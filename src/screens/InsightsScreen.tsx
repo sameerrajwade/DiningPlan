@@ -69,7 +69,8 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = () => {
     const cutoff = format(subDays(now, days), 'yyyy-MM-dd');
     const prevCutoff = format(subDays(now, days * 2), 'yyyy-MM-dd');
 
-    const currentMeals = meals.filter((m) => m.date >= cutoff);
+    const today = format(now, 'yyyy-MM-dd');
+    const currentMeals = meals.filter((m) => m.date >= cutoff && m.date <= today);
     const previousMeals = meals.filter((m) => m.date >= prevCutoff && m.date < cutoff);
     computeFromMeals(currentMeals, previousMeals);
   }, [meals, timeRange, computeFromMeals]);
@@ -82,8 +83,10 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = () => {
 
   const { takeoutPercent, dineOutPercent } = useMemo(() => {
     if (!insights) return { takeoutPercent: 0, dineOutPercent: 0 };
-    const cutoff = format(subDays(new Date(), TIME_RANGE_DAYS[timeRange]), 'yyyy-MM-dd');
-    const currentMeals = meals.filter((m) => m.date >= cutoff);
+    const now = new Date();
+    const todayStr = format(now, 'yyyy-MM-dd');
+    const cutoff = format(subDays(now, TIME_RANGE_DAYS[timeRange]), 'yyyy-MM-dd');
+    const currentMeals = meals.filter((m) => m.date >= cutoff && m.date <= todayStr);
     const total = Math.max(currentMeals.length, 1);
     const takeoutCount = currentMeals.filter((m) => m.sourceType === 'takeout').length;
     const homePercent = insights.homeCookedPercent || 0;

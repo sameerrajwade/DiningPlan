@@ -25,6 +25,7 @@ import { Dish, CuisineTag } from '../types';
 import { Colors, Spacing, FontSize, BorderRadius } from '../config/theme';
 import { CuisineChips } from '../components/CuisineChips';
 import { useDishStore } from '../stores/useDishStore';
+import { useMealStore } from '../stores/useMealStore';
 import { useAuthStore } from '../stores/useAuthStore';
 
 type SortMode = 'lastMade' | 'mostMade' | 'az' | 'favorites';
@@ -49,9 +50,42 @@ export const DishLibraryScreen: React.FC = () => {
   const { user } = useAuthStore();
   const householdId = user?.householdId ?? '';
 
+  const { meals, fetchAllMeals } = useMealStore();
+
   useEffect(() => {
-    if (householdId) fetchDishes(householdId);
+    if (householdId) {
+      fetchDishes(householdId);
+      fetchAllMeals(householdId).catch(() => {});
+    }
   }, [householdId, fetchDishes]);
+
+  const allDishes = useMemo(() => {
+    const dishMap = new Map<string, Dish>();
+    dishes.forEach((d) => dishMap.set(d.name.toLowerCase(), d));
+    meals.forEach((m) => {
+      if (!m.dishName) return;
+      const key = m.dishName.toLowerCase();
+      if (dishMap.has(key)) {
+        const existing = dishMap.get(key)!;
+        dishMap.set(key, {
+          ...existing,
+          timesCooked: existing.timesCooked + 1,
+          lastCookedDate: m.date > (existing.lastCookedDate || '') ? m.date : existing.lastCookedDate,
+        });
+      } else {
+        dishMap.set(key, {
+          id: m.dishName,
+          name: m.dishName,
+          cuisineTag: m.cuisineTag || 'Other',
+          categoryTags: [],
+          isFavorite: false,
+          timesCooked: 1,
+          lastCookedDate: m.date,
+        });
+      }
+    });
+    return Array.from(dishMap.values());
+  }, [dishes, meals]);
 
   const [search, setSearch] = useState('');
   const [sortMode, setSortMode] = useState<SortMode>('lastMade');
@@ -70,7 +104,7 @@ export const DishLibraryScreen: React.FC = () => {
   const [addingDish, setAddingDish] = useState(false);
 
   const filteredDishes = useMemo(() => {
-    let result = [...dishes];
+    let result = [...allDishes];
 
     // Search
     if (search.trim()) {
