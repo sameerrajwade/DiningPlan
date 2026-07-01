@@ -8,6 +8,7 @@ import { Colors } from './src/config/theme';
 import { onAuthStateChanged } from './src/services/auth';
 import { getUserProfile } from './src/services/firestore';
 import { useAuthStore } from './src/stores/useAuthStore';
+import { migrateDishNamesToTitleCase } from './src/services/migration';
 
 const theme = {
   ...DefaultTheme,
@@ -45,16 +46,19 @@ export default function App() {
           } catch {
             // Firestore may be unreachable on first launch
           }
-          setUser(
-            profile || {
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName || 'User',
-              email: firebaseUser.email || '',
-              avatarUrl: firebaseUser.photoURL || null,
-              householdId: null,
-              createdAt: new Date(),
-            },
-          );
+          const resolvedUser = profile || {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || 'User',
+            email: firebaseUser.email || '',
+            avatarUrl: firebaseUser.photoURL || null,
+            householdId: null,
+            createdAt: new Date(),
+          };
+          setUser(resolvedUser);
+          // Run once-per-device migration to title-case existing dish names
+          if (resolvedUser.householdId) {
+            migrateDishNamesToTitleCase(resolvedUser.householdId).catch(() => {});
+          }
         } else {
           setUser(null);
         }

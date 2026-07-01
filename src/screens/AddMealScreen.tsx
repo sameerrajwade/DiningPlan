@@ -24,6 +24,7 @@ import { useHouseholdStore } from '../stores/useHouseholdStore';
 import { getCurrencySymbol } from '../utils/currency';
 import type { RootStackScreenProps } from '../navigation/types';
 import type { MealType, SourceType, CuisineTag } from '../types';
+import { toTitleCase } from '../utils/text';
 
 type Props = RootStackScreenProps<'AddMeal'>;
 
@@ -159,7 +160,7 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
         date,
         mealType,
         sourceType,
-        dishName: dishName.trim(),
+        dishName: toTitleCase(dishName.trim()),
         cuisineTag,
         restaurantName: isOutside ? restaurantName.trim() : '',
         cost: isOutside && cost ? parseFloat(cost) : 0,

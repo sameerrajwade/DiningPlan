@@ -22,6 +22,7 @@ import {
 } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Dish, CuisineTag } from '../types';
+import { toTitleCase } from '../utils/text';
 import { Colors, Spacing, FontSize, BorderRadius } from '../config/theme';
 import { CuisineChips } from '../components/CuisineChips';
 import { useDishStore } from '../stores/useDishStore';
@@ -46,7 +47,7 @@ const getDaysSince = (dateStr: string): number => {
 };
 
 export const DishLibraryScreen: React.FC = () => {
-  const { dishes, isLoading, error, fetchDishes, addDish, updateDish } = useDishStore();
+  const { dishes, isLoading, error, fetchDishes, addDish, updateDish, toggleFavorite: storeFavorite } = useDishStore();
   const { user } = useAuthStore();
   const householdId = user?.householdId ?? '';
 
@@ -146,7 +147,7 @@ export const DishLibraryScreen: React.FC = () => {
     }
 
     return result;
-  }, [dishes, search, sortMode, quickFilter, cuisineFilter]);
+  }, [allDishes, search, sortMode, quickFilter, cuisineFilter]);
 
   const onRefresh = useCallback(async () => {
     if (!householdId) return;
@@ -159,13 +160,27 @@ export const DishLibraryScreen: React.FC = () => {
     async (dish: Dish) => {
       if (!householdId) return;
       try {
-        await updateDish(householdId, dish.id, { isFavorite: !dish.isFavorite });
+        const isRealDish = dishes.some((d) => d.id === dish.id);
+        if (!isRealDish) {
+          // Virtual dish from meal history — create it in Firestore with favorite=true
+          await addDish(householdId, {
+            name: dish.name,
+            cuisineTag: dish.cuisineTag,
+            categoryTags: dish.categoryTags ?? [],
+            isFavorite: true,
+            timesCooked: dish.timesCooked,
+            lastCookedDate: dish.lastCookedDate,
+            householdId,
+          });
+        } else {
+          await updateDish(householdId, dish.id, { isFavorite: !dish.isFavorite });
+        }
         await fetchDishes(householdId);
       } catch {
         Alert.alert('Error', 'Could not update favorite status.');
       }
     },
-    [householdId, updateDish, fetchDishes],
+    [householdId, dishes, addDish, updateDish, fetchDishes],
   );
 
   const handleAddDish = useCallback(async () => {
@@ -173,7 +188,7 @@ export const DishLibraryScreen: React.FC = () => {
     setAddingDish(true);
     try {
       await addDish(householdId, {
-        name: newName.trim(),
+        name: toTitleCase(newName.trim()),
         cuisineTag: newCuisine,
         categoryTags: newTags
           .split(',')

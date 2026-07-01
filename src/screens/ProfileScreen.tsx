@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -24,6 +24,7 @@ import { AvatarPicker } from '../components/AvatarPicker';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
 import { getCurrencySymbol } from '../utils/currency';
+import { useFocusEffect } from '@react-navigation/native';
 import { updateUserPreferences, getUserPreferences, updateUserProfile } from '../services/firestore';
 import { uploadProfilePicture } from '../services/storage';
 
@@ -88,6 +89,14 @@ export const ProfileScreen: React.FC = () => {
       fetchMembers(householdId).catch(() => {});
     }
   }, [householdId, fetchHousehold, fetchMembers]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (householdId) {
+        fetchMembers(householdId).catch(() => {});
+      }
+    }, [householdId, fetchMembers]),
+  );
 
   const updatePreferences = useCallback(
     async (partial: Partial<UserPreferences>) => {

@@ -230,9 +230,10 @@ export async function joinHousehold(
   inviteCode: string,
   userId: string,
 ): Promise<string> {
+  const normalizedCode = inviteCode.trim().toUpperCase();
   const q = query(
     collection(db, 'households'),
-    where('inviteCode', '==', inviteCode),
+    where('inviteCode', '==', normalizedCode),
   );
   const snap = await getDocs(q);
   if (snap.empty) throw new Error('Invalid invite code');
@@ -246,7 +247,7 @@ export async function joinHousehold(
   await updateDoc(householdDoc.ref, {
     memberIds: [...data.memberIds, userId],
   });
-  await updateDoc(doc(db, 'users', userId), { householdId: householdDoc.id });
+  await setDoc(doc(db, 'users', userId), { householdId: householdDoc.id }, { merge: true });
   return householdDoc.id;
 }
 

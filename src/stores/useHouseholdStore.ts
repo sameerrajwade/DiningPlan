@@ -66,6 +66,7 @@ export const useHouseholdStore = create<HouseholdState>((set) => ({
       }
     } catch (e: any) {
       set({ error: e.message, isLoading: false });
+      throw e;
     }
   },
 

@@ -9,7 +9,7 @@ import {
 import { Text, Chip, Surface, ActivityIndicator } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LineChart } from 'react-native-chart-kit';
-import { subDays, format } from 'date-fns';
+import { format, startOfWeek, startOfMonth, parseISO } from 'date-fns';
 import { Colors, Spacing, FontSize, BorderRadius } from '../config/theme';
 import { MetricCard } from '../components/MetricCard';
 import { useInsightStore } from '../stores/useInsightStore';
@@ -28,12 +28,37 @@ const TIME_RANGE_LABELS: Record<TimeRange, string> = {
   '180d': '6 months',
 };
 
-const TIME_RANGE_DAYS: Record<TimeRange, number> = {
-  '7d': 7,
-  '30d': 30,
-  '90d': 90,
-  '180d': 180,
-};
+function getCalendarRangeStart(range: TimeRange): string {
+  const now = new Date();
+  switch (range) {
+    case '7d':
+      return format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    case '30d':
+      return format(startOfMonth(now), 'yyyy-MM-dd');
+    case '90d': {
+      const qMonth = Math.floor(now.getMonth() / 3) * 3;
+      return format(new Date(now.getFullYear(), qMonth, 1), 'yyyy-MM-dd');
+    }
+    case '180d': {
+      const hMonth = now.getMonth() < 6 ? 0 : 6;
+      return format(new Date(now.getFullYear(), hMonth, 1), 'yyyy-MM-dd');
+    }
+  }
+}
+
+function getPrevRangeStart(range: TimeRange, rangeStart: string): string {
+  const start = parseISO(rangeStart);
+  switch (range) {
+    case '7d':
+      return format(new Date(start.getTime() - 7 * 86400000), 'yyyy-MM-dd');
+    case '30d':
+      return format(new Date(start.getFullYear(), start.getMonth() - 1, 1), 'yyyy-MM-dd');
+    case '90d':
+      return format(new Date(start.getFullYear(), start.getMonth() - 3, 1), 'yyyy-MM-dd');
+    case '180d':
+      return format(new Date(start.getFullYear(), start.getMonth() - 6, 1), 'yyyy-MM-dd');
+  }
+}
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -50,10 +75,9 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = () => {
   const loadData = useCallback(async () => {
     if (!household) return;
     const now = new Date();
-    const days = TIME_RANGE_DAYS[timeRange];
-    const start = format(subDays(now, days), 'yyyy-MM-dd');
     const end = format(now, 'yyyy-MM-dd');
-    const prevStart = format(subDays(now, days * 2), 'yyyy-MM-dd');
+    const start = getCalendarRangeStart(timeRange);
+    const prevStart = getPrevRangeStart(timeRange, start);
 
     await fetchMeals(household.id, prevStart, end);
   }, [household, timeRange, fetchMeals]);
@@ -65,11 +89,10 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = () => {
   useEffect(() => {
     if (meals.length === 0) return;
     const now = new Date();
-    const days = TIME_RANGE_DAYS[timeRange];
-    const cutoff = format(subDays(now, days), 'yyyy-MM-dd');
-    const prevCutoff = format(subDays(now, days * 2), 'yyyy-MM-dd');
-
     const today = format(now, 'yyyy-MM-dd');
+    const cutoff = getCalendarRangeStart(timeRange);
+    const prevCutoff = getPrevRangeStart(timeRange, cutoff);
+
     const currentMeals = meals.filter((m) => m.date >= cutoff && m.date <= today);
     const previousMeals = meals.filter((m) => m.date >= prevCutoff && m.date < cutoff);
     computeFromMeals(currentMeals, previousMeals);
@@ -85,7 +108,7 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = () => {
     if (!insights) return { takeoutPercent: 0, dineOutPercent: 0 };
     const now = new Date();
     const todayStr = format(now, 'yyyy-MM-dd');
-    const cutoff = format(subDays(now, TIME_RANGE_DAYS[timeRange]), 'yyyy-MM-dd');
+    const cutoff = getCalendarRangeStart(timeRange);
     const currentMeals = meals.filter((m) => m.date >= cutoff && m.date <= todayStr);
     const total = Math.max(currentMeals.length, 1);
     const takeoutCount = currentMeals.filter((m) => m.sourceType === 'takeout').length;

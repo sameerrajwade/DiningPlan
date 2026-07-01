@@ -7,12 +7,11 @@ import {
 } from 'react-native';
 import { Text, Chip, ActivityIndicator, Button, Card, Banner } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Restaurant } from '../types';
+import { useFocusEffect } from '@react-navigation/native';
 import { Colors, Spacing, FontSize, BorderRadius } from '../config/theme';
 import { MetricCard } from '../components/MetricCard';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
-import { getRestaurants } from '../services/firestore';
 import { useMealStore } from '../stores/useMealStore';
 import { getCurrencySymbol } from '../utils/currency';
 
@@ -51,73 +50,84 @@ const formatDate = (dateStr: string): string => {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
+interface RestaurantSummary {
+  id: string;
+  name: string;
+  cuisineType: string;
+  totalVisits: number;
+  totalSpend: number;
+  lastVisitDate: string;
+}
+
 export const RestaurantScreen: React.FC = () => {
   const { user } = useAuthStore();
-  const { meals } = useMealStore();
+  const { meals, fetchAllMeals, isLoading } = useMealStore();
   const { preferences } = useHouseholdStore();
   const householdId = user?.householdId ?? '';
 
   const currencySymbol = getCurrencySymbol(preferences?.currency ?? 'USD');
-
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [timeRange, setTimeRange] = useState<TimeRange>('all');
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    if (!householdId) return;
-    setIsLoading(true);
-    setError(null);
-    try {
-      const data = await getRestaurants(householdId);
-      setRestaurants(data);
-    } catch (e: any) {
-      setError(e.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [householdId]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useFocusEffect(
+    useCallback(() => {
+      if (householdId) {
+        fetchAllMeals(householdId).catch(() => {});
+      }
+    }, [householdId, fetchAllMeals]),
+  );
 
   const onRefresh = useCallback(async () => {
+    if (!householdId) return;
     setRefreshing(true);
-    await fetchData();
+    await fetchAllMeals(householdId).catch(() => {});
     setRefreshing(false);
-  }, [fetchData]);
+  }, [householdId, fetchAllMeals]);
 
-  const filteredRestaurants = useMemo(() => {
+  // Compute restaurant summary directly from meals (always up-to-date with edits)
+  const restaurants = useMemo((): RestaurantSummary[] => {
     const startDate = getStartDate(timeRange);
-    if (!startDate) return restaurants;
-    return restaurants.filter((r) => r.lastVisitDate >= startDate);
-  }, [restaurants, timeRange]);
+    const outsideMeals = meals.filter((m) => {
+      const isOutside = m.sourceType === 'dineout' || m.sourceType === 'takeout';
+      if (!isOutside || !m.restaurantName) return false;
+      if (startDate && m.date < startDate) return false;
+      return true;
+    });
 
-  const sortedRestaurants = useMemo(() => {
-    return [...filteredRestaurants].sort((a, b) => b.totalVisits - a.totalVisits);
-  }, [filteredRestaurants]);
+    const map = new Map<string, RestaurantSummary>();
+    for (const m of outsideMeals) {
+      const key = m.restaurantName!.toLowerCase();
+      const existing = map.get(key);
+      if (existing) {
+        existing.totalVisits += 1;
+        existing.totalSpend += m.cost ?? 0;
+        if (m.date > existing.lastVisitDate) existing.lastVisitDate = m.date;
+      } else {
+        map.set(key, {
+          id: m.restaurantName!,
+          name: m.restaurantName!,
+          cuisineType: m.cuisineTag ?? '',
+          totalVisits: 1,
+          totalSpend: m.cost ?? 0,
+          lastVisitDate: m.date,
+        });
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.totalVisits - a.totalVisits);
+  }, [meals, timeRange]);
 
-  const totalSpend = useMemo(
-    () => filteredRestaurants.reduce((sum, r) => sum + r.totalSpend, 0),
-    [filteredRestaurants],
-  );
-  const totalVisits = useMemo(
-    () => filteredRestaurants.reduce((sum, r) => sum + r.totalVisits, 0),
-    [filteredRestaurants],
-  );
-  const uniquePlaces = filteredRestaurants.length;
+  const totalSpend = useMemo(() => restaurants.reduce((s, r) => s + r.totalSpend, 0), [restaurants]);
+  const totalVisits = useMemo(() => restaurants.reduce((s, r) => s + r.totalVisits, 0), [restaurants]);
+  const uniquePlaces = restaurants.length;
 
-  // Exploration nudge: top 2 restaurants have >60% of visits
   const showExplorationNudge = useMemo(() => {
-    if (sortedRestaurants.length < 3 || totalVisits === 0) return false;
-    const topTwoVisits = sortedRestaurants[0].totalVisits + sortedRestaurants[1].totalVisits;
+    if (restaurants.length < 3 || totalVisits === 0) return false;
+    const topTwoVisits = restaurants[0].totalVisits + restaurants[1].totalVisits;
     return topTwoVisits / totalVisits > 0.6;
-  }, [sortedRestaurants, totalVisits]);
+  }, [restaurants, totalVisits]);
 
   const renderRestaurant = useCallback(
-    ({ item }: { item: Restaurant }) => {
+    ({ item }: { item: RestaurantSummary }) => {
       const isFrequent = item.totalVisits > 4;
       return (
         <Card style={styles.restaurantCard}>
@@ -162,23 +172,11 @@ export const RestaurantScreen: React.FC = () => {
     [currencySymbol],
   );
 
-  if (isLoading && restaurants.length === 0) {
+  if (isLoading && meals.length === 0) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={Colors.primary} />
-        <Text style={styles.loadingText}>Loading restaurants...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.centered}>
-        <MaterialCommunityIcons name="alert-circle-outline" size={48} color={Colors.error} />
-        <Text style={styles.errorText}>{error}</Text>
-        <Button mode="outlined" onPress={fetchData}>
-          Retry
-        </Button>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
@@ -186,7 +184,7 @@ export const RestaurantScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={sortedRestaurants}
+        data={restaurants}
         keyExtractor={(item) => item.id}
         renderItem={renderRestaurant}
         refreshControl={
@@ -194,7 +192,6 @@ export const RestaurantScreen: React.FC = () => {
         }
         ListHeaderComponent={
           <View>
-            {/* Time range selector */}
             <View style={styles.timeRangeRow}>
               {TIME_RANGES.map(({ value, label }) => (
                 <Chip
@@ -212,7 +209,6 @@ export const RestaurantScreen: React.FC = () => {
               ))}
             </View>
 
-            {/* Metric cards */}
             <View style={styles.metricsRow}>
               <View style={styles.metricWrapper}>
                 <MetricCard
@@ -240,7 +236,6 @@ export const RestaurantScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* Exploration nudge */}
             {showExplorationNudge && (
               <Banner
                 visible
@@ -265,7 +260,7 @@ export const RestaurantScreen: React.FC = () => {
           </View>
         }
         contentContainerStyle={
-          sortedRestaurants.length === 0 ? styles.emptyList : styles.listContent
+          restaurants.length === 0 ? styles.emptyList : styles.listContent
         }
       />
     </View>
@@ -386,12 +381,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     fontSize: FontSize.md,
     color: Colors.textSecondary,
-  },
-  errorText: {
-    fontSize: FontSize.md,
-    color: Colors.error,
-    marginVertical: Spacing.md,
-    textAlign: 'center',
   },
   emptyList: {
     flexGrow: 1,

@@ -27,15 +27,23 @@ export const HouseholdSetupScreen: React.FC = () => {
   };
 
   const handleJoin = async () => {
-    if (!inviteCode.trim()) {
+    const code = inviteCode.trim().toUpperCase();
+    if (!code) {
       Alert.alert('Required', 'Please enter an invite code');
       return;
     }
     if (!user) return;
     try {
-      await joinHousehold(inviteCode.trim(), user.id);
+      await joinHousehold(code, user.id);
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to join household');
+      const msg = e.message || 'Failed to join household';
+      const isNotFound = msg.toLowerCase().includes('invalid') || msg.toLowerCase().includes('not found');
+      Alert.alert(
+        'Could not join household',
+        isNotFound
+          ? 'Invite code not found. Please check the code and try again — codes are case-insensitive.'
+          : msg,
+      );
     }
   };
 
