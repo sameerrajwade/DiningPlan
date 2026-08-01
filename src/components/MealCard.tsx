@@ -75,6 +75,19 @@ export const MealCard: React.FC<MealCardProps> = ({ meal, onPress, placeholder }
   const daysAgo = getDaysAgo(meal.date);
   const chipColor = sourceColor(colors, meal.sourceType);
   const chipLabel = sourceLabel(meal.sourceType);
+  const isOutside = meal.sourceType !== 'home';
+  // For an outside meal, the restaurant is what you "ate" that slot — surface it
+  // as the title, with the dishes you ordered on the line below.
+  const title = isOutside && meal.restaurantName ? meal.restaurantName : meal.dishName;
+  // Dishes ordered at the restaurant (all items, or the single dish if it isn't
+  // just the restaurant-name fallback).
+  const orderedDishes = isOutside
+    ? (meal.items?.length
+        ? meal.items.map((it) => it.name).filter(Boolean)
+        : meal.dishName && meal.dishName !== title
+          ? [meal.dishName]
+          : [])
+    : [];
   // Additional dishes beyond the primary (items[0] is the primary/summary dish).
   const extraDishes =
     meal.items && meal.items.length > 1
@@ -91,7 +104,7 @@ export const MealCard: React.FC<MealCardProps> = ({ meal, onPress, placeholder }
         <View style={styles.textCol}>
           <View style={styles.row}>
             <Text style={styles.dishName} numberOfLines={1}>
-              {meal.dishName}
+              {title}
             </Text>
             <View style={[styles.pill, { backgroundColor: chipColor }]}>
               <MaterialCommunityIcons name={sourceIcon(meal.sourceType) as any} size={12} color={colors.white} />
@@ -102,7 +115,15 @@ export const MealCard: React.FC<MealCardProps> = ({ meal, onPress, placeholder }
           </View>
 
           <View style={styles.metaRow}>
-            {extraDishes.length > 0 ? (
+            {isOutside && orderedDishes.length > 0 ? (
+              <Text
+                style={styles.metaText}
+                numberOfLines={2}
+                accessibilityLabel={`Ordered ${orderedDishes.join(', ')}`}
+              >
+                {orderedDishes.join(' · ')}
+              </Text>
+            ) : !isOutside && extraDishes.length > 0 ? (
               <Text
                 style={styles.metaText}
                 numberOfLines={2}

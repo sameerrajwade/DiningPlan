@@ -10,20 +10,18 @@ import {
 import { Text, Chip, Surface, ActivityIndicator } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LineChart } from 'react-native-chart-kit';
-import { format, startOfWeek, startOfMonth, endOfMonth, parseISO, subMonths } from 'date-fns';
+import { format } from 'date-fns';
 import { useFocusEffect } from '@react-navigation/native';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
-import { MetricCard } from '../components/MetricCard';
 import { ShareStatModal, ShareStat } from '../components/ShareStatModal';
 import { useInsightStore } from '../stores/useInsightStore';
 import { useMealStore } from '../stores/useMealStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
 import { useAuthStore } from '../stores/useAuthStore';
 import { getCurrencySymbol } from '../utils/currency';
+import { getRange, TimeRange } from '../utils/insightsRange';
 import type { MainTabScreenProps } from '../navigation/types';
-
-type TimeRange = '7d' | '30d' | 'lastMonth' | '90d' | 'all';
 
 const TIME_RANGE_LABELS: Record<TimeRange, string> = {
   '7d': 'This week',
@@ -33,52 +31,18 @@ const TIME_RANGE_LABELS: Record<TimeRange, string> = {
   all: 'All',
 };
 
-// Each range is a closed [start, end] window plus the equivalent prior window
-// (for trend comparison). "lastMonth" is a fully closed past month; "all" spans
-// all history with no prior window (trend suppressed).
-function getRange(range: TimeRange): { start: string; end: string; prevStart: string; prevEnd: string } {
-  const now = new Date();
-  const today = format(now, 'yyyy-MM-dd');
-  const fmt = (d: Date) => format(d, 'yyyy-MM-dd');
-  const dayBefore = (d: Date) => fmt(new Date(d.getTime() - 86400000));
-  switch (range) {
-    case '7d': {
-      const start = startOfWeek(now, { weekStartsOn: 1 });
-      const prevStart = new Date(start.getTime() - 7 * 86400000);
-      return { start: fmt(start), end: today, prevStart: fmt(prevStart), prevEnd: dayBefore(start) };
-    }
-    case '30d': {
-      const start = startOfMonth(now);
-      return { start: fmt(start), end: today, prevStart: fmt(startOfMonth(subMonths(now, 1))), prevEnd: dayBefore(start) };
-    }
-    case 'lastMonth': {
-      const lm = subMonths(now, 1);
-      return {
-        start: fmt(startOfMonth(lm)),
-        end: fmt(endOfMonth(lm)),
-        prevStart: fmt(startOfMonth(subMonths(now, 2))),
-        prevEnd: fmt(endOfMonth(subMonths(now, 2))),
-      };
-    }
-    case '90d': {
-      const start = subMonths(now, 3);
-      return { start: fmt(start), end: today, prevStart: fmt(subMonths(now, 6)), prevEnd: dayBefore(start) };
-    }
-    case 'all': {
-      // No prior window for all-time; use an empty past range so trend = 0.
-      return { start: '1970-01-01', end: today, prevStart: '1970-01-01', prevEnd: '1970-01-01' };
-    }
-  }
-}
-
 const screenWidth = Dimensions.get('window').width;
 
-export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route }) => {
+export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route, navigation }) => {
   const { insights, isLoading, computeFromMeals } = useInsightStore();
   const { meals, fetchMeals, dedupeMeals } = useMealStore();
   const { household, preferences } = useHouseholdStore();
   const { user } = useAuthStore();
   const [timeRange, setTimeRange] = useState<TimeRange>('30d');
+  // Current local date, refreshed on focus. Threaded into every window-dependent
+  // memo so "this month" etc. follow the real date across a day/month rollover
+  // (getRange reads new Date(), but that alone isn't a render trigger).
+  const [today, setToday] = useState(() => format(new Date(), 'yyyy-MM-dd'));
 
   // Deep-link support: a notification (e.g. weekly → this week) can open Insights
   // with a preselected range.
@@ -88,6 +52,28 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
   }, [route.params?.range]);
   const [refreshing, setRefreshing] = useState(false);
   const [shareStat, setShareStat] = useState<ShareStat | null>(null);
+  const [showAllCooked, setShowAllCooked] = useState(false);
+
+  // Tapping a most-cooked dish opens it in the Dish Library (in the Home stack),
+  // which shows its full times-cooked count and last-made date.
+  const openDish = useCallback(
+    (name: string) => {
+      const { start, end } = getRange(timeRange);
+      navigation.navigate('Home', {
+        screen: 'DishLibrary',
+        params: {
+          monthDishes: [name],
+          title: name,
+          initialFilter: undefined,
+          // Scope the Dish Library count to the same range shown here, so the
+          // number matches (tapping a "this month" dish shows its month count,
+          // not the all-time total). "All" spans all history = all-time count.
+          window: timeRange === 'all' ? undefined : { start, end, label: TIME_RANGE_LABELS[timeRange].toLowerCase() },
+        },
+      });
+    },
+    [navigation, timeRange],
+  );
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -104,17 +90,33 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
     loadData();
   }, [loadData]);
 
-  // Refresh data every time the Insights tab gains focus
-  useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
-
-  useEffect(() => {
+  // Recompute the windowed insights. getRange() reads the CURRENT date, but that
+  // isn't a hook dependency, so we must trigger this explicitly — otherwise the
+  // window silently goes stale when the calendar day/month rolls over while the
+  // meals cache is unchanged (bug: "This month" kept showing last month's counts).
+  const recompute = useCallback(() => {
     if (meals.length === 0) return;
     const { start, end, prevStart, prevEnd } = getRange(timeRange);
     // Family insights exclude the kids-tiffin track (shown in its own card).
     const currentMeals = meals.filter((m) => m.date >= start && m.date <= end && m.audience !== 'kids');
     const previousMeals = meals.filter((m) => m.date >= prevStart && m.date <= prevEnd && m.audience !== 'kids');
     computeFromMeals(currentMeals, previousMeals);
-  }, [meals, timeRange, computeFromMeals]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `today` keys the date rollover
+  }, [meals, timeRange, computeFromMeals, today]);
+
+  useEffect(() => {
+    recompute();
+  }, [recompute]);
+
+  // Refresh data AND recompute the window on every focus, so returning to the tab
+  // after midnight / a month change reflects the current period, not a stale one.
+  useFocusEffect(
+    useCallback(() => {
+      setToday(format(new Date(), 'yyyy-MM-dd'));
+      loadData();
+      recompute();
+    }, [loadData, recompute]),
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -136,7 +138,8 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
       takeoutPercent: share('takeout'),
       dineOutPercent: share('dineout'),
     };
-  }, [meals, timeRange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `today` keys the date rollover
+  }, [meals, timeRange, today]);
 
   // Kids tiffin summary for the selected range (count, top dish, variety).
   const kidsStats = useMemo(() => {
@@ -155,9 +158,11 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
       topName: top?.[0] ?? '',
       topCount: top?.[1] ?? 0,
     };
-  }, [meals, timeRange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `today` keys the date rollover
+  }, [meals, timeRange, today]);
 
   const maxRestaurantVisits = insights?.topRestaurants?.[0]?.visits ?? 1;
+  const maxCooked = insights?.mostCookedDishes?.[0]?.count ?? 1;
 
   const chartData = insights?.monthlySpending?.length
     ? {
@@ -443,24 +448,43 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
               </Surface>
             )}
 
-            {/* Most cooked dishes */}
+            {/* Most cooked dishes — ranked, tappable (opens the dish in the Dish
+                Library), and expandable beyond the top 5. */}
             {insights.mostCookedDishes.length > 0 && (
-              <View>
-                <Text style={styles.sectionTitleStandalone}>Most Cooked Dishes</Text>
-                <View style={styles.metricsRow}>
-                  {insights.mostCookedDishes.slice(0, 3).map((d, i) => (
-                    <View key={d.name} style={styles.metricWrapper}>
-                      <MetricCard
-                        title={`#${i + 1}`}
-                        value={d.count}
-                        subtitle={d.name}
-                        icon="pot-steam"
-                        color={colors.home}
+              <Surface style={styles.section} elevation={1}>
+                <Text style={styles.sectionTitle}>Most Cooked Dishes</Text>
+                {(showAllCooked ? insights.mostCookedDishes : insights.mostCookedDishes.slice(0, 5)).map((d, i) => (
+                  <Pressable
+                    key={d.name}
+                    onPress={() => openDish(d.name)}
+                    style={styles.cookedRow}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${d.name}, cooked ${d.count} ${d.count === 1 ? 'time' : 'times'}. Open in Dish Library.`}
+                  >
+                    <Text style={styles.cookedRank}>{i + 1}</Text>
+                    <Text style={styles.cookedName} numberOfLines={1}>
+                      {d.name}
+                    </Text>
+                    <View style={styles.cookedBarTrack}>
+                      <View
+                        style={[
+                          styles.barFill,
+                          { width: `${Math.round((d.count / maxCooked) * 100)}%`, backgroundColor: colors.home },
+                        ]}
                       />
                     </View>
-                  ))}
-                </View>
-              </View>
+                    <Text style={styles.cookedCount}>{d.count}×</Text>
+                    <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textMuted} />
+                  </Pressable>
+                ))}
+                {insights.mostCookedDishes.length > 5 && (
+                  <Pressable onPress={() => setShowAllCooked((v) => !v)} style={styles.showAllRow} accessibilityRole="button">
+                    <Text style={styles.showAllText}>
+                      {showAllCooked ? 'Show less' : `Show all ${insights.mostCookedDishes.length}`}
+                    </Text>
+                  </Pressable>
+                )}
+              </Surface>
             )}
           </>
         )}
@@ -541,6 +565,13 @@ const makeStyles = (c: ThemeColors) =>
     chart: { borderRadius: BorderRadius.md, marginTop: Spacing.xs },
     metricsRow: { flexDirection: 'row', gap: Spacing.sm },
     metricWrapper: { flex: 1 },
+    cookedRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xs },
+    cookedRank: { width: 18, fontFamily: Fonts.bodySemiBold, fontSize: FontSize.sm, color: c.textMuted, textAlign: 'center' },
+    cookedName: { width: 96, fontFamily: Fonts.bodyMedium, fontSize: FontSize.sm, color: c.text },
+    cookedBarTrack: { flex: 1, height: 12, backgroundColor: c.surfaceVariant, borderRadius: BorderRadius.sm, overflow: 'hidden' },
+    cookedCount: { width: 34, fontFamily: Fonts.bodySemiBold, fontSize: FontSize.sm, color: c.textSecondary, textAlign: 'right' },
+    showAllRow: { paddingTop: Spacing.sm, alignItems: 'center' },
+    showAllText: { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.sm, color: c.primary },
     emptyState: { alignItems: 'center', marginTop: Spacing.xxl, gap: Spacing.md },
     emptyText: { fontFamily: Fonts.body, fontSize: FontSize.md, color: c.textMuted, textAlign: 'center' },
     emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: Spacing.xxl * 2, gap: Spacing.md },

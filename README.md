@@ -11,9 +11,9 @@ Built with React Native (Expo) and Firebase. Households sync across devices; a p
 - **Personalized weekly plans** — generates a plan from your real cooking history and dish rotation preferences, not generic recipe lists.
 - **Multi-dish meals (thali)** — log a main dish plus sides as one meal; each dish can carry a 1–5★ rating.
 - **Kids tiffin track** — a separate audience so a kids' lunchbox and the family meal can share the same day/slot.
-- **Dish library** — every dish you've cooked, sortable by *last made*, *most made*, favorites, or A–Z, with a "forgotten dishes" nudge for anything outside your rotation window.
-- **Eating out** — track takeout and dine-out visits by restaurant, with per-dish ratings ("what to order / what to avoid") and spend.
-- **Insights** — monthly spend trends, home-vs-out ratio, and cooking patterns via charts.
+- **Dish library** — every dish you've cooked (thali sides included), sorted by *most made* by default, or *last made* / favorites / A–Z, with a "not made in 30+ days" nudge. Counts are time-window aware: open the library from a "this month" card and each dish shows that period's count; open it in full for all-time totals.
+- **Eating out** — an "Outside Meals" count (dine-out + takeout) plus per-restaurant tracking, per-dish ratings ("what to order / what to avoid"), and spend.
+- **Insights** — home-vs-out ratio, spend trends, cuisine variety, and a ranked, tappable **most-cooked** list (drill into any dish). Every figure follows the selected time range and stays current across a day/month rollover.
 - **Reminders** — optional daily / weekly / monthly local notifications (no server push required).
 - **Households** — invite a partner; meals, dishes, and restaurants are shared and update live on the same device.
 - **Polished UX** — Terracotta & Sage theme with light / dark / auto, Fraunces + Inter typography, motion and skeleton loaders throughout.
@@ -33,8 +33,9 @@ Built with React Native (Expo) and Firebase. Households sync across devices; a p
 ## Architecture notes
 
 - **Cache-first reads.** Meals and dishes load once per household/session; every screen filters in memory and writes update the local cache immediately. Firestore is re-read only on pull-to-refresh or household change — keeping read volume flat. See `src/stores/useMealStore.ts` and `src/stores/useDishStore.ts`.
-- **Derived dish stats.** `timesCooked` / `lastCookedDate` are derived from the meals list (future-planned meals excluded) rather than double-counted from stored fields.
+- **Derived dish stats.** `timesCooked` / `lastCookedDate` are derived from the meals list (future-planned meals excluded, thali sides counted) rather than double-counted from stored fields. The aggregation is a pure, unit-tested function — `src/utils/dishStats.ts` — that takes an optional date window so a scoped view counts only in-window meals.
 - **Single meal, many dishes.** A multi-dish meal is one `Meal` document with an `items[]` array; `dishName` is the primary/summary dish.
+- **Date-window helpers.** Insight ranges live in `src/utils/insightsRange.ts` (`getRange(range, now)`, `now` injectable for tests). Screens recompute their window on focus, so "this month" follows the real date instead of freezing at mount.
 
 ## Project layout
 

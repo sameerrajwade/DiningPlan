@@ -21,7 +21,7 @@ import {
   Menu,
 } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
+import { useRoute, useNavigation, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { Dish, CuisineTag } from '../types';
 import { toTitleCase } from '../utils/text';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
@@ -32,6 +32,7 @@ import { cuisineIcon } from '../utils/icons';
 import { useDishStore } from '../stores/useDishStore';
 import { useMealStore } from '../stores/useMealStore';
 import { useAuthStore } from '../stores/useAuthStore';
+import { aggregateDishes } from '../utils/dishStats';
 
 type SortMode = 'lastMade' | 'mostMade' | 'az' | 'favorites';
 type QuickFilter = 'all' | 'favorites' | 'stale';
@@ -63,6 +64,8 @@ export const DishLibraryScreen: React.FC = () => {
   const route = useRoute<RouteProp<HomeStackParamList, 'DishLibrary'>>();
   const navigation = useNavigation<any>();
   const monthDishes = route.params?.monthDishes;
+  const initialFilter = route.params?.initialFilter;
+  const dateWindow = route.params?.window;
   const monthDishSet = useMemo(
     () => (monthDishes ? new Set(monthDishes.map((n) => n.toLowerCase())) : null),
     [monthDishes],
@@ -75,46 +78,31 @@ export const DishLibraryScreen: React.FC = () => {
     }
   }, [householdId, fetchDishes]);
 
+  // Reset the view state from the CURRENT params on every entry. Dish Library is
+  // opened for different intents (all dishes, "this month" window, a single dish
+  // from Insights, the stale list) and can be revisited without unmounting, so a
+  // prior visit's quick-filter/sort must never linger. This runs on focus, which
+  // covers both a fresh mount and re-navigation to an already-mounted instance.
+  useFocusEffect(
+    useCallback(() => {
+      setQuickFilter(initialFilter ?? 'all');
+      setSortMode(initialFilter === 'stale' ? 'lastMade' : 'mostMade');
+    }, [initialFilter]),
+  );
+
   const allDishes = useMemo(() => {
-    const dishMap = new Map<string, Dish>();
     // Local 'yyyy-MM-dd' for today; meal.date is stored as a local date string.
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    // Seed from saved dishes but reset counts — timesCooked/lastCookedDate are
-    // DERIVED from meals below (fixes DISH-COUNT-2: stored + derived double count).
-    dishes.forEach((d) => dishMap.set(d.name.toLowerCase(), { ...d, timesCooked: 0, lastCookedDate: '' }));
-    meals.forEach((m) => {
-      if (!m.dishName) return;
-      // Future-planned meals aren't cooked yet — exclude them from stats so an
-      // upcoming dish doesn't skew "last made" / counts (bug: future date won).
-      if (m.date > today) return;
-      const key = m.dishName.toLowerCase();
-      if (dishMap.has(key)) {
-        const existing = dishMap.get(key)!;
-        dishMap.set(key, {
-          ...existing,
-          timesCooked: existing.timesCooked + 1,
-          lastCookedDate: m.date > (existing.lastCookedDate || '') ? m.date : existing.lastCookedDate,
-        });
-      } else {
-        dishMap.set(key, {
-          id: m.dishName,
-          name: m.dishName,
-          cuisineTag: m.cuisineTag || 'Other',
-          categoryTags: [],
-          isFavorite: false,
-          timesCooked: 1,
-          lastCookedDate: m.date,
-          householdId: m.householdId,
-        });
-      }
-    });
-    return Array.from(dishMap.values());
-  }, [dishes, meals]);
+    return aggregateDishes(dishes, meals, { today, window: dateWindow });
+  }, [dishes, meals, dateWindow]);
 
   const [search, setSearch] = useState('');
-  const [sortMode, setSortMode] = useState<SortMode>('lastMade');
-  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
+  // Browsing the library (all dishes / "this month") defaults to Most made so
+  // your go-to dishes surface first. The "haven't made in a while" deep-link
+  // (initialFilter='stale') keeps Last made — that view is about rotation.
+  const [sortMode, setSortMode] = useState<SortMode>(initialFilter === 'stale' ? 'lastMade' : 'mostMade');
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>(initialFilter ?? 'all');
   const [cuisineFilter, setCuisineFilter] = useState<CuisineTag | null>(null);
   const [sortMenuVisible, setSortMenuVisible] = useState(false);
   const [cuisineMenuVisible, setCuisineMenuVisible] = useState(false);
@@ -134,6 +122,12 @@ export const DishLibraryScreen: React.FC = () => {
     // Contextual subset (e.g. tapped "Unique Dishes" on Home → this month's dishes)
     if (monthDishSet) {
       result = result.filter((d) => monthDishSet.has(d.name.toLowerCase()));
+    }
+
+    // Scoped-window view: only dishes actually cooked in the window (their count
+    // is already windowed), so we don't list saved dishes at 0× for the period.
+    if (dateWindow) {
+      result = result.filter((d) => d.timesCooked > 0);
     }
 
     // Search
@@ -176,7 +170,7 @@ export const DishLibraryScreen: React.FC = () => {
     }
 
     return result;
-  }, [allDishes, search, sortMode, quickFilter, cuisineFilter, monthDishSet]);
+  }, [allDishes, search, sortMode, quickFilter, cuisineFilter, monthDishSet, dateWindow]);
 
   const onRefresh = useCallback(async () => {
     if (!householdId) return;
@@ -387,15 +381,18 @@ export const DishLibraryScreen: React.FC = () => {
           ] as const
         ).map(({ key, label }) => {
           const isAll = key === 'all';
-          const displayLabel = isAll && monthDishes ? 'Show all' : label;
-          const selected = isAll ? quickFilter === 'all' && !monthDishes : quickFilter === key;
+          const scoped = !!(monthDishes || dateWindow);
+          const displayLabel = isAll && scoped ? 'Show all' : label;
+          const selected = isAll ? quickFilter === 'all' && !scoped : quickFilter === key;
           return (
             <Chip
               key={key}
               selected={selected}
               onPress={() => {
-                if (isAll && monthDishes) {
-                  navigation.setParams({ monthDishes: undefined, title: undefined });
+                if (isAll && scoped) {
+                  // Drop the scoped context (subset + window) to show the full
+                  // all-time library.
+                  navigation.setParams({ monthDishes: undefined, title: undefined, window: undefined });
                 }
                 setQuickFilter(key);
               }}
@@ -407,6 +404,12 @@ export const DishLibraryScreen: React.FC = () => {
           );
         })}
       </View>
+
+      {dateWindow && (
+        <Text style={styles.windowNote}>
+          Counts for {dateWindow.label ?? 'the selected period'}
+        </Text>
+      )}
 
       {error ? (
         <View style={styles.centered}>
@@ -547,6 +550,15 @@ const makeStyles = (c: ThemeColors) =>
       paddingHorizontal: Spacing.md,
       gap: Spacing.sm,
       marginBottom: Spacing.sm,
+    },
+    windowNote: {
+      paddingHorizontal: Spacing.md,
+      marginBottom: Spacing.xs,
+      fontFamily: Fonts.bodyMedium,
+      fontSize: FontSize.xs,
+      color: c.textMuted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
     },
     quickChip: {
       backgroundColor: c.surfaceVariant,
