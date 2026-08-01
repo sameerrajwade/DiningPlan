@@ -4,3 +4,4 @@ node_modules/
 gradle-dist.zip
 releases/
 app-logs.txt
+.claude/

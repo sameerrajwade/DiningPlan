@@ -44,7 +44,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useAuthStore();
   const householdId = user?.householdId ?? '';
   const { meals, isLoading: mealsLoading, fetchMeals, dedupeMeals } = useMealStore();
-  const { dishes, fetchDishes } = useDishStore();
+  const { fetchDishes } = useDishStore();
   const { preferences } = useHouseholdStore();
 
   const currencySymbol = getCurrencySymbol(preferences?.currency ?? 'USD');
@@ -59,9 +59,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
   })();
 
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const thisMonthStart = useMemo(() => format(startOfMonth(new Date()), 'yyyy-MM-dd'), []);
-  const prevMonthStart = useMemo(() => format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'), []);
+  // Current local date, refreshed on focus so the "this month" window follows the
+  // real date across a day/month rollover instead of freezing at mount.
+  const [today, setToday] = React.useState(() => format(new Date(), 'yyyy-MM-dd'));
+  const thisMonthStart = useMemo(() => format(startOfMonth(new Date()), 'yyyy-MM-dd'), [today]);
+  const prevMonthStart = useMemo(() => format(startOfMonth(subMonths(new Date(), 1)), 'yyyy-MM-dd'), [today]);
 
   const loadData = useCallback(async (force = false) => {
     if (!householdId) return;
@@ -70,7 +72,10 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     await dedupeMeals(householdId).catch(() => {});
   }, [householdId, prevMonthStart, today, fetchMeals, fetchDishes, dedupeMeals]);
 
-  useFocusEffect(useCallback(() => { loadData(); }, [loadData]));
+  useFocusEffect(useCallback(() => {
+    setToday(format(new Date(), 'yyyy-MM-dd'));
+    loadData();
+  }, [loadData]));
 
   // Family dashboard metrics exclude the kids-tiffin track (shown separately).
   const monthMeals = useMemo(
@@ -106,11 +111,14 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     const prev = Math.round((prevMonthMeals.filter((m) => m.sourceType === 'home').length / prevMonthMeals.length) * 100);
     return homeCookedPercent - prev;
   }, [prevMonthMeals, homeCookedPercent]);
-  const dineOutCount = useMemo(() => monthMeals.filter((m) => m.sourceType === 'dineout').length, [monthMeals]);
-  const dineOutCountLastMonth = useMemo(
-    () => prevMonthMeals.filter((m) => m.sourceType === 'dineout').length,
-    [prevMonthMeals],
-  );
+  // "Outside Meals" = every meal not cooked at home (dine-out + takeout). The
+  // card shows the combined total with the breakdown as a subtitle. (Previously
+  // this counted dine-out only, so takeouts silently went missing.)
+  const ateOut = useMemo(() => {
+    const dine = monthMeals.filter((m) => m.sourceType === 'dineout').length;
+    const take = monthMeals.filter((m) => m.sourceType === 'takeout').length;
+    return { total: dine + take, dine, take };
+  }, [monthMeals]);
   const uniqueDishNames = useMemo(
     () => Array.from(new Set(monthMeals.filter((m) => m.dishName).map((m) => m.dishName))),
     [monthMeals],
@@ -177,22 +185,32 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     scheduleDaily(dailyHour, body).catch(() => {});
   }, [meals, dailyOn, dailyHour, notifHydrated, today]);
 
-  // #4: only surface dishes NOT made within the rotation window (default 14d).
+  // Dishes not cooked at home in 30+ days, longest-ago first, top 5. Derive the
+  // real last-cooked date from actual meals (incl. thali sides in `items`) rather
+  // than the stored aggregate, which could be stale and made this list look
+  // random. "See all" opens the full stale list in the Dish Library.
   const forgottenDishes = useMemo(() => {
-    const threshold = preferences?.dishRotationDays ?? 14;
     const now = new Date();
-    return [...dishes]
-      .filter((d) => {
-        if (!d.lastCookedDate || d.lastCookedDate > today) return false;
-        return differenceInDays(now, parseISO(d.lastCookedDate + 'T00:00:00')) >= threshold;
-      })
-      .sort(
-        (a, b) =>
-          differenceInDays(now, parseISO(b.lastCookedDate + 'T00:00:00')) -
-          differenceInDays(now, parseISO(a.lastCookedDate + 'T00:00:00')),
-      )
-      .slice(0, 10);
-  }, [dishes, today, preferences]);
+    const lastCooked = new Map<string, string>();
+    meals.forEach((m) => {
+      if (m.sourceType !== 'home' || m.date > today) return;
+      const names = m.items?.length ? m.items.map((it) => it.name) : [m.dishName];
+      names.forEach((name) => {
+        if (!name) return;
+        const prev = lastCooked.get(name);
+        if (!prev || m.date > prev) lastCooked.set(name, m.date);
+      });
+    });
+    return Array.from(lastCooked.entries())
+      .map(([name, date]) => ({
+        name,
+        lastCookedDate: date,
+        days: differenceInDays(now, parseISO(date + 'T00:00:00')),
+      }))
+      .filter((d) => d.days >= 30)
+      .sort((a, b) => b.days - a.days)
+      .slice(0, 5);
+  }, [meals, today]);
 
   const handleAddMeal = useCallback(() => {
     navigation.getParent()?.getParent()?.navigate('AddMeal');
@@ -291,11 +309,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               </View>
               <View style={styles.metricCol}>
                 <PressableScale onPress={() => navigation.navigate('Restaurants')}>
-                  <MetricCard title="Dine Outs" value={dineOutCount} subtitle={`${dineOutCountLastMonth} last month`} icon="store" color={colors.dineout} />
+                  <MetricCard title="Outside Meals" value={ateOut.total} subtitle={`${ateOut.dine} dine · ${ateOut.take} takeout`} icon="store" color={colors.dineout} />
                 </PressableScale>
               </View>
               <View style={styles.metricCol}>
-                <PressableScale onPress={() => navigation.navigate('DishLibrary', { monthDishes: uniqueDishNames, title: 'Dishes this month' })}>
+                <PressableScale onPress={() => navigation.navigate('DishLibrary', { window: { start: thisMonthStart, end: today, label: 'this month' }, title: 'Dishes this month', monthDishes: undefined, initialFilter: undefined })}>
                   <MetricCard
                     title="Unique Dishes"
                     value={uniqueDishNames.length}
@@ -323,7 +341,9 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                     onPress={() =>
                       navigation.navigate('DishLibrary', {
                         monthDishes: uniqueKidsDishNames,
+                        window: { start: thisMonthStart, end: today, label: 'this month' },
                         title: 'Kids tiffins this month',
+                        initialFilter: undefined,
                       })
                     }
                   >
@@ -398,18 +418,21 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
         {forgottenDishes.length > 0 && (
           <>
-            <TouchableOpacity onPress={() => navigation.navigate('DishLibrary')}>
+            <TouchableOpacity onPress={() => navigation.navigate('DishLibrary', { initialFilter: 'stale', title: 'Not made in a while', window: undefined, monthDishes: undefined })}>
               <Text style={styles.sectionTitle}>Dishes you haven't made in a while {'›'}</Text>
             </TouchableOpacity>
-            {forgottenDishes.map((item) => {
-              const daysAgo = differenceInDays(new Date(), parseISO(item.lastCookedDate + 'T00:00:00'));
-              return (
-                <View key={item.id} style={styles.forgottenRow}>
-                  <Text style={styles.forgottenName}>{item.name}</Text>
-                  <Text style={styles.forgottenDays}>{daysAgo} days ago</Text>
-                </View>
-              );
-            })}
+            {forgottenDishes.map((item) => (
+              <View key={item.name} style={styles.forgottenRow}>
+                <Text style={styles.forgottenName}>{item.name}</Text>
+                <Text style={styles.forgottenDays}>{item.days} days ago</Text>
+              </View>
+            ))}
+            <TouchableOpacity
+              onPress={() => navigation.navigate('DishLibrary', { initialFilter: 'stale', title: 'Not made in a while', window: undefined, monthDishes: undefined })}
+              style={styles.seeAllRow}
+            >
+              <Text style={styles.seeAllText}>See all dishes not made in 30+ days {'›'}</Text>
+            </TouchableOpacity>
           </>
         )}
 
@@ -522,6 +545,8 @@ const makeStyles = (c: ThemeColors) =>
     },
     forgottenName: { fontFamily: Fonts.bodyMedium, fontSize: FontSize.md, color: c.text },
     forgottenDays: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: c.textMuted },
+    seeAllRow: { paddingVertical: Spacing.sm, alignItems: 'flex-start' },
+    seeAllText: { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.sm, color: c.primary },
     fab: {
       position: 'absolute',
       right: Spacing.md,

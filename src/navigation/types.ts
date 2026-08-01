@@ -20,7 +20,17 @@ export type MainTabParamList = {
 
 export type HomeStackParamList = {
   HomeMain: undefined;
-  DishLibrary: { monthDishes?: string[]; title?: string } | undefined;
+  DishLibrary:
+    | {
+        monthDishes?: string[];
+        title?: string;
+        initialFilter?: 'all' | 'favorites' | 'stale';
+        // When set, timesCooked / last-made are counted only within [start, end]
+        // (inclusive, yyyy-MM-dd) so a scoped view ("this month", a range from
+        // Insights) shows window counts, not the all-time total.
+        window?: { start: string; end: string; label?: string };
+      }
+    | undefined;
   Restaurants: undefined;
   RestaurantDetail: { name: string };
   History: undefined;

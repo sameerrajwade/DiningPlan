@@ -67,10 +67,16 @@ export function computeInsights(
     }))
     .sort((a, b) => b.percent - a.percent);
 
-  // Most cooked dishes (home only)
+  // Most cooked dishes (home only). Count EVERY dish in the meal, not just the
+  // primary — a thali's sides (Poli, Rice, Dal) live in `items` and were being
+  // ignored, so frequent breads/sides never surfaced here.
   const dishMap = new Map<string, number>();
   for (const m of meals.filter((m) => m.sourceType === 'home')) {
-    dishMap.set(m.dishName, (dishMap.get(m.dishName) || 0) + 1);
+    const names = m.items && m.items.length ? m.items.map((it) => it.name) : [m.dishName];
+    for (const name of names) {
+      if (!name) continue;
+      dishMap.set(name, (dishMap.get(name) || 0) + 1);
+    }
   }
   const mostCookedDishes = Array.from(dishMap.entries())
     .map(([name, count]) => ({ name, count }))
