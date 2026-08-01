@@ -9,10 +9,11 @@ Family meal-planning app (React Native / Expo + Firebase, TypeScript), rebranded
 - Motion = built-in RN Animated only (no Reanimated). Paywall/monetization DEFERRED.
 - Develop → test → show results → only then build/deliver.
 
-## Open PRs (2026-07-10)
-- **PR #2 (MERGED)** — 14 UX/device-test fixes (dish labels, all-dishes cards, image share, kids-weekends, breakfast fixes, dedupe, splash, skeletons, celebration).
-- **PR #3 (MERGED)** — GitHub Pages site: 9-screen gallery + 7-screen guide + status-bar-cropped clean screenshots + share = card-only. Now on main.
-- **PR #4 (merging)** — Firestore read reduction + two meal bug fixes + README (this session).
+## Open PRs
+- **PR #2 (MERGED)** — 14 UX/device-test fixes.
+- **PR #3 (MERGED)** — GitHub Pages site: 9-screen gallery + 7-screen guide + status-bar-cropped screenshots.
+- **PR #4 (MERGED)** — Firestore read reduction + two meal bug fixes + README.
+- **PR #5 (OPEN, 2026-08-01)** — branch `insights-dish-window-fixes` → main. This session's work: "Outside Meals" card, tappable/windowed Most Cooked, meal-derived forgotten dishes, restaurant-name titles, windowed Dish Library counts + param-bleed fix, date-rollover recompute, pure dishStats/insightsRange utils + tests (32 total). README + docs/guide.html updated. Screenshots (home.png/insights.png) NOT yet regenerated — see Next Up.
 
 ## Last Session (2026-07-31) — 6 real-use fixes + Firebase data verification (branch reads-cache-first, tsc=0, 22 tests)
 Sameer's usage surfaced 6 issues. Fixes:
@@ -42,7 +43,8 @@ Meals + dishes now **cache-first single-source**: load ALL once per household/se
 - Built release APK (assembleRelease), installed on device 57150DLCH002E1, merged PR #4 to main.
 
 ## Next Up
-1. **Rebuild release APK** with the 6 fixes (assembleRelease), install on device, verify each fix against real Firebase data — esp. Ate Out count now matches (dineout+takeout) and forgotten-dishes no longer looks random.
+0. **Regenerate product screenshots** home.png + insights.png (they still show old "Dine Outs" card / 3-card Most Cooked). Pipeline: `adb exec-out screencap -p` (1280x2856) → sharp crop top 150px → 1280x2706 to match existing. Needs a curated app-data state first (current has test junk like "Test" dish). Merge PR #5.
+1. **Rebuild release APK** with the 6 fixes (assembleRelease), install on device, verify each fix against real Firebase data — esp. Outside Meals count (dineout+takeout).
 2. **Confirm read count dropped** in Firebase console (target: from ~2-3k/day toward a few hundred). If wife's install works + reads look good → green-light release path.
 3. Merge PR #3 (site) + PR #4 (reads) to main.
 4. Release path: Play **Internal testing** (instant Play install, up to 100 testers) OR closed beta (12 testers/14 days → production); org account w/ D-U-N-S skips the gate. Prep: data-safety form, store listing, signed AAB via EAS.
