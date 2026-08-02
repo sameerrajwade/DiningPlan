@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--terra:#C0532E;--sage:#5E8B6A;--sageL:#E7F0E9;--kids:#4A6FA5;--bg:#FBF7F2;--card:#FFFFFF;
+    --tx:#241E1B;--tx2:#6E645C;--tx3:#A79C93;--bd:#EAE2D8}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1280px;height:2706px}
+  .phone{width:1280px;height:2706px;background:var(--bg);font-family:'Inter',sans-serif;color:var(--tx);overflow:hidden;position:relative}
+  .hd{background:var(--bg);padding:66px 56px 24px}
+  .hd h1{font-family:'Fraunces',serif;font-size:68px;font-weight:600}
+  .wk{background:var(--card);border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:center;gap:40px;padding:34px;font-size:44px;font-weight:600}
+  .wk .a{color:var(--tx3);font-size:52px}.wk .t{color:var(--terra);font-weight:600;font-size:40px;margin-left:20px}
+  .body{padding:34px 56px 0}
+  .toggle{background:var(--card);border:1px solid var(--bd);border-radius:26px;padding:30px 38px;display:flex;align-items:center;margin-bottom:30px}
+  .toggle .t{font-size:42px;font-weight:500;display:flex;align-items:center;gap:18px;color:var(--kids)}
+  .sw{margin-left:auto;width:100px;height:56px;border-radius:32px;background:#9CB6D8;position:relative}
+  .sw::after{content:"";position:absolute;right:6px;top:6px;width:44px;height:44px;border-radius:50%;background:#fff}
+  .day{background:var(--card);border:1px solid var(--bd);border-radius:30px;padding:40px;margin-bottom:30px}
+  .dh{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:22px}
+  .dh .dn{font-family:'Fraunces',serif;font-size:52px;font-weight:600}
+  .dh .dd{font-size:38px;color:var(--tx3)}
+  .ml{font-size:28px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--tx3);margin:20px 0 14px}
+  .ml.k{color:var(--kids);display:flex;align-items:center;gap:12px}
+  .meal{border:1px solid var(--bd);border-radius:24px;padding:28px 30px;display:flex;align-items:center;gap:26px}
+  .mi{width:96px;height:96px;border-radius:20px;background:var(--sageL);display:flex;align-items:center;justify-content:center;flex:none}
+  .mn{font-size:44px;font-weight:500}.ms{font-size:32px;color:var(--tx2);margin-top:6px}
+  .pill{margin-left:auto;background:var(--sage);color:#fff;font-size:30px;font-weight:600;padding:14px 30px;border-radius:40px;display:flex;align-items:center;gap:12px}
+  .plan{position:absolute;left:56px;right:56px;bottom:230px;height:130px;border-radius:26px;background:var(--terra);color:#fff;font-size:46px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:20px}
+  .nav{position:absolute;left:0;right:0;bottom:0;height:190px;background:var(--bg);border-top:1px solid var(--bd);display:flex;padding:26px 30px 40px}
+  .nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:27px;color:var(--tx3);font-weight:500}
+  .nav a.on{color:var(--terra)}
+  svg{display:block}
+  .bowl{width:44px;height:44px}
+</style></head>
+<body>
+<div class="phone">
+  <div class="hd"><h1>Calendar</h1></div>
+  <div class="wk"><span class="a">‹</span>Jun 1 – 7, 2026<span class="a">›</span><span class="t">Today</span></div>
+  <div class="body">
+    <div class="toggle"><div class="t">🙂 Show kids tiffin</div><div class="sw"></div></div>
+
+    <div class="day">
+      <div class="dh"><div class="dn">Monday</div><div class="dd">Jun 1</div></div>
+      <div class="ml">Lunch</div>
+      <div class="meal"><div class="mi"><svg class="bowl" viewBox="0 0 24 24"><path fill="#5E8B6A" d="M4 11h16a8 8 0 01-16 0z"/><rect x="6" y="16" width="12" height="1.6" rx=".8" fill="#5E8B6A"/></svg></div><div><div class="mn">Pancakes</div><div class="ms">Last made 3 days ago</div></div><div class="pill">🏠 Home</div></div>
+      <div class="ml">Dinner</div>
+      <div class="meal"><div class="mi"><svg class="bowl" viewBox="0 0 24 24"><path fill="#5E8B6A" d="M4 11h16a8 8 0 01-16 0z"/><rect x="6" y="16" width="12" height="1.6" rx=".8" fill="#5E8B6A"/></svg></div><div><div class="mn">Spaghetti Bolognese</div><div class="ms">Last made 3 days ago</div></div><div class="pill">🏠 Home</div></div>
+      <div class="ml k">🙂 Kids Tiffin</div>
+      <div class="meal"><div class="mi"><svg class="bowl" viewBox="0 0 24 24"><path fill="#5E8B6A" d="M4 11h16a8 8 0 01-16 0z"/><rect x="6" y="16" width="12" height="1.6" rx=".8" fill="#5E8B6A"/></svg></div><div><div class="mn">Grilled Cheese</div><div class="ms">Last made 3 days ago</div></div><div class="pill">🏠 Home</div></div>
+    </div>
+
+    <div class="day">
+      <div class="dh"><div class="dn">Tuesday</div><div class="dd">Jun 2</div></div>
+      <div class="ml">Lunch</div>
+      <div class="meal"><div class="mi"><svg class="bowl" viewBox="0 0 24 24"><path fill="#5E8B6A" d="M4 11h16a8 8 0 01-16 0z"/><rect x="6" y="16" width="12" height="1.6" rx=".8" fill="#5E8B6A"/></svg></div><div><div class="mn">Caesar Salad</div><div class="ms">Last made 2 days ago</div></div><div class="pill">🏠 Home</div></div>
+      <div class="ml">Dinner</div>
+      <div class="meal"><div class="mi"><svg class="bowl" viewBox="0 0 24 24"><path fill="#5E8B6A" d="M4 11h16a8 8 0 01-16 0z"/><rect x="6" y="16" width="12" height="1.6" rx=".8" fill="#5E8B6A"/></svg></div><div><div class="mn">Beef Tacos</div><div class="ms">Last made 2 days ago</div></div><div class="pill">🏠 Home</div></div>
+    </div>
+  </div>
+
+  <div class="plan">🪄 Plan your week</div>
+  <div class="nav">
+    <a><svg width="46" height="46" viewBox="0 0 24 24"><path fill="#A79C93" d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3z"/></svg>Home</a>
+    <a class="on"><svg width="44" height="44" viewBox="0 0 24 24"><path fill="none" stroke="#C0532E" stroke-width="2" d="M4 5h16v16H4z M4 9h16 M8 3v4 M16 3v4"/></svg>Calendar</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="none" stroke="#A79C93" stroke-width="2" stroke-linecap="round" d="M5 19 15 9l-1-1L4 18z M15 9l2-2 M16 4l1 1 M20 8l-1-1"/></svg>Plan</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="#A79C93" d="M4 13h3v7H4z M10 8h3v12h-3z M16 4h3v16h-3z"/></svg>Insights</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="#A79C93"/><path fill="#A79C93" d="M4 21c0-4 4-6 8-6s8 2 8 6z"/></svg>Profile</a>
+  </div>
+</div>
+</body></html>

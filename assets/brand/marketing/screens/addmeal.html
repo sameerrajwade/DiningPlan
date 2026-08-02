@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--terra:#C0532E;--sage:#5E8B6A;--amber:#E0A63C;--kids:#4A6FA5;--bg:#FBF7F2;--card:#FFFFFF;
+    --sv:#F3EEE7;--tx:#241E1B;--tx2:#6E645C;--tx3:#A79C93;--bd:#EAE2D8}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1280px;height:2706px}
+  .phone{width:1280px;height:2706px;background:var(--bg);font-family:'Inter',sans-serif;color:var(--tx);overflow:hidden;position:relative}
+  .top{height:170px;display:flex;align-items:center;gap:36px;padding:0 56px;border-bottom:1px solid var(--bd)}
+  .top .ttl{font-size:48px;font-weight:600}
+  .body{padding:44px 56px}
+  .h1{font-family:'Fraunces',serif;font-size:66px;font-weight:600;margin-bottom:44px}
+  .lbl{font-size:32px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--tx2);margin:38px 0 18px}
+  .input{background:var(--card);border:1px solid var(--bd);border-radius:22px;height:120px;display:flex;align-items:center;padding:0 38px;font-size:44px}
+  .input.ph{color:var(--tx3)}
+  .seg{display:flex;gap:24px}
+  .opt{flex:1;height:118px;border-radius:22px;border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;gap:16px;font-size:40px;font-weight:600;color:var(--tx2);background:var(--card)}
+  .opt.sel{background:var(--terra);color:#fff;border-color:var(--terra)}
+  .opt.kids.o{border-color:var(--kids);color:var(--kids)}
+  .opt.home{background:var(--sage);color:#fff;border-color:var(--sage)}
+  .opt.take{border-color:var(--amber);color:var(--amber)}
+  .opt.dine{border-color:var(--terra);color:var(--terra)}
+  .qp{font-size:32px;color:var(--tx2);margin:26px 0 16px}
+  .chips{display:flex;gap:20px;flex-wrap:wrap}
+  .chip{background:var(--sv);border-radius:40px;padding:18px 34px;font-size:34px;font-weight:500}
+  .add{color:var(--terra);font-size:38px;font-weight:600;margin-top:26px;display:flex;align-items:center;gap:16px}
+  .cchip{background:var(--sv);border-radius:40px;padding:18px 34px;font-size:34px;font-weight:500}
+  .cchip.sel{background:var(--terra);color:#fff}
+  .cchip.other{background:transparent;border:2px dashed var(--bd);color:var(--terra)}
+  .notes{background:var(--card);border:1px solid var(--bd);border-radius:22px;height:200px;padding:34px 38px;font-size:42px;color:var(--tx3)}
+  .save{position:absolute;left:56px;right:56px;bottom:-30px;height:130px;border-radius:26px;background:var(--terra)}
+  svg{display:block}
+</style></head>
+<body>
+<div class="phone">
+  <div class="top"><svg width="52" height="52" viewBox="0 0 24 24"><path fill="none" stroke="#241E1B" stroke-width="2.4" stroke-linecap="round" d="M15 5l-7 7 7 7"/></svg><div class="ttl">Add Meal</div></div>
+  <div class="body">
+    <div class="h1">Add Meal</div>
+
+    <div class="lbl">Date</div>
+    <div class="input">Thu, Jun 5, 2026</div>
+
+    <div class="lbl">For</div>
+    <div class="seg"><div class="opt sel">👥 Family</div><div class="opt kids o">🙂 Kids tiffin</div></div>
+
+    <div class="lbl">Meal Type</div>
+    <div class="seg"><div class="opt sel">☀ Lunch</div><div class="opt">🌙 Dinner</div></div>
+
+    <div class="lbl">Source</div>
+    <div class="seg"><div class="opt home">🍳 Home</div><div class="opt take">🛍 Takeout</div><div class="opt dine">🍴 Dine Out</div></div>
+
+    <div class="lbl">Main Dish</div>
+    <div class="input ph">Dish name</div>
+    <div class="qp">Quick picks</div>
+    <div class="chips"><div class="chip">Spaghetti Bolognese</div><div class="chip">Grilled Chicken</div><div class="chip">Veggie Stir-Fry</div><div class="chip">Beef Tacos</div></div>
+    <div class="add">⊕ Add another dish</div>
+
+    <div class="lbl">Cuisine</div>
+    <div class="chips">
+      <div class="cchip sel">✓ Italian</div><div class="cchip">American</div><div class="cchip">Mexican</div><div class="cchip">Chinese</div>
+      <div class="cchip">Thai</div><div class="cchip">Japanese</div><div class="cchip">Mediterranean</div><div class="cchip">Korean</div>
+      <div class="cchip">French</div><div class="cchip">Vietnamese</div><div class="cchip other">+ Other</div>
+    </div>
+
+    <div class="lbl">Notes</div>
+    <div class="notes">Optional notes…</div>
+  </div>
+  <div class="save"></div>
+</div>
+</body></html>

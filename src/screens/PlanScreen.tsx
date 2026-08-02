@@ -20,7 +20,7 @@ import {
 } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { format, addDays, parseISO, startOfWeek, endOfWeek, addWeeks } from 'date-fns';
+import { format, addDays, parseISO, startOfWeek, endOfWeek, addWeeks, isToday } from 'date-fns';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { generateMealPlan } from '../services/planner';
@@ -32,7 +32,6 @@ import { useAuthStore } from '../stores/useAuthStore';
 import type { MealPlan, Meal } from '../types';
 import type { MainTabScreenProps } from '../navigation/types';
 
-const DAY_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
 const EMPTY_SLOT = { dishName: '', sourceType: 'home' as const, isNew: false, lastMadeDaysAgo: 0 };
 
@@ -47,10 +46,10 @@ function savedWeekToPlan(weekMeals: Meal[], weekStart: Date): MealPlan[] {
     plan.push({
       date,
       lunch: lunch
-        ? { dishName: lunch.dishName, sourceType: lunch.sourceType, isNew: false, lastMadeDaysAgo: 0 }
+        ? { dishName: lunch.dishName, sourceType: lunch.sourceType, isNew: false, lastMadeDaysAgo: 0, restaurantName: lunch.restaurantName }
         : { ...EMPTY_SLOT },
       dinner: dinner
-        ? { dishName: dinner.dishName, sourceType: dinner.sourceType, isNew: false, lastMadeDaysAgo: 0 }
+        ? { dishName: dinner.dishName, sourceType: dinner.sourceType, isNew: false, lastMadeDaysAgo: 0, restaurantName: dinner.restaurantName }
         : { ...EMPTY_SLOT },
       ...(kids ? { kids: { dishName: kids.dishName, sourceType: kids.sourceType, isNew: false, lastMadeDaysAgo: 0 } } : {}),
     });
@@ -158,6 +157,10 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
     const dishMap = new Map<string, typeof dishes[0]>();
     dishes.forEach((d) => dishMap.set(d.name.toLowerCase(), d));
     meals.forEach((m) => {
+      // Only home dishes are plannable — you plan what you'll COOK. A dish only
+      // ever ordered out (e.g. "Dosa" at a restaurant) must not become a home
+      // dinner suggestion.
+      if (m.sourceType !== 'home') return;
       if (m.dishName && !dishMap.has(m.dishName.toLowerCase())) {
         dishMap.set(m.dishName.toLowerCase(), {
           id: m.dishName,
@@ -192,6 +195,7 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
           sourceType: m.sourceType,
           isNew: false,
           lastMadeDaysAgo: 0,
+          restaurantName: m.restaurantName,
         });
 
         const next: MealPlan[] = [];
@@ -199,8 +203,11 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
           const date = format(addDays(weekStartDate, i), 'yyyy-MM-dd');
           const gen = genByDate.get(date);
           const canGenerate = date >= todayStr && !!gen; // never plan the past
-          const savedLunch = meals.find((m) => m.date === date && m.mealType === 'lunch');
-          const savedDinner = meals.find((m) => m.date === date && m.mealType === 'dinner');
+          // Exclude kids tiffins — they're stored with mealType 'lunch' but must
+          // not populate the FAMILY lunch/dinner slots (would leak a kids dish
+          // into the family track and duplicate it on accept).
+          const savedLunch = meals.find((m) => m.date === date && m.mealType === 'lunch' && m.audience !== 'kids');
+          const savedDinner = meals.find((m) => m.date === date && m.mealType === 'dinner' && m.audience !== 'kids');
 
           const savedKids = meals.find((m) => m.date === date && m.audience === 'kids');
 
@@ -231,6 +238,9 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
   const refreshDay = useCallback(
     (dayIdx: number) => {
       if (allDishes.length === 0) return;
+      // Never regenerate a past day — accept won't persist it, so showing a new
+      // dish there is just confusing.
+      if (plan[dayIdx] && plan[dayIdx].date < format(new Date(), 'yyyy-MM-dd')) return;
       const dayPlan = generateMealPlan(
         allDishes,
         meals,
@@ -285,10 +295,18 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
       const kidsOn = !!preferences?.planKidsTiffin;
 
       // Delete existing FAMILY meals for those dates so stale plan records don't
-      // persist. Kids meals are only cleared when the kids track is active
-      // (otherwise leave them untouched — never lose kids data on a family save).
+      // persist. Kids meals are only cleared on dates where the plan actually has
+      // a replacement kids dish — otherwise (weekends, empty kids pool) we'd delete
+      // a kids tiffin the accept never rewrites, permanently losing it.
+      const kidsReplaceDates = new Set(
+        daysToSave.filter((d) => d.kids?.dishName).map((d) => d.date),
+      );
       const staleIds = meals
-        .filter((m) => saveDates.has(m.date) && (kidsOn || m.audience !== 'kids'))
+        .filter((m) => {
+          if (!saveDates.has(m.date)) return false;
+          if (m.audience === 'kids') return kidsOn && kidsReplaceDates.has(m.date);
+          return true; // family meal on a save date — always refreshed
+        })
         .map((m) => m.id);
       await Promise.all(staleIds.map((id) => deleteMeal(householdId, id)));
 
@@ -378,6 +396,18 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
   };
   const srcColor = (s: string) =>
     s === 'dineout' ? colors.dineout : s === 'takeout' ? colors.takeout : colors.home;
+
+  // Outside (dine-out/takeout) slots lead with the restaurant name — matching how
+  // Calendar/Home render them — with the ordered dish as a secondary line.
+  const isOutsideSlot = (s: MealPlan['lunch']) =>
+    s.sourceType === 'dineout' || s.sourceType === 'takeout';
+  const slotPrimary = (s: MealPlan['lunch']) =>
+    isOutsideSlot(s) && s.restaurantName ? s.restaurantName : s.dishName || '—';
+  const slotSub = (s: MealPlan['lunch']) =>
+    isOutsideSlot(s) && s.restaurantName && s.dishName &&
+    s.dishName.toLowerCase() !== s.restaurantName.toLowerCase()
+      ? s.dishName
+      : '';
 
   // Any saved (already-planned) content in the displayed week?
   const hasSaved = useMemo(
@@ -486,19 +516,30 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
         {/* Plan list */}
         {plan.map((day, idx) => {
           const date = parseISO(day.date);
-          const dayLabel = `${DAY_LABELS[date.getDay()]} ${format(date, 'd')}`;
+          const isDayToday = isToday(date);
           return (
-            <Surface key={day.date} style={styles.dayRow} elevation={1}>
+            <Surface key={day.date} style={[styles.dayRow, isDayToday && styles.dayRowToday]} elevation={1}>
               <View style={styles.dayHeader}>
-                <Text style={styles.dayLabel}>{dayLabel}</Text>
-                {isDirty && (
-                  <IconButton
-                    icon="refresh"
-                    size={18}
-                    iconColor={colors.textSecondary}
-                    onPress={() => refreshDay(idx)}
-                  />
-                )}
+                <View style={styles.dayNameRow}>
+                  <Text style={[styles.dayName, isDayToday && styles.todayText]}>{format(date, 'EEEE')}</Text>
+                  {isDayToday && (
+                    <View style={styles.todayPill}>
+                      <Text style={styles.todayPillText}>Today</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.dayNameRow}>
+                  <Text style={[styles.dayDate, isDayToday && styles.todayText]}>{format(date, 'MMM d')}</Text>
+                  {isDirty && (
+                    <IconButton
+                      icon="refresh"
+                      size={18}
+                      iconColor={colors.textSecondary}
+                      onPress={() => refreshDay(idx)}
+                      style={styles.refreshBtn}
+                    />
+                  )}
+                </View>
               </View>
               <View style={styles.mealRow}>
                 {/* Lunch */}
@@ -512,9 +553,12 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
                     onPress={() => openEdit(idx, 'lunch')}
                     numberOfLines={1}
                   >
-                    {day.lunch.dishName || '—'}
+                    {slotPrimary(day.lunch)}
                   </Text>
-                  {isDirty && (
+                  {slotSub(day.lunch) ? (
+                    <Text style={styles.restSub} numberOfLines={1}>{slotSub(day.lunch)}</Text>
+                  ) : null}
+                  {isDirty && day.lunch.sourceType === 'home' && (
                     <View style={styles.dishMeta}>
                       {day.lunch.isNew ? (
                         <Badge style={styles.newBadge} size={18}>New!</Badge>
@@ -537,13 +581,16 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
                     onPress={() => openEdit(idx, 'dinner')}
                     numberOfLines={1}
                   >
-                    {day.dinner.dishName || '—'}
+                    {slotPrimary(day.dinner)}
                   </Text>
-                  {isDirty && (
+                  {slotSub(day.dinner) ? (
+                    <Text style={styles.restSub} numberOfLines={1}>{slotSub(day.dinner)}</Text>
+                  ) : null}
+                  {isDirty && day.dinner.sourceType === 'home' && (
                     <View style={styles.dishMeta}>
                       {day.dinner.isNew ? (
                         <Badge style={styles.newBadge} size={18}>New!</Badge>
-                      ) : day.dinner.sourceType !== 'dineout' && day.dinner.dishName ? (
+                      ) : day.dinner.dishName ? (
                         <Text style={[styles.daysAgoText, { color: daysAgoColor(day.dinner.lastMadeDaysAgo) }]}>
                           {day.dinner.lastMadeDaysAgo}d ago
                         </Text>
@@ -740,8 +787,17 @@ const makeStyles = (c: ThemeColors) =>
       padding: Spacing.md,
       marginBottom: Spacing.sm,
     },
-    dayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    dayLabel: { fontFamily: Fonts.display, fontSize: FontSize.md, color: c.text },
+    dayRowToday: { borderColor: c.primary, borderWidth: 1 },
+    dayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: Spacing.sm },
+    dayNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    // Matches CalendarScreen's day header exactly (Fraunces lg name + body sm date).
+    dayName: { fontFamily: Fonts.display, fontSize: FontSize.lg, color: c.text },
+    dayDate: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: c.textMuted },
+    todayPill: { backgroundColor: c.primary, borderRadius: BorderRadius.full, paddingHorizontal: 9, paddingVertical: 2 },
+    todayPillText: { fontFamily: Fonts.bodySemiBold, fontSize: 10, color: c.white, textTransform: 'uppercase', letterSpacing: 0.5 },
+    todayText: { color: c.primary },
+    refreshBtn: { margin: 0, marginVertical: -8, marginRight: -8 },
+    restSub: { fontFamily: Fonts.body, fontSize: FontSize.xs, color: c.textMuted, marginBottom: Spacing.xs, marginTop: -2 },
     mealRow: { flexDirection: 'row', gap: Spacing.md },
     mealSlot: { flex: 1 },
     mealTypeRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: Spacing.xs },

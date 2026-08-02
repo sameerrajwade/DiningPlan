@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--terra:#C0532E;--sage:#5E8B6A;--bg:#FBF7F2;--card:#FFFFFF;--tx:#241E1B}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1280px;height:2706px}
+  .phone{width:1280px;height:2706px;position:relative;overflow:hidden;font-family:'Inter',sans-serif;background:var(--bg)}
+  .bgimg{position:absolute;inset:0;width:1280px;height:2706px;object-fit:cover}
+  .scrim{position:absolute;inset:0;background:rgba(36,30,27,.5)}
+  .wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:44px}
+  .cardc{width:800px;background:var(--terra);border-radius:44px;padding:74px 60px;text-align:center;color:#fff;box-shadow:0 40px 90px rgba(0,0,0,.35)}
+  .sof{font-family:'Fraunces',serif;font-size:60px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:24px}
+  .pct{font-family:'Fraunces',serif;font-size:170px;font-weight:700;line-height:1;margin:36px 0 20px;display:flex;align-items:center;justify-content:center;gap:26px}
+  .pct .dot{width:36px;height:36px;border-radius:50%;background:var(--sage)}
+  .cap{font-size:52px;font-weight:600}
+  .sub{font-size:40px;opacity:.9;margin-top:16px}
+  .div{height:2px;background:rgba(255,255,255,.35);margin:44px 60px 40px}
+  .memo{font-family:'Fraunces',serif;font-size:42px;opacity:.95}
+  .actions{width:800px;background:var(--bg);border-radius:40px;padding:34px 50px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+  .close{color:var(--terra);font-size:46px;font-weight:600}
+  .share{background:var(--terra);color:#fff;font-size:46px;font-weight:600;padding:26px 56px;border-radius:44px;display:flex;align-items:center;gap:20px}
+  svg{display:block}
+</style></head>
+<body>
+<div class="phone">
+  <img class="bgimg" src="./insights.png" alt="">
+  <div class="scrim"></div>
+  <div class="wrap">
+    <div class="cardc">
+      <div class="sof"><svg viewBox="0 0 1024 1024" width="64" height="64"><g fill="none" stroke="#FBF7F2" stroke-width="40" stroke-linecap="round"><path d="M430 424 C 398 372, 462 352, 430 300"/><path d="M512 430 C 480 378, 544 358, 512 300"/><path d="M594 424 C 562 372, 626 352, 594 300"/></g><ellipse cx="512" cy="520" rx="214" ry="48" fill="#FBF7F2"/><path d="M300 520 A 214 214 0 0 0 724 520 Z" fill="#FBF7F2"/></svg>Sofra</div>
+      <div class="pct"><span class="dot"></span>82%</div>
+      <div class="cap">Home-cooked this month</div>
+      <div class="sub">Takeout 6% · Dine out 12%</div>
+      <div class="div"></div>
+      <div class="memo">Your family's meal memory</div>
+    </div>
+    <div class="actions">
+      <div class="close">Close</div>
+      <div class="share">⤴ Share</div>
+    </div>
+  </div>
+</div>
+</body></html>

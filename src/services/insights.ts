@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import { Meal, InsightData } from '../types';
 
 export function computeInsights(
@@ -14,7 +13,9 @@ export function computeInsights(
   const prevHomeCooked = previousPeriodMeals.filter((m) => m.sourceType === 'home').length;
   const prevHomeCookedPercent =
     prevTotal > 0 ? Math.round((prevHomeCooked / prevTotal) * 100) : 0;
-  const homeCookedTrend = homeCookedPercent - prevHomeCookedPercent;
+  // Only report a trend when there IS a previous period to compare against —
+  // otherwise a first-month user falsely sees "Last period was 0% home".
+  const homeCookedTrend = prevTotal > 0 ? homeCookedPercent - prevHomeCookedPercent : 0;
 
   // Dine out count
   const dineOutCount = meals.filter((m) => m.sourceType === 'dineout').length;
@@ -58,7 +59,8 @@ export function computeInsights(
   // Cuisine breakdown
   const cuisineMap = new Map<string, number>();
   for (const m of meals) {
-    cuisineMap.set(m.cuisineTag, (cuisineMap.get(m.cuisineTag) || 0) + 1);
+    const tag = m.cuisineTag || 'Other';
+    cuisineMap.set(tag, (cuisineMap.get(tag) || 0) + 1);
   }
   const cuisineBreakdown = Array.from(cuisineMap.entries())
     .map(([cuisine, count]) => ({
@@ -87,7 +89,9 @@ export function computeInsights(
   const monthMap = new Map<string, number>();
   for (const m of [...meals, ...previousPeriodMeals]) {
     if (m.sourceType !== 'home' && m.cost) {
-      const monthKey = format(new Date(m.date), 'yyyy-MM');
+      // Bucket by the local date string directly — `new Date('yyyy-MM-dd')` is
+      // UTC midnight and buckets into the wrong month in negative-offset zones.
+      const monthKey = m.date.slice(0, 7);
       monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + m.cost);
     }
   }

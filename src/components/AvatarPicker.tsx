@@ -73,7 +73,9 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
 
   const handleCamera = async () => {
     try {
-      const result = await launchCamera({ mediaType: 'photo', quality: 0.8 });
+      // Cap dimensions — a full-res phone photo blows past the 1 MB Storage rule
+      // and the upload fails. 512px is ample for an avatar.
+      const result = await launchCamera({ mediaType: 'photo', quality: 0.8, maxWidth: 512, maxHeight: 512 });
       handleResult(result, 'Camera');
     } catch {
       Alert.alert('Error', 'Could not open camera.');
@@ -82,7 +84,7 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
 
   const handleGallery = async () => {
     try {
-      const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.8 });
+      const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.8, maxWidth: 512, maxHeight: 512 });
       handleResult(result, 'Photos');
     } catch {
       Alert.alert('Error', 'Could not open gallery.');

@@ -47,8 +47,12 @@ export const SettingsScreen: React.FC = () => {
             if (!user) return;
             setDeleting(true);
             try {
-              await deleteUserData(user.id, householdId);
+              // Delete the Auth user FIRST — it throws 'requires-recent-login'
+              // for stale sessions (the common case). If we destroyed the
+              // Firestore data first, that throw would leave the account alive
+              // but the profile/household membership gone (data loss).
               await deleteCurrentUser();
+              await deleteUserData(user.id, householdId);
               await signOut();
             } catch (e: any) {
               if (e?.code === 'auth/requires-recent-login') {

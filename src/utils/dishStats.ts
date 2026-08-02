@@ -16,6 +16,11 @@ export interface AggregateOpts {
 // Rules:
 //  - Seeds from saved dishes but resets their counts; timesCooked/lastCooked are
 //    DERIVED from meals (avoids double counting stored + derived).
+//  - HOME meals only. Outside meals (dine-out/takeout) carry a dishName/items
+//    too, but those are "ordered", not "cooked" — counting them inflated the
+//    Dish Library + the Home "Unique Dishes" metric. Restaurant dishes live in
+//    the restaurant detail screen instead. (Insights "most cooked" is already
+//    home-only, so this keeps all three consistent.)
 //  - Counts EVERY dish in a meal, including thali sides in `items` (a meal with
 //    items counts each item once; otherwise the single `dishName`).
 //  - Skips future-dated meals (date > today) — planned, not cooked.
@@ -35,6 +40,7 @@ export function aggregateDishes(
 
   meals.forEach((m) => {
     if (m.date > today) return;
+    if (m.sourceType !== 'home') return; // dishes you cooked, not ordered out
     if (window && (m.date < window.start || m.date > window.end)) return;
 
     const names = m.items?.length ? m.items.map((it) => it.name) : m.dishName ? [m.dishName] : [];
