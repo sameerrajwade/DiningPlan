@@ -12,28 +12,26 @@
 - **Deployment:** Android path documented + ready (Play verification → `eas build` → internal testing). **iOS path FULLY documented** (4 guides: checklist, Firebase setup, App Store submission, quick-ref). Code is iOS-ready (no changes needed).
 
 ## Last Session (2026-08-01, latest)
-- **Website icon refresh:** replaced feature-card emoji (🍲✨📊…) with 7 branded SVG icons. Live on `sofra.savvylabs.dev`.
-- **iOS deployment research (this session):** comprehensive research & 4 guides created:
-  - `ios-deploy-checklist.md` (step-by-step A–R)
-  - `ios-firebase-setup.md` (critical: GoogleService-Info.plist, URL schemes, silent failures)
-  - `ios-appstore-submission.md` (metadata, privacy label, App Review)
-  - `ios-quick-ref.md` (quick lookup + pre-testing checklist)
-- **Key finding:** iOS setup differs significantly from Android (no SHA-1, uses URL schemes; stricter privacy label). Silent failure points documented. Pre-testing checklist ready before friends test.
-- **Launch readiness:** Android 8-step path documented. iOS path fully covered. Code is iOS-ready (no changes needed).
+- **Website icon refresh:** feature-card emoji (🍲✨📊…) → 7 branded SVG icons. Live on `sofra.savvylabs.dev`.
+- **iOS deployment research & guides:** Created 4 comprehensive guides (deploy checklist, Firebase setup, App Store submission, quick-ref). Key findings: iOS differs from Android (URL schemes instead of SHA-1, stricter privacy label, silent failures documented).
+- **iOS testing strategy:** Appetize.io cloud simulator (free tier: 30 min/month, 3 min/session) for pre-testing before giving builds to friends. No Mac/iPhone/Apple account needed for initial testing.
+- **Model decision:** Opus 4.8 Medium effort chosen for iOS work (better reasoning on multi-step config, catches silent failures, worth cost vs. wasted Appetize sessions).
+- **Launch readiness:** Android path ready. iOS path fully documented + testing strategy confirmed.
 
 ## Next Up (Sameer's launch path)
-**Android (immediate):**
-1. Verify Google Play Developer account (identity check + payment method).
-2. `eas build -p android --profile production` → download `.aab`.
-3. Play Console: create app → internal testing → upload `.aab` → copy SHA-1 → add to Firebase.
-4. Fill compliance forms + store listing + smoke test.
+**Android (priority):**
+1. Verify Google Play Developer account.
+2. `eas build -p android --profile production` → Play Console → internal testing.
+3. Compliance + store listing + smoke test.
 
-**iOS (when ready — guides ready to follow):**
-- Enroll Apple Developer ($99/year) → create app → `eas build -p ios` → smoke test on device.
-- **MUST** test locally on real iOS device before giving to friends (pre-testing checklist in `ios-quick-ref.md`).
-- Follow `ios-deploy-checklist.md` step-by-step; refer to `ios-firebase-setup.md` for silent failures.
+**iOS (when ready — pre-enrollment testing):**
+1. Use Expo Go on friend's iPhone for quick testing (free, no account).
+2. OR: Build preview iOS app → test on Appetize.io cloud simulator (free tier available).
+3. When confident → enroll Apple Developer ($99/year) → follow `ios-deploy-checklist.md`.
+4. TestFlight internal testing before App Store submission.
+- Guides ready: `ios-deploy-checklist.md`, `ios-firebase-setup.md`, `ios-appstore-submission.md`, `ios-quick-ref.md`.
 
-**Post-launch:** Update `#get` button href (line 120 TODO) to live Play URL.
+**Post-launch:** Update `#get` button href (line 120) to live Play URL.
 
 ## Constraints
 - Repo: github.com/sameerrajwade/Sofra. Package id `com.thaliplan.app` must NOT change (Firebase-linked).
