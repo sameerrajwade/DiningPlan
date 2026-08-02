@@ -5,13 +5,19 @@ emails; we can brand the *name, subject, and body* but (on Path A) the From-addr
 stays a Firebase domain. A fully custom `sofra-registration@…` sender needs the
 Path B backend + a domain you own (deferred).
 
-## Where
-Firebase Console → project **thaliplan** → **Authentication** → **Templates** tab.
+## Do these in order (all in Firebase Console, project `thaliplan`)
+
+## 0. Public-facing name  ← fixes the "app name" in the email header/footer/body
+Console → **⚙ Project settings** → **General** tab → **Public-facing name** → set to
+`Sofra` → Save. (Default is often the project id "thaliplan", which is why the
+email body/sign-off looked generic.) The templates render this as `%APP_NAME%`.
 
 ## 1. Sender name (applies to all templates)
-- **Sender name:** `Sofra`
-- Leave the From-address as the default `noreply@thaliplan.firebaseapp.com`
-  (customizing the domain requires domain verification — skip for now).
+Console → **Authentication** → **Templates** tab. For each template (below), click
+the ✏️ edit pencil and set:
+- **Sender name:** `Sofra`  ← this is what shows in the inbox instead of a blank name
+- Leave the From-address as default `noreply@thaliplan.firebaseapp.com`
+  (changing the domain = Level B / custom SMTP — deferred).
 
 ## 2. Email address verification template
 - **Subject:** `Confirm your Sofra account`

@@ -1,7 +1,8 @@
 # iOS Appetize.io Smoke-Test Runbook (Sofra)
 
-**Build:** EAS iOS simulator build `e7a0f565` (v1.0.0, SDK 52).
-**Artifact:** https://expo.dev/artifacts/eas/ug9sdxLZ8LsngkQ4dbO9nf0hyXXPfx2Tisu9COOnlks.tar.gz
+**Build:** EAS iOS simulator build `620270a7` (v1.0.0, SDK 52) — includes email-verification gate, generic auth errors, meal-slot fix.
+**Artifact:** https://expo.dev/artifacts/eas/Mhwupxa54G8EnSKzpGJuecYiyDruK3QJyg72ruuG4aw.tar.gz
+**(superseded:** old build `e7a0f565` predates the auth fixes — do not use.)
 
 > **Free-tier discipline:** ~30 min/month, ~3 min/session. Tests are ordered by RISK and batched into 3 short sessions so the scariest things (sign-in, Firebase writes) are proven first. Read the whole session's steps BEFORE launching it, so no clock time is spent reading. Keep the Firebase console open in another tab to watch writes land.
 

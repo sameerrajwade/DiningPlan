@@ -224,9 +224,8 @@ export const AuthScreen: React.FC = () => {
 
           {resetSent && (
             <HelperText type="info" visible style={styles.infoText}>
-              If an account with a password exists for this email, a reset link is on
-              its way. Check your inbox and spam. (Google sign-in accounts have no
-              password to reset — just use “Continue with Google”.)
+              If an account exists for this email, a password reset link is on its
+              way. Check your inbox and spam.
             </HelperText>
           )}
 
