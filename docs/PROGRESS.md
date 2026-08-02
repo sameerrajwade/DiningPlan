@@ -6,26 +6,34 @@
 - **App:** Sofra — family meal-planning app. React Native / Expo + Firebase (Firestore/Auth/Storage) + TypeScript. Zustand state, React Navigation, React Native Paper. Rebranded ThaliPlan → Sofra.
 - **Design:** Terracotta & Sage theme (light/dark/auto), Fraunces (display) + Inter (body), RN Animated motion. All screens dark-aware.
 - **MVP1 features:** multi-dish meals + per-dish ratings, kids-tiffin planning, weekly auto-planner, local notifications, Insights charts, restaurants + dish library, in-app account deletion.
-- **Health:** `tsc=0`, **46/46 Jest tests pass**. Latest RELEASE APK built + installed on Pixel 10 Pro (device `57150DLCH002E1`) over wireless — boots clean, all fixes device-verified.
-- **Website:** `sofra.savvylabs.dev` (GitHub Pages) — fully branded with 7 SVG feature icons (terracotta/sage/amber/kids palette), dark-mode aware, generic 9-screen gallery.
-- **Firebase:** project `thaliplan`. Firestore + Storage rules deployed & match repo. `.firebaserc` sets default project.
-- **GIT: ready for launch.** All code shipped; working tree clean. Awaiting Sameer's Play Console verification + `eas build` submission.
+- **Health:** `tsc=0`, **46/46 Jest tests pass**. Latest RELEASE APK on Pixel 10 Pro (device-verified, no crashes).
+- **Website:** `sofra.savvylabs.dev` (GitHub Pages) — fully branded with 7 SVG feature icons, dark-mode aware, 9-screen gallery. Live.
+- **Firebase:** project `thaliplan`. Firestore + Storage rules deployed. Android Firebase config verified (SHA-1 ready).
+- **Deployment:** Android path documented + ready (Play verification → `eas build` → internal testing). **iOS path FULLY documented** (4 guides: checklist, Firebase setup, App Store submission, quick-ref). Code is iOS-ready (no changes needed).
 
 ## Last Session (2026-08-01, latest)
-- **Website icon refresh (this session):** replaced all feature-card emoji (🍲✨📊…) with 7 branded SVG icons — minimal stroke-based, styled to terracotta/sage/amber/kids palette, responsive & dark-mode auto. Live on `sofra.savvylabs.dev`.
-- **Launch readiness review:** confirmed all code, design, Firebase, and compliance assets ready. Documented Sameer's 7-step Play Console path: account verification → `eas build` → internal testing → SHA-1 to Firebase → compliance forms → store listing → smoke test.
-- Prior: launch-prep PR merged (crash fix + 20+ audit fixes + brand kit + generic screens + website revamp).
-- App health: `tsc=0`, 46/46 tests, latest APK on Pixel 10 Pro, all device-verified.
+- **Website icon refresh:** replaced feature-card emoji (🍲✨📊…) with 7 branded SVG icons. Live on `sofra.savvylabs.dev`.
+- **iOS deployment research (this session):** comprehensive research & 4 guides created:
+  - `ios-deploy-checklist.md` (step-by-step A–R)
+  - `ios-firebase-setup.md` (critical: GoogleService-Info.plist, URL schemes, silent failures)
+  - `ios-appstore-submission.md` (metadata, privacy label, App Review)
+  - `ios-quick-ref.md` (quick lookup + pre-testing checklist)
+- **Key finding:** iOS setup differs significantly from Android (no SHA-1, uses URL schemes; stricter privacy label). Silent failure points documented. Pre-testing checklist ready before friends test.
+- **Launch readiness:** Android 8-step path documented. iOS path fully covered. Code is iOS-ready (no changes needed).
 
 ## Next Up (Sameer's launch path)
+**Android (immediate):**
 1. Verify Google Play Developer account (identity check + payment method).
-2. `npm i -g eas-cli` → `eas login` → `eas build -p android --profile production` → download `.aab`.
-3. Play Console: create app "Sofra" → Internal Testing track → upload `.aab`.
-4. **CRITICAL:** Copy Play App Signing + upload SHA-1 → add both to Firebase → verify sign-in works.
-5. Fill Data Safety form + IARC content rating + privacy URL + category.
-6. Upload store listing copy + 3 assets (icon + feature graphic + 2+ screenshots).
-7. Smoke test on internal build → publish to production.
-8. Post-launch: update `#get` button href in `docs/index.html` (line 120 TODO).
+2. `eas build -p android --profile production` → download `.aab`.
+3. Play Console: create app → internal testing → upload `.aab` → copy SHA-1 → add to Firebase.
+4. Fill compliance forms + store listing + smoke test.
+
+**iOS (when ready — guides ready to follow):**
+- Enroll Apple Developer ($99/year) → create app → `eas build -p ios` → smoke test on device.
+- **MUST** test locally on real iOS device before giving to friends (pre-testing checklist in `ios-quick-ref.md`).
+- Follow `ios-deploy-checklist.md` step-by-step; refer to `ios-firebase-setup.md` for silent failures.
+
+**Post-launch:** Update `#get` button href (line 120 TODO) to live Play URL.
 
 ## Constraints
 - Repo: github.com/sameerrajwade/Sofra. Package id `com.thaliplan.app` must NOT change (Firebase-linked).
