@@ -44,6 +44,9 @@ export const useHouseholdStore = create<HouseholdState>((set) => ({
       }
     } catch (e: any) {
       set({ error: e.message, isLoading: false });
+      // Rethrow so callers (HouseholdSetupScreen) can surface the failure instead
+      // of the button silently stopping. AuthScreen's optional-create path catches.
+      throw e;
     }
   },
 

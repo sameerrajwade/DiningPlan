@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--terra:#C0532E;--bg:#FBF7F2;--card:#FFFFFF;--tx:#241E1B;--tx2:#6E645C;--tx3:#A79C93;--bd:#EAE2D8}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1280px;height:2706px}
+  .phone{width:1280px;height:2706px;background:var(--bg);font-family:'Inter',sans-serif;color:var(--tx);
+    padding:70px 64px 0;display:flex;flex-direction:column;align-items:center}
+  .logo{width:170px;height:170px;background:var(--terra);border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .brand{font-family:'Fraunces',serif;font-size:76px;font-weight:600;color:var(--terra);margin-top:26px}
+  .tag{font-size:38px;color:var(--tx2);margin-top:10px}
+  .field{width:100%;background:var(--card);border:1px solid var(--bd);border-radius:24px;height:120px;display:flex;align-items:center;gap:26px;padding:0 38px;margin-top:30px;font-size:42px;color:var(--tx3)}
+  .field.first{margin-top:64px}
+  .btn{width:100%;height:126px;border-radius:24px;background:var(--terra);color:#fff;font-size:44px;font-weight:600;display:flex;align-items:center;justify-content:center;margin-top:34px}
+  .or{display:flex;align-items:center;gap:26px;width:100%;margin:40px 0;color:var(--tx3);font-size:34px;font-weight:600}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--bd)}
+  .gbtn{width:100%;height:122px;border-radius:24px;background:var(--card);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;gap:24px;font-size:42px;font-weight:600}
+  .link{color:var(--terra);font-size:38px;font-weight:600;margin:38px 0}
+  .feat{width:100%;background:var(--card);border:1px solid var(--bd);border-radius:26px;padding:34px 38px;display:flex;gap:30px;align-items:center;margin-bottom:24px}
+  .feat .fi{width:74px;flex:none;color:var(--terra)}
+  .feat h4{font-size:42px;font-weight:600}
+  .feat p{font-size:32px;color:var(--tx2);margin-top:6px}
+  svg{display:block}
+</style></head>
+<body>
+<div class="phone">
+  <div class="logo">
+    <svg viewBox="0 0 1024 1024" width="112" height="112">
+      <g fill="none" stroke="#FBF7F2" stroke-width="34" stroke-linecap="round">
+        <path d="M430 424 C 398 372, 462 352, 430 300"/><path d="M512 430 C 480 378, 544 358, 512 300"/><path d="M594 424 C 562 372, 626 352, 594 300"/></g>
+      <ellipse cx="512" cy="520" rx="214" ry="48" fill="#FBF7F2"/><path d="M300 520 A 214 214 0 0 0 724 520 Z" fill="#FBF7F2"/>
+      <rect x="312" y="702" width="400" height="28" rx="14" fill="#5E8B6A"/></svg>
+  </div>
+  <div class="brand">Sofra</div>
+  <div class="tag">Plan meals, not stress</div>
+
+  <div class="field first"><svg width="42" height="42" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="#6E645C"/><path fill="#6E645C" d="M4 21c0-4 4-6 8-6s8 2 8 6z"/></svg>Your name</div>
+  <div class="field"><svg width="42" height="42" viewBox="0 0 24 24"><path fill="none" stroke="#6E645C" stroke-width="2" d="M3 6h18v12H3z M3 7l9 6 9-6"/></svg>Email</div>
+  <div class="field"><svg width="40" height="40" viewBox="0 0 24 24"><path fill="none" stroke="#6E645C" stroke-width="2" d="M6 10V8a6 6 0 1112 0v2 M5 10h14v10H5z"/></svg>Password</div>
+  <div class="field"><svg width="42" height="42" viewBox="0 0 24 24"><path fill="none" stroke="#6E645C" stroke-width="2" d="M4 21V11l5-4 M14 21V11l5-4M4 21h16M9 7v14M19 7v14"/></svg>Household name (optional)</div>
+  <div class="btn">Get Started</div>
+  <div class="or">OR</div>
+  <div class="gbtn"><span style="font-family:Fraunces,serif;font-size:44px;font-weight:700">G</span> Continue with Google</div>
+  <div class="link">Already have an account? <b>Sign in</b></div>
+
+  <div class="feat"><svg class="fi" viewBox="0 0 24 24" width="58" height="58"><path fill="#C0532E" d="M7 21h10v-2H7zM12 2a5 5 0 00-5 5c0 2 1 3 2 4 .5.5 1 1 1 2v3h4v-3c0-1 .5-1.5 1-2 1-1 2-2 2-4a5 5 0 00-5-5z"/></svg><div><h4>Smart Meal Planning</h4><p>Personalized weekly plans from your cooking history</p></div></div>
+  <div class="feat"><svg class="fi" viewBox="0 0 24 24" width="58" height="58"><path fill="none" stroke="#C0532E" stroke-width="2.4" d="M4 18l5-6 4 4 7-9"/></svg><div><h4>Track &amp; Insights</h4><p>See spending patterns and cooking habits</p></div></div>
+  <div class="feat"><svg class="fi" viewBox="0 0 24 24" width="58" height="58"><circle cx="8" cy="9" r="3" fill="#C0532E"/><circle cx="16" cy="9" r="3" fill="#C0532E"/><path fill="#C0532E" d="M2 20c0-3 3-5 6-5s6 2 6 5zM12 20c.5-2 2.5-4 5-4s4.5 1.5 5 4z"/></svg><div><h4>Family Friendly</h4><p>Plan meals for the whole household together</p></div></div>
+</div>
+</body></html>

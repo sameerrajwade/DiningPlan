@@ -17,7 +17,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useAuthStore } from '../stores/useAuthStore';
-import { createHousehold } from '../services/firestore';
+import { useHouseholdStore } from '../stores/useHouseholdStore';
 
 type AuthMode = 'signIn' | 'signUp';
 
@@ -87,15 +87,18 @@ export const AuthScreen: React.FC = () => {
       await signIn(email.trim(), password);
     } else {
       await signUp(email.trim(), password, name.trim());
-      // Create household if name provided
+      // Create household if a name was provided. Use the STORE action (not the raw
+      // service) so it also sets user.householdId in the auth store — otherwise the
+      // app still thinks the user has no household and re-routes to setup, risking a
+      // duplicate. Errors are handled inside the store (user can set up later).
       if (householdName.trim()) {
-        try {
-          const { user } = useAuthStore.getState();
-          if (user) {
-            await createHousehold(householdName.trim(), user.id);
+        const { user } = useAuthStore.getState();
+        if (user) {
+          try {
+            await useHouseholdStore.getState().createHousehold(householdName.trim(), user.id);
+          } catch {
+            // Non-critical — user can set up their household later from the app.
           }
-        } catch {
-          // Non-critical, user can set up household later
         }
       }
     }

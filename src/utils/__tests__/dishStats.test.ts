@@ -65,6 +65,19 @@ describe('aggregateDishes', () => {
     expect(find(all, 'Future Dish')).toBeUndefined();
   });
 
+  it('counts HOME meals only — outside (dine-out/takeout) dishes are excluded', () => {
+    const withOutside: Meal[] = [
+      meal('2026-07-20', 'Khichadi'), // home
+      { ...meal('2026-07-21', 'Paneer Tikka'), sourceType: 'dineout', restaurantName: 'Spice Hub' },
+      { ...meal('2026-07-22', 'Noodles'), sourceType: 'takeout', restaurantName: 'Wok In' },
+    ];
+    const all = aggregateDishes([], withOutside, { today: TODAY });
+    expect(find(all, 'Khichadi')?.timesCooked).toBe(1);
+    // Ordered-out dishes are NOT part of the dish library.
+    expect(find(all, 'Paneer Tikka')).toBeUndefined();
+    expect(find(all, 'Noodles')).toBeUndefined();
+  });
+
   it('supports the stale list all-time but NOT under a month window (the bug)', () => {
     // All-time: June-only dishes are present with a 30+ day-old lastCookedDate,
     // so the "not made 30+ days" filter surfaces them.

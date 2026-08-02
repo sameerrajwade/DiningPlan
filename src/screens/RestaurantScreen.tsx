@@ -49,7 +49,9 @@ const getRange = (range: TimeRange): { start: string | null; end: string | null 
 
 const formatDate = (dateStr: string): string => {
   if (!dateStr) return 'N/A';
-  const d = new Date(dateStr);
+  // Parse as LOCAL midnight — `new Date('yyyy-MM-dd')` is UTC midnight, which
+  // rolls back a day in negative-offset timezones (showed "Jul 31" for Aug 1).
+  const d = new Date(dateStr + 'T00:00:00');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 

@@ -119,8 +119,18 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     const take = monthMeals.filter((m) => m.sourceType === 'takeout').length;
     return { total: dine + take, dine, take };
   }, [monthMeals]);
+  // Unique dishes you COOKED — home meals only. Outside meals (dine-out/takeout)
+  // carry a dishName too (the ordered dish or restaurant name), so counting them
+  // here inflated "Unique Dishes" (e.g. 1 home dish + 1 dine-out showed 2).
   const uniqueDishNames = useMemo(
-    () => Array.from(new Set(monthMeals.filter((m) => m.dishName).map((m) => m.dishName))),
+    () =>
+      Array.from(
+        new Set(
+          monthMeals
+            .filter((m) => m.sourceType === 'home' && m.dishName)
+            .map((m) => m.dishName),
+        ),
+      ),
     [monthMeals],
   );
   const outsideSpending = useMemo(

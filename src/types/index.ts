@@ -84,6 +84,7 @@ export interface MealPlanSlot {
   sourceType: SourceType;
   lastMadeDaysAgo: number;
   isNew: boolean;
+  restaurantName?: string; // set for saved outside (dine-out/takeout) slots
 }
 
 export interface MealPlan {

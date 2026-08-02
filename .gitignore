@@ -5,3 +5,6 @@ gradle-dist.zip
 releases/
 app-logs.txt
 .claude/
+
+# Play Store service account key (secret — never commit)
+play-service-account.json

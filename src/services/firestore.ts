@@ -11,6 +11,8 @@ import {
   orderBy,
   Timestamp,
   increment,
+  arrayUnion,
+  arrayRemove,
   setDoc,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -22,6 +24,7 @@ import {
   User,
   UserPreferences,
 } from '../types';
+import { stripUndefined } from '../utils/sanitize';
 
 // ─── Helpers ───
 
@@ -37,15 +40,6 @@ function restaurantsCol(householdId: string) {
 
 function toDate(ts: any): Date {
   return ts instanceof Timestamp ? ts.toDate() : new Date(ts);
-}
-
-// Firestore rejects `undefined` field values — drop them before writing.
-function stripUndefined<T extends Record<string, any>>(obj: T): T {
-  const out: Record<string, any> = {};
-  for (const [k, v] of Object.entries(obj)) {
-    if (v !== undefined) out[k] = v;
-  }
-  return out as T;
 }
 
 function mealFromDoc(docSnap: any): Meal {
@@ -137,7 +131,7 @@ export async function addDish(
   householdId: string,
   dish: Omit<Dish, 'id'>,
 ): Promise<string> {
-  const ref = await addDoc(dishesCol(householdId), { ...dish, householdId });
+  const ref = await addDoc(dishesCol(householdId), stripUndefined({ ...dish, householdId }));
   return ref.id;
 }
 
@@ -146,7 +140,7 @@ export async function updateDish(
   dishId: string,
   data: Partial<Dish>,
 ): Promise<void> {
-  await updateDoc(doc(db, `households/${householdId}/dishes`, dishId), data);
+  await updateDoc(doc(db, `households/${householdId}/dishes`, dishId), stripUndefined(data));
 }
 
 export async function getDishes(householdId: string): Promise<Dish[]> {
@@ -190,22 +184,22 @@ export async function addOrUpdateRestaurant(
   const snap = await getDocs(q);
 
   if (snap.empty) {
-    await addDoc(restaurantsCol(householdId), {
+    await addDoc(restaurantsCol(householdId), stripUndefined({
       name,
       cuisineType,
       totalVisits: 1,
       totalSpend: spend,
       lastVisitDate: date,
       householdId,
-    });
+    }));
   } else {
     const existing = snap.docs[0];
-    await updateDoc(existing.ref, {
+    await updateDoc(existing.ref, stripUndefined({
       totalVisits: increment(1),
       totalSpend: increment(spend),
       lastVisitDate: date,
       cuisineType,
-    });
+    }));
   }
 }
 
@@ -290,9 +284,9 @@ export async function joinHousehold(
     return householdDoc.id;
   }
 
-  await updateDoc(householdDoc.ref, {
-    memberIds: [...data.memberIds, userId],
-  });
+  // Atomic add — a plain read-modify-write loses a member when two people join
+  // on the same invite code concurrently (last write wins).
+  await updateDoc(householdDoc.ref, { memberIds: arrayUnion(userId) });
   await setDoc(doc(db, 'users', userId), { householdId: householdDoc.id }, { merge: true });
   return householdDoc.id;
 }
@@ -305,9 +299,8 @@ export async function leaveHousehold(
   const ref = doc(db, 'households', householdId);
   const snap = await getDoc(ref);
   if (!snap.exists()) return;
-  const data = snap.data() as Household;
-  const remaining = (data.memberIds ?? []).filter((id) => id !== userId);
-  await updateDoc(ref, { memberIds: remaining });
+  // Atomic remove (avoids clobbering a concurrent membership change).
+  await updateDoc(ref, { memberIds: arrayRemove(userId) });
 }
 
 // Delete the user's own profile doc + detach from household. Auth user is
@@ -319,6 +312,9 @@ export async function deleteUserData(
   if (householdId) {
     await leaveHousehold(householdId, userId).catch(() => {});
   }
+  // Delete the preferences sub-doc too — Firestore does not cascade, so it would
+  // otherwise be orphaned.
+  await deleteDoc(doc(db, 'users', userId, 'settings', 'preferences')).catch(() => {});
   await deleteDoc(doc(db, 'users', userId)).catch(() => {});
 }
 
@@ -332,7 +328,7 @@ export async function updateHousehold(
   householdId: string,
   data: Partial<Household>,
 ): Promise<void> {
-  await updateDoc(doc(db, 'households', householdId), data);
+  await updateDoc(doc(db, 'households', householdId), stripUndefined(data));
 }
 
 export async function getHouseholdMembers(householdId: string): Promise<User[]> {
@@ -350,10 +346,10 @@ export async function getHouseholdMembers(householdId: string): Promise<User[]> 
 // ─── Users ───
 
 export async function createUserProfile(user: User): Promise<void> {
-  await setDoc(doc(db, 'users', user.id), {
+  await setDoc(doc(db, 'users', user.id), stripUndefined({
     ...user,
     createdAt: Timestamp.now(),
-  });
+  }));
 }
 
 export async function getUserProfile(userId: string): Promise<User | null> {
@@ -367,7 +363,7 @@ export async function updateUserProfile(
   userId: string,
   data: Partial<User>,
 ): Promise<void> {
-  await updateDoc(doc(db, 'users', userId), data);
+  await updateDoc(doc(db, 'users', userId), stripUndefined(data));
 }
 
 export async function getUserPreferences(
@@ -382,7 +378,7 @@ export async function updateUserPreferences(
   userId: string,
   prefs: Partial<UserPreferences>,
 ): Promise<void> {
-  await setDoc(doc(db, 'users', userId, 'settings', 'preferences'), prefs, {
+  await setDoc(doc(db, 'users', userId, 'settings', 'preferences'), stripUndefined(prefs), {
     merge: true,
   });
 }

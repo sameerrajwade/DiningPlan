@@ -56,3 +56,28 @@ describe('computeInsights — most cooked dishes', () => {
     expect(mostCookedDishes.map((d) => d.name)).toEqual(['Poha']);
   });
 });
+
+describe('computeInsights — home-cooked trend', () => {
+  // Regression: a first-month user with no previous-period meals falsely saw
+  // "Last period was 0% home". Trend must be 0 (suppressed) when there's no prior data.
+  it('reports no trend when the previous period is empty', () => {
+    const meals: Meal[] = [meal({ sourceType: 'home' }), meal({ sourceType: 'home' })];
+    const { homeCookedTrend } = computeInsights(meals, []);
+    expect(homeCookedTrend).toBe(0);
+  });
+
+  it('reports a real trend when the previous period has data', () => {
+    const cur: Meal[] = [meal({ sourceType: 'home' }), meal({ sourceType: 'home' })]; // 100% home
+    const prev: Meal[] = [meal({ sourceType: 'home' }), meal({ sourceType: 'dineout' })]; // 50% home
+    const { homeCookedTrend } = computeInsights(cur, prev);
+    expect(homeCookedTrend).toBe(50);
+  });
+});
+
+describe('computeInsights — cuisine breakdown', () => {
+  it('buckets a missing cuisineTag as "Other" (no undefined key)', () => {
+    const meals: Meal[] = [meal({ cuisineTag: undefined as any }), meal({ cuisineTag: 'Italian' })];
+    const { cuisineBreakdown } = computeInsights(meals, []);
+    expect(cuisineBreakdown.map((c) => c.cuisine).sort()).toEqual(['Italian', 'Other']);
+  });
+});

@@ -141,6 +141,15 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `today` keys the date rollover
   }, [meals, timeRange, today]);
 
+  // Count of FAMILY meals in the current window. Gates the insights cards +
+  // empty state — the full `meals` cache also holds the previous window, so
+  // gating on `meals.length` showed all-zero cards for an empty current month.
+  const currentFamilyCount = useMemo(() => {
+    const { start, end } = getRange(timeRange);
+    return meals.filter((m) => m.date >= start && m.date <= end && m.audience !== 'kids').length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `today` keys the date rollover
+  }, [meals, timeRange, today]);
+
   // Kids tiffin summary for the selected range (count, top dish, variety).
   const kidsStats = useMemo(() => {
     const { start, end } = getRange(timeRange);
@@ -211,7 +220,7 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
           })}
         </ScrollView>
 
-        {(!insights || meals.length === 0) && !kidsStats ? (
+        {(!insights || currentFamilyCount === 0) && !kidsStats ? (
           <View style={styles.emptyContainer}>
             <MaterialCommunityIcons name="chart-bar" size={64} color={colors.textMuted} />
             <Text style={styles.emptyTitle}>No insights yet</Text>
@@ -266,7 +275,7 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
           </Surface>
         )}
 
-        {insights && meals.length > 0 && (
+        {insights && currentFamilyCount > 0 && (
           <>
             {/* Home vs Outside ratio */}
             <Surface style={styles.section} elevation={1}>
@@ -275,7 +284,7 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
                 <Pressable
                   onPress={() =>
                     setShareStat({
-                      headline: 'Home-cooked this month',
+                      headline: `Home-cooked · ${TIME_RANGE_LABELS[timeRange]}`,
                       value: `${homePercent}%`,
                       sub: `Takeout ${takeoutPercent}%  ·  Dine out ${dineOutPercent}%`,
                       accent: colors.home,

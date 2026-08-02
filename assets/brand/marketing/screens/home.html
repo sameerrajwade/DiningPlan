@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--terra:#C0532E;--sage:#5E8B6A;--sageL:#E7F0E9;--amber:#E0A63C;--kids:#4A6FA5;--kidsL:#E7EEF6;
+    --bg:#FBF7F2;--card:#FFFFFF;--sv:#F3EEE7;--tx:#241E1B;--tx2:#6E645C;--tx3:#A79C93;--bd:#EAE2D8}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1280px;height:2706px}
+  .phone{width:1280px;height:2706px;background:var(--bg);position:relative;overflow:hidden;
+    font-family:'Inter',sans-serif;color:var(--tx);padding:70px 48px 0}
+  .frns{font-family:'Fraunces',serif}
+  .greet{font-size:34px;color:var(--tx2);font-weight:500}
+  .hh{font-size:68px;font-weight:600;margin-top:6px}
+  .grid{display:flex;flex-wrap:wrap;gap:26px;margin-top:44px}
+  .metric{background:var(--card);border:1px solid var(--bd);border-radius:30px;padding:36px 38px;width:calc(50% - 13px)}
+  .metric .lbl{font-size:27px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);display:flex;align-items:center;gap:14px}
+  .metric .val{font-size:78px;font-weight:600;margin-top:14px;line-height:1}
+  .metric .sub{font-size:30px;color:var(--tx2);margin-top:8px}
+  .dot{width:22px;height:22px;border-radius:50%}
+  .kidsCard{background:var(--kidsL);border-color:#D6E2F0}
+  .kidsCard .val{color:var(--kids)}
+  .down{color:var(--sage);font-weight:600}
+  .sec{font-size:52px;font-weight:600;margin:60px 0 30px}
+  .mlabel{font-size:29px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;color:var(--tx3);display:flex;align-items:center;gap:14px;margin:0 0 14px}
+  .mlabel.kids{color:var(--kids)}
+  .meal{background:var(--card);border:1px solid var(--bd);border-radius:28px;padding:34px 36px;display:flex;align-items:center;gap:28px;margin-bottom:20px}
+  .mi{width:80px;height:80px;border-radius:20px;background:var(--sageL);display:flex;align-items:center;justify-content:center;font-size:42px;flex:none}
+  .mname{font-size:46px;font-weight:500;flex:1}
+  .msub{font-size:30px;color:var(--tx2);margin-top:6px}
+  .pill{margin-left:auto;background:var(--sageL);color:var(--sage);font-size:28px;font-weight:600;padding:12px 26px;border-radius:40px;display:flex;align-items:center;gap:12px}
+  .stale{background:var(--card);border:1px solid var(--bd);border-radius:24px;padding:30px 34px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .stale .n{font-size:42px;font-weight:500}
+  .stale .d{font-size:32px;color:var(--tx3)}
+  .fab{position:absolute;right:60px;bottom:230px;width:132px;height:132px;border-radius:50%;background:var(--terra);
+    display:flex;align-items:center;justify-content:center;box-shadow:0 16px 34px rgba(192,83,46,.4)}
+  .nav{position:absolute;left:0;right:0;bottom:0;height:190px;background:var(--bg);border-top:1px solid var(--bd);
+    display:flex;padding:26px 30px 40px}
+  .nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:27px;color:var(--tx3);font-weight:500}
+  .nav a.on{color:var(--terra)}
+  .gbar{position:absolute;left:0;right:0;bottom:0;height:0}
+  svg{display:block}
+</style></head>
+<body>
+<div class="phone">
+  <div class="greet">Good evening 👋</div>
+  <div class="hh frns">The Rivera Family</div>
+
+  <div class="grid">
+    <div class="metric">
+      <div class="lbl"><span class="dot" style="background:var(--terra)"></span>Outside Meals</div>
+      <div class="val frns">6</div><div class="sub">this month</div>
+    </div>
+    <div class="metric">
+      <div class="lbl"><span class="dot" style="background:var(--amber)"></span>Outside Spend</div>
+      <div class="val frns">$128</div><div class="sub"><span class="down">↓ 14%</span> vs last month</div>
+    </div>
+    <div class="metric">
+      <div class="lbl"><span class="dot" style="background:var(--sage)"></span>Unique Dishes</div>
+      <div class="val frns">19</div><div class="sub">cooked this month</div>
+    </div>
+    <div class="metric kidsCard">
+      <div class="lbl" style="color:var(--kids)">🙂 Kids Tiffins</div>
+      <div class="val frns">5</div><div class="sub">5 unique dishes</div>
+    </div>
+  </div>
+
+  <div class="sec frns">Today's meals</div>
+  <div class="mlabel">☀ Lunch</div>
+  <div class="meal"><div class="mi">🥗</div><div><div class="mname">Veggie Stir-Fry</div></div><div class="pill">🏠 Home</div></div>
+  <div class="mlabel">🌙 Dinner</div>
+  <div class="meal"><div class="mi">🐟</div><div><div class="mname">Grilled Salmon</div><div class="msub">Lemon Rice · Green Beans</div></div><div class="pill">🏠 Home</div></div>
+  <div class="mlabel kids">🙂 Kids Tiffin</div>
+  <div class="meal"><div class="mi" style="background:var(--kidsL)">🧀</div><div><div class="mname">Grilled Cheese</div></div><div class="pill">🏠 Home</div></div>
+
+  <div class="sec frns" style="font-size:44px">Dishes you haven't made in a while ›</div>
+  <div class="stale"><div class="n">Lentil Soup</div><div class="d">34 days ago</div></div>
+  <div class="stale"><div class="n">Roast Chicken</div><div class="d">41 days ago</div></div>
+
+  <div class="fab"><svg width="56" height="56" viewBox="0 0 24 24"><path fill="#FBF7F2" d="M11 5h2v14h-2z"/><path fill="#FBF7F2" d="M5 11h14v2H5z"/></svg></div>
+
+  <div class="nav">
+    <a class="on"><svg width="46" height="46" viewBox="0 0 24 24"><path fill="#C0532E" d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3z"/></svg>Home</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="none" stroke="#A79C93" stroke-width="2" d="M4 5h16v16H4z M4 9h16 M8 3v4 M16 3v4"/></svg>Calendar</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="none" stroke="#A79C93" stroke-width="2" stroke-linecap="round" d="M5 19 15 9l-1-1L4 18z M15 9l2-2 M16 4l1 1 M20 8l-1-1 M18 3v0 M21 6v0"/></svg>Plan</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="#A79C93" d="M4 13h3v7H4z M10 8h3v12h-3z M16 4h3v16h-3z"/></svg>Insights</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="#A79C93"/><path fill="#A79C93" d="M4 21c0-4 4-6 8-6s8 2 8 6z"/></svg>Profile</a>
+  </div>
+</div>
+</body></html>

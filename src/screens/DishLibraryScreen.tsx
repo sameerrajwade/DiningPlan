@@ -33,6 +33,7 @@ import { useDishStore } from '../stores/useDishStore';
 import { useMealStore } from '../stores/useMealStore';
 import { useAuthStore } from '../stores/useAuthStore';
 import { aggregateDishes } from '../utils/dishStats';
+import { formatDaysAgo } from '../utils/relativeDate';
 
 type SortMode = 'lastMade' | 'mostMade' | 'az' | 'favorites';
 type QuickFilter = 'all' | 'favorites' | 'stale';
@@ -87,6 +88,11 @@ export const DishLibraryScreen: React.FC = () => {
     useCallback(() => {
       setQuickFilter(initialFilter ?? 'all');
       setSortMode(initialFilter === 'stale' ? 'lastMade' : 'mostMade');
+      // Also clear search + cuisine filter, else they bleed across the different
+      // intents this (never-unmounted) screen is opened for (e.g. a leftover
+      // "dal"/Indian filter silently emptying the stale-dish deep link).
+      setSearch('');
+      setCuisineFilter(null);
     }, [initialFilter]),
   );
 
@@ -278,7 +284,7 @@ export const DishLibraryScreen: React.FC = () => {
           </View>
           <View style={styles.dishStats}>
             <Text style={[styles.daysText, { color: daysColor }]}>
-              {item.lastCookedDate ? `${daysSince}d ago` : 'Never'}
+              {item.lastCookedDate ? formatDaysAgo(daysSince, { compact: true }) : 'Never'}
             </Text>
             <Text style={styles.countText}>{item.timesCooked}x</Text>
           </View>

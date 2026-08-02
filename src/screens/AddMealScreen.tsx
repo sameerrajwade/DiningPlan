@@ -212,7 +212,12 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
       // star rating). For home meals, the single dish field is authoritative.
       const cleanItems: MealItem[] = isOutside
         ? items
-            .map((it) => ({ name: toTitleCase(it.name.trim()), rating: it.rating }))
+            .map((it) => {
+              const name = toTitleCase(it.name.trim());
+              // Only attach `rating` when actually set — an `undefined` rating
+              // would make Firestore reject the whole meal write.
+              return (it.rating != null ? { name, rating: it.rating } : { name }) as MealItem;
+            })
             .filter((it) => it.name.length > 0)
         : [];
 
@@ -229,6 +234,12 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
         ? cleanItems[0]?.name || restaurantName.trim()
         : toTitleCase(dishName.trim());
 
+      // Guard against a NaN cost from free-text like "." — a NaN would sail past
+      // stripUndefined (Firestore accepts NaN doubles) and poison spend aggregates
+      // + the restaurant's totalSpend via increment().
+      const parsedCost = parseFloat(cost);
+      const safeCost = isOutside && Number.isFinite(parsedCost) ? parsedCost : 0;
+
       const mealData: Omit<Meal, 'id' | 'createdAt' | 'updatedAt' | 'createdBy' | 'householdId'> = {
         date,
         mealType,
@@ -236,14 +247,14 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
         dishName: resolvedDishName,
         cuisineTag,
         restaurantName: isOutside ? restaurantName.trim() : '',
-        cost: isOutside && cost ? parseFloat(cost) : 0,
+        cost: safeCost,
         notes: notes.trim() || '',
         audience,
-        ...(isOutside && cleanItems.length > 0 ? { items: cleanItems } : {}),
-        // Always persist the full dish list for home meals (even a single dish).
-        // Omitting it on edit left a stale multi-dish `items` array in storage,
-        // so a removed side kept reappearing on Home/Calendar (merge-only update).
-        ...(!isOutside && homeItems.length > 0 ? { items: homeItems } : {}),
+        // ALWAYS write `items` (never omit the key). updateMeal is a merge, so
+        // omitting it on edit left the OLD array intact — a cleared dish or a
+        // home→outside switch kept showing stale dishes. An empty array cleanly
+        // clears it; screens read via `items?.length` so [] is safe.
+        items: isOutside ? cleanItems : homeItems,
       };
 
       // Persist per-dish star ratings onto the restaurant ("what to take/avoid").

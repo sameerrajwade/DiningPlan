@@ -1,61 +1,78 @@
 # Sofra — Progress
 
-## Current State
-Family meal-planning app (React Native / Expo + Firebase, TypeScript), rebranded ThaliPlan → Sofra. Pre-launch overhaul near-done: Terracotta & Sage theme (light/dark/auto), Fraunces/Inter, motion, all screens dark-aware. MVP1 includes multi-dish + per-dish ratings, kids-tiffin planning, local notifications (daily/weekly/monthly), Insights charts. 14 Jest tests pass (`npm test`), tsc=0. Active branch `ux-improvements-jul9` → PR #2 (open, unmerged).
+> Thorough restart reference. If resuming a new session, read this first.
+
+## Current State (facts)
+- **App:** Sofra — family meal-planning app. React Native / Expo + Firebase (Firestore/Auth/Storage) + TypeScript. Zustand state, React Navigation, React Native Paper. Rebranded ThaliPlan → Sofra.
+- **Design:** Terracotta & Sage theme (light/dark/auto), Fraunces (display) + Inter (body), RN Animated motion. All screens dark-aware.
+- **MVP1 features:** multi-dish meals + per-dish ratings, kids-tiffin planning, weekly auto-planner, local notifications, Insights charts, restaurants + dish library, in-app account deletion.
+- **Health:** `tsc=0`, **46/46 Jest tests pass**. Latest RELEASE APK built + installed on Pixel 10 Pro (device `57150DLCH002E1`) over wireless — boots clean, all this session's fixes device-verified.
+- **Firebase:** project `thaliplan`. Firestore rules AND Storage rules DEPLOYED to prod and match repo. `.firebaserc` sets default project (deploys need no `--project` flag now).
+- **⚠️ GIT: ALL of this session's work is UNCOMMITTED on `main`** (~30 modified + new files; new: sanitize.ts/relativeDate.ts + tests, .firebaserc, docs/*, assets/brand/marketing/). Files persist on disk across a restart, but nothing is committed/pushed. **Commit before/after restart.** (On `main` → branch first per workflow, or commit directly if intended.)
 
 ## Constraints
 - Repo: github.com/sameerrajwade/Sofra. Package id `com.thaliplan.app` must NOT change (Firebase-linked).
-- Never handle signing/keystore passwords — Sameer signs. Release APK is debug-signed (template config).
-- Motion = built-in RN Animated only (no Reanimated). Paywall/monetization DEFERRED.
-- Develop → test → show results → only then build/deliver.
+- **Never handle signing/keystore passwords — Sameer signs.** Signing path = **EAS managed** (cloud build, EAS-stored upload key, Play App Signing).
+- Motion = built-in RN Animated only (no Reanimated). Paywall/monetization DEFERRED to post-launch.
+- Develop → test → show results → only then build/deliver. Verify on device via `adb exec-out screencap -p`.
+- Firebase project = `thaliplan`. Prod rule deploys: `firebase deploy --only firestore:rules` / `--only storage`.
 
-## Open PRs
-- **PR #2 (MERGED)** — 14 UX/device-test fixes.
-- **PR #3 (MERGED)** — GitHub Pages site: 9-screen gallery + 7-screen guide + status-bar-cropped screenshots.
-- **PR #4 (MERGED)** — Firestore read reduction + two meal bug fixes + README.
-- **PR #5 (OPEN, 2026-08-01)** — branch `insights-dish-window-fixes` → main. This session's work: "Outside Meals" card, tappable/windowed Most Cooked, meal-derived forgotten dishes, restaurant-name titles, windowed Dish Library counts + param-bleed fix, date-rollover recompute, pure dishStats/insightsRange utils + tests (32 total). README + docs/guide.html updated. Screenshots (home.png/insights.png) NOT yet regenerated — see Next Up.
+## Key file & asset locations
+- **Video prompts:** `docs/video-prompts.md` — 10× 20-second brand-commercial briefs (real-people shoots): cast, setting, timecoded beats, which app screen to feature, on-screen line, + production notes. End-card = logo lockup + Google Play badge.
+- **Branding / marketing assets:** `assets/brand/marketing/` (has its own `README.md`). Master logo source: `assets/brand/icon_full.svg` (terracotta tile) + `assets/brand/mark_cream.svg` (bowl only). Palette: terracotta `#C0532E`, sage `#5E8B6A`, warm paper `#FBF7F2`. Render pipeline = Chrome headless @2× → sharp downscale; icon via sharp-from-SVG. Editable `.html` source sits next to every `.png`. Exports:
+  - `sofra_icon_512.png` 512×512 — **Play Store app icon** (full-bleed)
+  - `sofra_feature.png` 1024×500 — **Play feature graphic** (subtle URL)
+  - `sofra_shot_home/plan/insights.png` 1080×1920 — **Play phone screenshots** (branded frames; embed the GENERIC mockups — store-ready, no test data)
+  - `sofra_reel.png` 1080×1920 — YouTube Shorts / Instagram Reels (+ Play pill)
+  - `sofra_square.png` 1080×1080 — Instagram feed
+  - `sofra_og.png` 1200×630 — website Open Graph / link-preview image
+  - `sofra_lockup.png` 900×280 — transparent horizontal logo lockup (site header/press)
+- **Generic app-screen mockups:** `assets/brand/marketing/screens/*.html` → rendered PNGs. All 9 screens (login, household, home, addmeal, plan, celebration, insights, share, calendar) rebuilt with GENERIC global data — "The Rivera Family"; dishes Veggie Stir-Fry / Grilled Salmon / Spaghetti Bolognese / Beef Tacos / Roast Chicken; restaurants Nonna's Kitchen / Green Bowl; cuisines Italian/American/Mexican/Asian; USD. **Copied into `docs/assets/screens/*.png` — the live site gallery (index.html) is now fully generic.**
+- **Store listing copy:** `docs/store-listing.md` (title, short/full description, category, URLs).
+- **Android deploy checklist:** `docs/android-deploy-checklist.md` (signing/build, Firebase, Play compliance, listing, rollout, launch sequence).
+- **MVP2 backlog:** `docs/MVP2.md`.
+- **NotebookLM ad brief PDF:** `C:\Users\samee\Downloads\Sofra_Ad_Brief_for_NotebookLM.pdf` (12pp). NOTE: embeds PRE-rename screenshots ("Dine Outs") — regenerate if visuals must match current UI.
+- **Website:** GitHub Pages from `docs/`, custom domain `sofra.savvylabs.dev` (via `docs/CNAME`). Pages: index.html, guide.html, features.html, security.html, architecture.html, privacy.html, terms.html.
 
-## Last Session (2026-07-31) — 6 real-use fixes + Firebase data verification (branch reads-cache-first, tsc=0, 22 tests)
-Sameer's usage surfaced 6 issues. Fixes:
-1. **"Ate Out" card** (was "Dine Outs") = dineout+takeout this month, subtitle "X dine · Y takeout". VERIFIED via Firebase console (household WpoNv4NLFa5ozdAimyNp/meals): July has **10 dineout + 3 takeout = 13**. Old card showed 10 (dineout only, correct but excluded takeout); Restaurants tab showed 13. **No data-loss/dedupe bug** — the 10 was genuinely July's dineout count (all-time dineout=19: 10 Jul, 8 Jun, 1 May). Ate Out now shows 13, matching Restaurants.
-2. Takeout **restaurant name STAYS mandatory** — reverted an initial wrong change. Sameer's "description was mandatory" complaint = his OLD installed APK (current code already makes dishes/notes optional; only restaurant name required). Confirm resolved after rebuild.
-3. MealCard for outside meals shows **restaurant name as title**, ordered dishes below.
-4. Insights "Most Cooked" → ranked **tappable list** (top 5 + "Show all"), each row opens the dish in Dish Library (cross-tab nav Home→DishLibrary).
-5. Home "haven't made in a while" now **derived from actual meals** (was stale stored `lastCookedDate`), 30+ day, top 5, "See all" → Dish Library stale filter (new `initialFilter` param).
-6. Most-cooked **counts thali sides** (`items`); Dish Library counts sides too so tap-through counts match. insights.test.ts (3 tests) locks it.
-7. **Dish Library default sort**: browse views ("this month"/"all") now default to **Most made** (staples on top); the stale deep-link keeps **Last made** (rotation). Set via sortMode initial + initialFilter effect in DishLibraryScreen.
-8. **Windowed dish counts**: Dish Library `timesCooked` was ALWAYS all-time — opening "Dishes this month" or tapping a dish from an Insights pill showed the all-time count (Khichdi = 6 vs real July 3). Added optional `window:{start,end,label}` route param; counts only meals in-window, hides 0× dishes, "Counts for <label>" caption. Wired: Home Unique Dishes + Kids Tiffins (this month), Insights openDish (current range; 'all'=all-time). Insights "Most Cooked" was already windowed.
-9. **FOLLOW-UP BUG (window bleed)**: Dish Library is revisited without remounting; RN shallow-merges params + local filter state persisted, so the this-month window leaked into the "30+ days" stale view (→ 1 dish instead of dozens of June-only dishes) and state went inconsistent. Fix: reset quickFilter/sortMode from current params on FOCUS (useFocusEffect); every navigate passes fully-explicit params (window/monthDishes/initialFilter incl undefined) so merge can't bleed; "All" chip clears window too. VERIFIED expected sets against live Firestore (100 home meals; many June-only dishes = stale).
-10. **Refactor+tests**: extracted dish aggregation → pure `src/utils/dishStats.ts`; new dishStats.test.ts (6 tests) locks window vs all-time, sides, future-exclusion, and the stale-window-bleed regression. Total 28 tests, tsc=0.
-11. **DATE-ROLLOVER STALENESS (Insights showed stale month)**: Insights "This month" kept showing July's Khichadi=6 on Aug 1. Cause: compute effect deps were [meals,timeRange] but getRange() reads new Date() (not a dep), and fetchMeals is cache-first (no meals change on focus) → never recomputed after the month rolled over. Fix: `recompute()` runs on FOCUS + a focus-refreshed `today` state threaded into recompute + homePercent + kidsStats memos. Same freeze fixed on HomeScreen (thisMonthStart was useMemo([]) → now keyed on focus-updated `today`). Verified via Firestore: Khichadi all-time=6 (July 3: 07-20/26/30 + June 3), stored dishes/Khichadi timesCooked=6 — that was the stale value.
-12. **getRange extracted + tested**: moved Insights `getRange` → pure `src/utils/insightsRange.ts` with injectable `now`. New insightsRange.test.ts (4 tests) pins this-month/last-month windows AND the exact rollover regression (Jul31→Khichadi×3, Aug1→absent). 32 tests total, tsc=0.
-13. **Card rename**: Home "Ate Out" → **"Outside Meals"** (pairs with "Outside Spend"); same dineout+takeout count + "X dine · Y takeout" subtitle.
-14. **"Khichadi=6" is CORRECT, not a bug** — verified live on device (adb screencap) + Firestore. All 6 Khichadi meals are July (07-02/16/20/26/29/30), zero June. Window filter proven working: on phone, "This month"=Khichadi 6/Poli 6/Anda Masala; "Last month"(June)=Kobi 4/Chicken Wings 3/Palak Paratha 3/Chicken Biryani 3/Veg Biryani 2 (Khichadi ABSENT) — different dishes + different Top Restaurants (July Panera/Hideaway vs June Vanam/Subway) ⇒ not all-time. Earlier "July=3" claim was MY error (read only first 50 of 100 home docs). No code change needed. Device-screenshot verification via `adb exec-out screencap -p` is a reliable check for RN app state.
-Built RELEASE APK (assembleRelease) + installed on device 57150DLCH002E1 over **wireless debugging** (adb pair 192.168.86.121 + connect :39741). Latest build 2026-07-31 23:23, 69.8MB. On-device verification by Sameer pending.
+## LAUNCH STATUS
 
-## Prior Session — Firestore read reduction (branch reads-cache-first / PR #4)
-Meals + dishes now **cache-first single-source**: load ALL once per household/session, every screen filters in memory, writes update memory locally (same-phone edits show instantly everywhere, 0 reads), re-read only on pull-to-refresh or household change. Removed 20s TTL + write-invalidation; coalesced concurrent loads; App.tsx warms caches at startup. No onSnapshot by design (user OK with cross-device refresh). New useMealStore.test.ts (5 tests) locks it. tsc=0, 19/19 Jest. Effect: ~2-3k reads/day → ~1 getAllMeals+getDishes per launch/refresh, flat. Built RELEASE APK (assembleRelease, standalone) + installed on device 57150DLCH002E1; copied to C:\Users\samee\Downloads\Sofra-beta.apk for Sameer to share with wife via Google Drive (chose private Drive over a public GitHub release). PAUSED: Sameer monitors Firebase read count tomorrow (2026-07-11) to confirm the drop; if good → move to release.
+### DONE (code / infra / assets — all verified)
+- **Launch-blocker bug fixed:** Dine Out/Takeout with an unrated dish wrote `items:[{name, rating:undefined}]` → Firestore "Unsupported field value: undefined". Fixed at source + deep recursive `stripUndefined` (`src/utils/sanitize.ts`) now wraps EVERY Firestore write. Device-verified: dine-out saves cleanly.
+- **5-agent audit → 20+ fixes** (meal / planner / insights / restaurants / auth). Incl. **P0 account-deletion data-loss** (now deletes Auth user FIRST), planner kids-tiffin leak + data-loss, insights false "0% home" / range headline / empty-window / TZ bucketing, restaurant future-visit counts + TZ dates, avatar 1MB cap (512px), atomic arrayUnion/arrayRemove membership, signup household-name sync.
+- **Unique Dishes = home-only** (was double-counting outside meals); Dish Library + Insights consistent. **Relative dates** Today/Yesterday/N-days-ago (`src/utils/relativeDate.ts`).
+- **Plan↔Calendar synced:** planner suggests HOME dishes only; saved outside meals show restaurant name + dish; day header font + TODAY highlight box match Calendar.
+- **Firestore + Storage rules deployed to prod** (leave-household branch added; both match repo).
+- **eas.json** wired: `submit.production.android` (internal track, draft), production `autoIncrement` + `appVersionSource: remote`. Hermes on. AAB config in place.
+- **Brand kit + store copy + privacy/terms** ready. In-app account deletion live.
 
-## Bug fixes (2026-07-10, branch reads-cache-first, tsc=0)
-- FUTURE-DISH-STAT: DishLibrary "unique dishes" derived `lastCookedDate` as the MAX of ALL meal dates incl. future-planned ones, so an upcoming dish (e.g. Upma next Sunday) beat the real last-cooked date and skewed "Xd ago" + counts. Fixed by skipping meals with `m.date > today` (local yyyy-MM-dd) in DishLibraryScreen allDishes aggregation. (commit 98e6420)
-- EXTRA-DISH-DELETE: Removing an added side from a home meal didn't persist — AddMealScreen only wrote `items` when >1 dish, so reducing to a single dish dropped the key and the merge-only Firestore/store update left the stale array; the removed dish reappeared on Home/Calendar. Fixed: home meals always persist `items` (len>0). (commit bdc7370)
-- Added top-level README.md (overview, features, stack, architecture, setup/build). (commit 31e7057)
-- Built release APK (assembleRelease), installed on device 57150DLCH002E1, merged PR #4 to main.
+### REMAINING FOR LAUNCH — Sameer console tasks (NOT code)
+1. `npm i -g eas-cli` → `eas login` → `eas build -p android --profile production` → accept "generate keystore" → download the **.aab**.
+2. Play Console: create app "Sofra" → **Internal testing** track → upload the .aab (or `eas submit -p android` after placing `play-service-account.json` at repo root — it's gitignored).
+3. **CRITICAL:** after first upload, copy the **Play App Signing key SHA-1** (Play Console → App integrity) AND the upload-key SHA-1 → add BOTH to Firebase console (project settings → Android app). Then **verify Google Sign-in on the internal-testing build** — it silently fails if SHA-1 is missing.
+4. Play compliance: **Data Safety form** (collects: email, name, user content/meals, avatar photo; encrypted in transit; user-deletable), **content rating** (IARC → Food & Drink, likely Everyone), **target audience** (not child-directed), **privacy URL** https://sofra.savvylabs.dev/privacy.html, category Food & Drink.
+5. Store listing: paste copy from `docs/store-listing.md`; upload `sofra_icon_512.png` (512×512), `sofra_feature.png` (1024×500), and ≥2 of `sofra_shot_*.png` (1080×1920).
+6. Rollout gate: **personal Play account** ⇒ 12-tester/14-day closed testing before production; **internal testing is instant** (up to 100 testers) — start there.
+7. Pre-submit smoke test on the STORE artifact: sign-in → household → log meal (incl. dine-out) → generate+accept plan → insights → avatar upload → delete account.
 
-## Next Up
-0. **Regenerate product screenshots** home.png + insights.png (they still show old "Dine Outs" card / 3-card Most Cooked). Pipeline: `adb exec-out screencap -p` (1280x2856) → sharp crop top 150px → 1280x2706 to match existing. Needs a curated app-data state first (current has test junk like "Test" dish). Merge PR #5.
-1. **Rebuild release APK** with the 6 fixes (assembleRelease), install on device, verify each fix against real Firebase data — esp. Outside Meals count (dineout+takeout).
-2. **Confirm read count dropped** in Firebase console (target: from ~2-3k/day toward a few hundred). If wife's install works + reads look good → green-light release path.
-3. Merge PR #3 (site) + PR #4 (reads) to main.
-4. Release path: Play **Internal testing** (instant Play install, up to 100 testers) OR closed beta (12 testers/14 days → production); org account w/ D-U-N-S skips the gate. Prep: data-safety form, store listing, signed AAB via EAS.
-5. Reads Tier 3 (only before large histories / scaling): denormalized stats docs + optional ~12-mo load cap; enable Firebase App Check.
-6. Backlog: NOTIF-DEEPLINK MVP2; icon/splash PNG regen; crash reporting (Sentry vs Crashlytics); deploy+verify Firestore/Storage rules in prod.
+## WEBSITE — REVAMPED (done this session)
+`sofra.savvylabs.dev` (GitHub Pages from `docs/`). Consumer launch pass DONE:
+- **Screens fully generic + live** — all 9 `docs/assets/screens/*.png` (Rivera Family, global dishes) power BOTH the index gallery AND `guide.html`. The old numbered `docs/screens/*.png` are ORPHANED (referenced by nothing) — safe to delete later.
+- **Nav de-dev'd** on index + guide: `Features · Guide · FAQ · Get the app` (Architecture/Security demoted to footer).
+- **Open Graph / Twitter meta** added to index + guide (image = `docs/assets/og.png` = the 1200×630 brand OG). `docs/assets/lockup.png` also copied in for future header use.
+- **FAQ section** added (recipe app? shared account? cost? privacy? platforms? planning?).
+- **"Get Sofra"** section → launch/**"Coming soon on Google Play"** state (removed the dead `CHANGE-ME` GitHub link). ⚠️ ONE TODO left in `index.html` (HTML comment at #get): after Play launch, set the button href to the live listing URL + relabel "Get it on Google Play".
+- theme-color + canonical added. Static, GitHub Pages, dark-aware.
 
-## Device-test findings — ALL FIXED (2026-07-09 pt3, phased, tsc=0/14 tests)
-- DUPMEAL: Home now runs dedupeMeals on load + picks newest record per slot (matches Calendar/Plan) → no more Home/Calendar divergence.
-- COLDBOOT: App.tsx loading gate now shows branded splash (Sofra logo circle + wordmark + tagline).
-- LOADFLASH: Home "Today's meals" shows Skeleton placeholders during load instead of "No meal planned" flash.
-- SIGNUP-LOGO: AuthScreen resets scroll to top on sign-in↔sign-up toggle (logo was clipped from retained offset).
-- COPY-AI: "AI-powered weekly plans" → "Personalized weekly plans from your cooking history".
-- DELIGHT: new Celebration.tsx (native-driver confetti burst) fires on Plan accept. (dish-rate omitted — confetti on every star tap = noisy.)
-Pending: rebuild+install+device-verify, then commit to PR #2.
+## Verified on device (Pixel 10 Pro, this session)
+Dine-out save works (no crash) · Home "Unique Dishes" = 1 (home-only) · Dish Library "Palak Paratha · Today · 1 dish" · Plan shows Saturday TODAY box + "Honest"→"Dosa" dine-out + home-only generated dishes + Calendar-matching fonts.
+
+## Backlog / non-blocking / later
+- **MVP2** (`docs/MVP2.md`): relative-date larger units (weeks/months), optional combined home+outside dish view, notification deep-linking.
+- **Non-blocking watch-items:** orphaned Storage avatar bytes on account delete (rule-safe); spending-trend chart with exactly 2 equal data points (low-confidence react-native-chart-kit).
+- **Post-launch:** crash reporting (Sentry vs Crashlytics — needs DSN), Firebase App Check (Play Integrity), reads Tier 3 (denormalized stats only before large histories), icon/splash PNG regen if desired, i18n.
+- Regenerate the NotebookLM PDF screenshots if it'll be shared (currently pre-rename).
+
+## History (condensed — earlier sessions)
+- **PRs #2–#5 all MERGED** to `main`: #2 (14 UX/device fixes), #3 (GitHub Pages site), #4 (Firestore reads cache-first single-source — ~2-3k reads/day → ~1 load/launch), #5 (Insights/Dish window fixes, "Outside Meals" card, tappable Most Cooked, windowed dish counts, date-rollover recompute, pure dishStats/insightsRange utils).
+- Cache-first store: all meals/dishes loaded once per session, screens filter in memory, writes update memory locally, re-read only on pull-to-refresh/household change (no onSnapshot by design). `useMealStore.test.ts` locks it.
+- Prior verified-correct behaviors (not bugs): dish counts include thali sides (`items`); windowed vs all-time counts; kids excluded from family metrics.

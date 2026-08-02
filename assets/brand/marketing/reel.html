@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1080px;height:1920px;overflow:hidden}
+  .art{width:1080px;height:1920px;position:relative;font-family:'Inter',sans-serif;
+    background:radial-gradient(130% 90% at 50% 12%, #CB5E35 0%, #C0532E 40%, #9E4019 100%);
+    display:flex;flex-direction:column;align-items:center;text-align:center;color:#FBF7F2}
+  /* safe zone: keep key content between y=360 and y=1520 (reel UI top/bottom) */
+  .tile{width:300px;height:300px;margin-top:430px;border-radius:66px;background:#FBF7F2;
+    display:flex;align-items:center;justify-content:center;box-shadow:0 26px 60px rgba(80,26,8,.4)}
+  .word{font-family:'Fraunces',serif;font-weight:600;font-size:150px;line-height:1;margin-top:70px;letter-spacing:-2px}
+  .rule{width:110px;height:7px;border-radius:4px;background:#7FB08C;margin:34px 0 30px}
+  .tag{font-size:44px;font-weight:500;opacity:.95}
+  .hook{margin-top:120px;padding:0 120px;font-family:'Fraunces',serif;font-weight:500;
+    font-size:64px;line-height:1.22;letter-spacing:-.5px}
+  .hook b{color:#F6D9A0;font-weight:600}
+  .pill{margin-top:auto;margin-bottom:250px;display:flex;align-items:center;gap:20px;
+    background:#FBF7F2;color:#7A2E12;padding:26px 50px;border-radius:60px;font-size:36px;font-weight:600;
+    box-shadow:0 18px 40px rgba(80,26,8,.35)}
+  .pill svg{display:block}
+</style></head>
+<body>
+<div class="art">
+  <div class="tile">
+    <svg viewBox="0 0 1024 1024" width="210" height="210">
+      <g fill="none" stroke="#C0532E" stroke-width="30" stroke-linecap="round">
+        <path d="M430 424 C 398 372, 462 352, 430 300"/>
+        <path d="M512 430 C 480 378, 544 358, 512 300"/>
+        <path d="M594 424 C 562 372, 626 352, 594 300"/>
+      </g>
+      <ellipse cx="512" cy="520" rx="214" ry="48" fill="#C0532E"/>
+      <path d="M300 520 A 214 214 0 0 0 724 520 Z" fill="#C0532E"/>
+      <rect x="312" y="702" width="400" height="28" rx="14" fill="#5E8B6A"/>
+    </svg>
+  </div>
+  <div class="word">Sofra</div>
+  <div class="rule"></div>
+  <div class="tag">Your family's meal memory</div>
+  <div class="hook">What's for dinner?<br><b>Your kitchen already knows.</b></div>
+  <div class="pill">
+    <svg width="34" height="38" viewBox="0 0 512 512"><path fill="#7A2E12" d="M47 32C36 26 22 26 12 33S-2 52 2 64l86 192L2 448c-4 12 1 24 10 31s24 7 35 1l400-224c11-6 18-18 18-32s-7-26-18-32L47 32z"/></svg>
+    Get it on Google Play
+  </div>
+</div>
+</body></html>

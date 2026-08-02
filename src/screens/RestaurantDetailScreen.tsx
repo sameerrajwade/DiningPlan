@@ -56,10 +56,16 @@ export const RestaurantDetailScreen: React.FC<Props> = ({ route }) => {
       .finally(() => setLoading(false));
   }, [householdId, name]);
 
-  const visits = useMemo(
-    () => meals.filter((m) => m.restaurantName?.toLowerCase() === name.toLowerCase()),
-    [meals, name],
-  );
+  const visits = useMemo(() => {
+    // Exclude future-dated (planned) meals so counts/spend/dishes match the
+    // Restaurants list, which already excludes the future. A planned dine-out
+    // isn't a visit yet.
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    return meals.filter(
+      (m) => m.restaurantName?.toLowerCase() === name.toLowerCase() && m.date <= today,
+    );
+  }, [meals, name]);
 
   const totalSpend = useMemo(() => visits.reduce((s, m) => s + (m.cost ?? 0), 0), [visits]);
   const lastVisit = useMemo(() => {

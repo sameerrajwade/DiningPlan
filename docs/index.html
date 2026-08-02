@@ -5,6 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sofra — Your family's meal memory</title>
 <meta name="description" content="Sofra is a family meal planner that remembers every meal you make — auto-plans your week from your own dishes, tracks home-vs-outside spending, and never forgets a recipe your family loves.">
+<link rel="canonical" href="https://sofra.savvylabs.dev/">
+<meta name="theme-color" content="#C0532E">
+<!-- Open Graph / social link previews -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sofra">
+<meta property="og:title" content="Sofra — Your family's meal memory">
+<meta property="og:description" content="Plan the week from the dishes you already cook. Remember every meal, every restaurant, every favourite.">
+<meta property="og:url" content="https://sofra.savvylabs.dev/">
+<meta property="og:image" content="https://sofra.savvylabs.dev/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Sofra — Your family's meal memory">
+<meta name="twitter:description" content="Plan the week from the dishes you already cook. Remember every meal, every restaurant, every favourite.">
+<meta name="twitter:image" content="https://sofra.savvylabs.dev/assets/og.png">
 <link rel="icon" href="assets/icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,11 +30,10 @@
 <header class="nav"><div class="wrap">
   <a class="brand" href="index.html"><img src="assets/icon.png" alt="Sofra"> Sofra</a>
   <nav>
+    <a href="#features">Features</a>
     <a href="guide.html">Guide</a>
-    <a href="features.html">Features</a>
-    <a href="security.html">Security</a>
-    <a href="architecture.html">Architecture</a>
-    <a href="privacy.html">Privacy</a>
+    <a href="#faq">FAQ</a>
+    <a href="#get">Get the app</a>
   </nav>
 </div></header>
 
@@ -34,7 +48,7 @@
   </div>
 </div></section>
 
-<section><div class="wrap">
+<section id="features"><div class="wrap">
   <div class="sec-head">
     <div class="eyebrow">Why Sofra</div>
     <h2>Not another recipe app</h2>
@@ -82,22 +96,43 @@
   </div>
 </div></section>
 
+<section id="faq"><div class="wrap">
+  <div class="sec-head">
+    <div class="eyebrow">FAQ</div>
+    <h2>Good to know</h2>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>Is Sofra a recipe app?</h3><p>No — it's a memory tool. Sofra remembers the meals your family already makes and plans from those, instead of pushing new recipes at you.</p></div>
+    <div class="card"><h3>Does my family share an account?</h3><p>You share one household. Everyone adds and sees meals together, in sync.</p></div>
+    <div class="card"><h3>What does it cost?</h3><p>Sofra is free to use at launch, with no ads.</p></div>
+    <div class="card"><h3>Is my data private?</h3><p>Your meals stay private to your household, encrypted in transit. You can delete your account and all its data anytime from Settings.</p></div>
+    <div class="card"><h3>Which platforms?</h3><p>Android first, via Google Play. Light and fast, in light and dark mode.</p></div>
+    <div class="card"><h3>Do I need to plan to use it?</h3><p>No. Just log meals as you go — the planning and insights build themselves from your own history.</p></div>
+  </div>
+</div></section>
+
 <section id="get"><div class="wrap">
   <div class="band">
-    <span class="pill">Android</span>
+    <span class="pill">Coming soon · Android</span>
     <h2 style="margin-top:12px">Get Sofra</h2>
-    <p class="lead">Sofra is in active beta on Android. Download the latest build, or watch this space for the Google Play release.</p>
+    <p class="lead">Sofra is launching on Google Play. The release is around the corner — explore the guide while you wait, and it'll be a tap away soon.</p>
     <div class="btnrow" style="justify-content:flex-start">
-      <a class="btn btn-primary" href="https://github.com/CHANGE-ME/sofra/releases/latest">Download for Android</a>
+      <!-- TODO after Play launch: set href to the live listing URL and change the label to "Get it on Google Play". -->
+      <a class="btn btn-primary" href="#get" aria-disabled="true">▶&nbsp; Coming soon on Google Play</a>
       <a class="btn btn-ghost" href="guide.html">Read the guide</a>
     </div>
-    <p style="margin-top:14px; color:var(--faint); font-size:14px">Sideloaded builds are debug-signed for testing; some antivirus tools may warn on install — that's expected for pre–Play Store apps. The Google Play release will remove those warnings.</p>
+    <p style="margin-top:14px; color:var(--faint); font-size:14px">No ads. No selling your data. Your family's meals stay private to your household — and you can delete everything anytime.</p>
   </div>
 </div></section>
 
 <footer><div class="wrap">
   <span>© 2026 Sofra · Your family's meal memory</span>
-  <span><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="mailto:sofra.support@gmail.com">Support</a></span>
+  <span>
+    <a href="guide.html">Guide</a> · <a href="features.html">Features</a> ·
+    <a href="architecture.html">Architecture</a> · <a href="security.html">Security</a> ·
+    <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> ·
+    <a href="mailto:sofra.support@gmail.com">Support</a>
+  </span>
 </div></footer>
 </body>
 </html>
