@@ -6,19 +6,26 @@
 - **App:** Sofra — family meal-planning app. React Native / Expo + Firebase (Firestore/Auth/Storage) + TypeScript. Zustand state, React Navigation, React Native Paper. Rebranded ThaliPlan → Sofra.
 - **Design:** Terracotta & Sage theme (light/dark/auto), Fraunces (display) + Inter (body), RN Animated motion. All screens dark-aware.
 - **MVP1 features:** multi-dish meals + per-dish ratings, kids-tiffin planning, weekly auto-planner, local notifications, Insights charts, restaurants + dish library, in-app account deletion.
-- **Health:** `tsc=0`, **46/46 Jest tests pass**. Latest RELEASE APK built + installed on Pixel 10 Pro (device `57150DLCH002E1`) over wireless — boots clean, all this session's fixes device-verified.
-- **Firebase:** project `thaliplan`. Firestore rules AND Storage rules DEPLOYED to prod and match repo. `.firebaserc` sets default project (deploys need no `--project` flag now).
-- **GIT: all work SHIPPED.** PR #6 (`launch-prep`) squash-MERGED to `main` (commit `2cacedf`), branch deleted, local main synced. Working tree clean.
+- **Health:** `tsc=0`, **46/46 Jest tests pass**. Latest RELEASE APK built + installed on Pixel 10 Pro (device `57150DLCH002E1`) over wireless — boots clean, all fixes device-verified.
+- **Website:** `sofra.savvylabs.dev` (GitHub Pages) — fully branded with 7 SVG feature icons (terracotta/sage/amber/kids palette), dark-mode aware, generic 9-screen gallery.
+- **Firebase:** project `thaliplan`. Firestore + Storage rules deployed & match repo. `.firebaserc` sets default project.
+- **GIT: ready for launch.** All code shipped; working tree clean. Awaiting Sameer's Play Console verification + `eas build` submission.
 
 ## Last Session (2026-08-01, latest)
-- Merged the full launch-prep PR (crash fix + 20+ audit fixes + UI polish + brand kit + generic screens + **website revamp**) to `main`.
-- Website revamp live in `docs/`: consumer nav, OG/Twitter meta (`docs/assets/og.png`), FAQ, "Coming soon on Google Play" section, footer cleanup; index + guide both use the 9 generic screens.
-- **Branding check & icon refresh (this turn):** verified `docs/assets/icon.png` == app `assets/icon.png` == the new steam-bowl mark. **COMPLETED:** website feature-card emoji (🍲✨📊…) replaced with branded SVG icons — 7 minimal stroke-based icons styled to terracotta/sage/amber/kids-blue palette, scale & dark-mode auto.
-- Latest release APK: `android/app/build/outputs/apk/release/app-release.apk` (~69.8MB, Aug 1 21:37, debug-signed) — on Pixel 10 Pro.
+- **Website icon refresh (this session):** replaced all feature-card emoji (🍲✨📊…) with 7 branded SVG icons — minimal stroke-based, styled to terracotta/sage/amber/kids palette, responsive & dark-mode auto. Live on `sofra.savvylabs.dev`.
+- **Launch readiness review:** confirmed all code, design, Firebase, and compliance assets ready. Documented Sameer's 7-step Play Console path: account verification → `eas build` → internal testing → SHA-1 to Firebase → compliance forms → store listing → smoke test.
+- Prior: launch-prep PR merged (crash fix + 20+ audit fixes + brand kit + generic screens + website revamp).
+- App health: `tsc=0`, 46/46 tests, latest APK on Pixel 10 Pro, all device-verified.
 
-## Next Up
-1. Sameer console: `eas build` → Play internal testing → SHA-1 to Firebase → verify sign-in → Data Safety/rating/listing.
-2. After Play launch: swap the `#get` button href in `docs/index.html` to the live Play URL (TODO comment at line 120).
+## Next Up (Sameer's launch path)
+1. Verify Google Play Developer account (identity check + payment method).
+2. `npm i -g eas-cli` → `eas login` → `eas build -p android --profile production` → download `.aab`.
+3. Play Console: create app "Sofra" → Internal Testing track → upload `.aab`.
+4. **CRITICAL:** Copy Play App Signing + upload SHA-1 → add both to Firebase → verify sign-in works.
+5. Fill Data Safety form + IARC content rating + privacy URL + category.
+6. Upload store listing copy + 3 assets (icon + feature graphic + 2+ screenshots).
+7. Smoke test on internal build → publish to production.
+8. Post-launch: update `#get` button href in `docs/index.html` (line 120 TODO).
 
 ## Constraints
 - Repo: github.com/sameerrajwade/Sofra. Package id `com.thaliplan.app` must NOT change (Firebase-linked).
