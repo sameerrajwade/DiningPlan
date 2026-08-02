@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Sofra",
-    "slug": "thaliplan",
+    "slug": "sofrasavvylabsdev",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -18,7 +18,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.thaliplan.app"
+      "bundleIdentifier": "com.thaliplan.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -30,6 +33,20 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "thaliplan"
+    "scheme": "thaliplan",
+    "plugins": [
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.349329204088-nmihufdrn14vsqikc5tpotqf37otvaui"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f4ddb333-3bef-4b83-a470-a98b046a86a8"
+      }
+    },
+    "owner": "savvylabs"
   }
 }

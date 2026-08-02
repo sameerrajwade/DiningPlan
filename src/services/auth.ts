@@ -14,6 +14,9 @@ import { auth } from '../config/firebase';
 
 GoogleSignin.configure({
   webClientId: '349329204088-6d984s5kj2sbnngtth6567cib4e846di.apps.googleusercontent.com',
+  // iOS-only OAuth client (from thaliplan Firebase iOS app). Android ignores this and
+  // uses webClientId + the SHA-1-registered Android client, so this is Android-neutral.
+  iosClientId: '349329204088-nmihufdrn14vsqikc5tpotqf37otvaui.apps.googleusercontent.com',
 });
 
 export async function signUpWithEmail(

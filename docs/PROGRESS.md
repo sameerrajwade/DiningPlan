@@ -11,7 +11,12 @@
 - **Firebase:** project `thaliplan`. Firestore + Storage rules deployed. Android Firebase config verified (SHA-1 ready).
 - **Deployment:** Android path documented + ready (Play verification → `eas build` → internal testing). **iOS path FULLY documented** (4 guides: checklist, Firebase setup, App Store submission, quick-ref). Code is iOS-ready (no changes needed).
 
-## Last Session (2026-08-01, latest)
+## Last Session (2026-08-02, latest — iOS wiring on branch `ios-setup`)
+- **Android LOCK established:** backup `C:\Users\samee\DiningPlanner-Android` (repo minus node_modules); work on branch `ios-setup`; hard constraint added (see Constraints). Verified Android config byte-for-byte untouched in every edit.
+- **Registered iOS app in Firebase** (`thaliplan` project, bundle `com.thaliplan.app`, nickname "ThaliPlan iOS") → additive, Android app untouched. Got iOS OAuth client.
+- **Wired iOS Google Sign-in (JS-SDK-correct, no plist in repo):** `app.json` plugins → google-signin `iosUrlScheme` (proven iOS-Info.plist-only, no Android branch); `auth.ts` → added `iosClientId` (Android ignores); `eas.json` preview → `ios.simulator:true` (Appetize path, no Apple acct needed). iOS OAuth values: client `349329204088-nmihufdrn14vsqikc5tpotqf37otvaui`.
+- **Health:** tsc=0, 46/46 tests pass after edits.
+- **Prior session (2026-08-01):**
 - **Website icon refresh:** feature-card emoji (🍲✨📊…) → 7 branded SVG icons. Live on `sofra.savvylabs.dev`.
 - **iOS deployment research & guides:** Created 4 comprehensive guides (deploy checklist, Firebase setup, App Store submission, quick-ref). Key findings: iOS differs from Android (URL schemes instead of SHA-1, stricter privacy label, silent failures documented).
 - **iOS testing strategy:** Appetize.io cloud simulator (free tier: 30 min/month, 3 min/session) for pre-testing before giving builds to friends. No Mac/iPhone/Apple account needed for initial testing.
@@ -24,16 +29,19 @@
 2. `eas build -p android --profile production` → Play Console → internal testing.
 3. Compliance + store listing + smoke test.
 
-**iOS (when ready — pre-enrollment testing):**
-1. Use Expo Go on friend's iPhone for quick testing (free, no account).
-2. OR: Build preview iOS app → test on Appetize.io cloud simulator (free tier available).
-3. When confident → enroll Apple Developer ($99/year) → follow `ios-deploy-checklist.md`.
-4. TestFlight internal testing before App Store submission.
+**iOS (config wired — Sameer's CLI/console tasks next):**
+1. `eas login` (Sameer's Expo account). First `eas build` will prompt to create/link an EAS project + add `extra.eas.projectId`+`owner` to app.json (EAS-managed, expected).
+2. `eas build -p ios --profile preview` → produces a **simulator** `.tar.gz` (NO Apple Developer account needed).
+3. Upload the .app to Appetize.io → run the 10-point smoke test (watch Google Sign-in especially — simulator OAuth is the main risk).
+4. If all pass → enroll Apple Developer ($99/yr) → signed build → TestFlight → App Store (`ios-deploy-checklist.md`).
+- NOTE: `@react-native-google-signin` needs a dev/custom build (not Expo Go), so use the EAS simulator build, not Expo Go, for real sign-in testing.
 - Guides ready: `ios-deploy-checklist.md`, `ios-firebase-setup.md`, `ios-appstore-submission.md`, `ios-quick-ref.md`.
 
 **Post-launch:** Update `#get` button href (line 120) to live Play URL.
 
 ## Constraints
+- **ANDROID LOCK (iOS work in progress):** Android is FROZEN. iOS changes are additive to iOS-only sections ONLY. HANDS OFF: `app.json` root keys + `"android"` block (L23-29); `eas.json` existing `android`/`submit` keys; `package.json` dependency versions (no bumps for iOS). No new/upgraded deps to support iOS without flagging Android impact first. Every iOS commit must show ZERO diff to Android config. iOS work lives on branch `ios-setup`. Backup restore point: `C:\Users\samee\DiningPlanner-Android` (full repo minus node_modules).
+- **Firebase = JS SDK (not native RN Firebase):** `src/config/firebase.ts` uses a platform-agnostic `firebaseConfig` JS object → iOS reuses the SAME config for Firestore/Auth/Storage. NO `GoogleService-Info.plist` needed for those. The iOS guides' plist/native steps mostly DON'T apply. Only iOS-specific secret = Google Sign-in iOS OAuth client (iosClientId + reversed-client-id URL scheme) in `app.json`.
 - Repo: github.com/sameerrajwade/Sofra. Package id `com.thaliplan.app` must NOT change (Firebase-linked).
 - **Never handle signing/keystore passwords — Sameer signs.** Signing path = **EAS managed** (cloud build, EAS-stored upload key, Play App Signing).
 - Motion = built-in RN Animated only (no Reanimated). Paywall/monetization DEFERRED to post-launch.
