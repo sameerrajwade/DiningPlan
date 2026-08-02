@@ -5,14 +5,19 @@ import { createUserProfile, getUserProfile, getUserPreferences } from '../servic
 import { useHouseholdStore } from './useHouseholdStore';
 import { useMealStore } from './useMealStore';
 import { useDishStore } from './useDishStore';
+import { mapAuthError } from '../utils/authErrors';
 
 interface AuthState {
   user: User | null;
   preferences: UserPreferences | null;
   isAuthenticated: boolean;
+  // Whether the signed-in user's email is verified. Google accounts are always
+  // verified; new email/password accounts are gated until they confirm.
+  emailVerified: boolean;
   isLoading: boolean;
   error: string | null;
   setUser: (user: User | null) => void;
+  setEmailVerified: (verified: boolean) => void;
   fetchUser: (userId: string) => Promise<void>;
   fetchPreferences: (userId: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
@@ -20,6 +25,8 @@ interface AuthState {
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  resendVerification: () => Promise<void>;
+  refreshEmailVerified: () => Promise<boolean>;
   clearError: () => void;
   clear: () => void;
 }
@@ -28,11 +35,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   preferences: null,
   isAuthenticated: false,
+  emailVerified: false,
   isLoading: false,
   error: null,
 
   setUser: (user) =>
     set({ user, isAuthenticated: !!user }),
+
+  setEmailVerified: (verified) => set({ emailVerified: verified }),
 
   fetchUser: async (userId: string) => {
     set({ isLoading: true, error: null });
@@ -40,7 +50,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const user = await getUserProfile(userId);
       set({ user, isAuthenticated: !!user, isLoading: false });
     } catch (e: any) {
-      set({ error: e.message, isLoading: false });
+      set({ error: mapAuthError(e), isLoading: false });
     }
   },
 
@@ -49,7 +59,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const preferences = await getUserPreferences(userId);
       set({ preferences });
     } catch (e: any) {
-      set({ error: e.message });
+      set({ error: mapAuthError(e) });
     }
   },
 
@@ -72,10 +82,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({
         user: profile,
         isAuthenticated: !!profile,
+        emailVerified: firebaseUser.emailVerified,
         isLoading: false,
       });
     } catch (e: any) {
-      set({ error: e.message, isLoading: false });
+      set({ error: mapAuthError(e), isLoading: false });
     }
   },
 
@@ -92,9 +103,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         createdAt: new Date(),
       };
       await createUserProfile(newUser);
-      set({ user: newUser, isAuthenticated: true, isLoading: false });
+      // New email/password account starts unverified — the verification link was
+      // sent in signUpWithEmail; the app routes to VerifyEmailScreen until confirmed.
+      set({ user: newUser, isAuthenticated: true, emailVerified: false, isLoading: false });
     } catch (e: any) {
-      set({ error: e.message, isLoading: false });
+      set({ error: mapAuthError(e), isLoading: false });
     }
   },
 
@@ -107,7 +120,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       useDishStore.getState().clear();
       set({ user: null, preferences: null, isAuthenticated: false, isLoading: false });
     } catch (e: any) {
-      set({ error: e.message, isLoading: false });
+      set({ error: mapAuthError(e), isLoading: false });
     }
   },
 
@@ -127,9 +140,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         };
         await createUserProfile(profile);
       }
-      set({ user: profile, isAuthenticated: true, isLoading: false });
+      set({ user: profile, isAuthenticated: true, emailVerified: firebaseUser.emailVerified, isLoading: false });
     } catch (e: any) {
-      set({ error: e.message, isLoading: false });
+      set({ error: mapAuthError(e), isLoading: false });
     }
   },
 
@@ -139,13 +152,23 @@ export const useAuthStore = create<AuthState>((set) => ({
       await authService.resetPassword(email);
       set({ isLoading: false });
     } catch (e: any) {
-      set({ error: e.message, isLoading: false });
+      set({ error: mapAuthError(e), isLoading: false });
     }
+  },
+
+  resendVerification: async () => {
+    await authService.resendVerificationEmail();
+  },
+
+  refreshEmailVerified: async () => {
+    const verified = await authService.refreshEmailVerified();
+    set({ emailVerified: verified });
+    return verified;
   },
 
   clearError: () => set({ error: null }),
 
-  clear: () => set({ user: null, preferences: null, isAuthenticated: false, isLoading: false, error: null }),
+  clear: () => set({ user: null, preferences: null, isAuthenticated: false, emailVerified: false, isLoading: false, error: null }),
 }));
 
 export default useAuthStore;

@@ -1,13 +1,16 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { CompositeScreenProps, NavigatorScreenParams } from '@react-navigation/native';
-import { Meal } from '../types';
+import { Meal, MealType } from '../types';
 
 export type RootStackParamList = {
   Auth: undefined;
+  VerifyEmail: undefined;
   HouseholdSetup: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;
-  AddMeal: { meal?: Meal } | undefined;
+  // `mealType` pre-selects the slot the user tapped (e.g. tapping "Dinner" on
+  // Home) so the form doesn't default to Lunch and wrongly report a conflict.
+  AddMeal: { meal?: Meal; mealType?: MealType } | undefined;
 };
 
 export type MainTabParamList = {

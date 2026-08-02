@@ -11,11 +11,28 @@
 - **Firebase:** project `thaliplan`. Firestore + Storage rules deployed. Android Firebase config verified (SHA-1 ready).
 - **Deployment:** Android path documented + ready (Play verification → `eas build` → internal testing). **iOS path FULLY documented** (4 guides: checklist, Firebase setup, App Store submission, quick-ref). Code is iOS-ready (no changes needed).
 
-## Last Session (2026-08-02, latest — iOS wiring on branch `ios-setup`)
+## Last Session (2026-08-02, latest — pre-launch auth fixes, branch `ios-setup`)
+- **DECISION: block launch to fix auth first** (Path A = Firebase link-based, no backend/no billing). Code-only + Firebase-console; ZERO Android-config diff (no app.json/eas.json/package.json touched — lock holds). tsc=0, **50/50 tests pass**. ALL changes are shared RN/Firebase-JS code → apply to BOTH iOS + Android (no platform branch).
+- **#SECURITY Firebase errors no longer leaked:** new `src/utils/authErrors.ts` maps codes → generic copy; wrong-password / unknown-account / invalid-credential ALL say "Incorrect email or password." (no DB/SDK leak, no account-enumeration). Wired into every `useAuthStore` catch. Locked by `authErrors.test.ts` (4 tests).
+- **Sender name:** Sameer owns savvylabs.dev NOT sofra.com; only wants inbox to read "Sofra" (not app.thaliplan). Path A sender-name="Sofra" console field fully covers it — no domain/backend. From-address stays firebase domain (he doesn't care).
+- **#4 reset email OPEN:** Sameer confirms NOTHING arrives (inbox+spam). Most likely = tested a Google-only account (no password → Firebase silently sends nothing). NEXT: check Auth→Users Providers col for that email; if only-Google, expected. Else create fresh email/pw account + retest; if still nothing → project email-config dig.
+- **#1 Email verification (NEW):** `signUpWithEmail` now sends a verification link; auth store tracks `emailVerified`; new gate screen `VerifyEmailScreen` sits between auth and app ("I've verified"/"Resend"). Google accounts arrive verified → skip gate. Wired in `App.tsx` + `AppNavigator`.
+- **#2 Forgot password:** code path was already correct (`sendPasswordResetEmail`) — real cause of "no email" = tested a Google-only account (no password) or spam. Hardened the success copy to say so.
+- **#3 Branding:** Path A can only set sender NAME=Sofra + subject/body + no-reply footer (From-address stays Firebase domain; custom sender needs Path B). Exact paste-in copy → `docs/firebase-email-templates.md` (SAMEER console task).
+- **#4 Meal-type bug FIXED:** tapping Dinner on Home now pre-selects Dinner in AddMeal (passed `mealType` nav param) instead of defaulting to Lunch and falsely reporting a conflict.
+- **NEEDS DEVICE TEST before Android build:** verify-email gate + resend + reset copy + meal-type slot. Not yet run on device (RN — not browser-previewable).
+
+## Prior Session (2026-08-02 — Appetize walkthrough)
+- Reviewed `ios-appetize-runbook.md`; iOS sim build #2 (`e7a0f565`) is the artifact to test. FLAGGED: EAS artifact URLs expire ~30d — if the .tar.gz 404s, `npx eas-cli build:view e7a0f565` or fresh `eas build -p ios --profile preview`.
+
+## Prior Session (2026-08-02 — iOS wiring on branch `ios-setup`)
 - **Android LOCK established:** backup `C:\Users\samee\DiningPlanner-Android` (repo minus node_modules); work on branch `ios-setup`; hard constraint added (see Constraints). Verified Android config byte-for-byte untouched in every edit.
 - **Registered iOS app in Firebase** (`thaliplan` project, bundle `com.thaliplan.app`, nickname "ThaliPlan iOS") → additive, Android app untouched. Got iOS OAuth client.
 - **Wired iOS Google Sign-in (JS-SDK-correct, no plist in repo):** `app.json` plugins → google-signin `iosUrlScheme` (proven iOS-Info.plist-only, no Android branch); `auth.ts` → added `iosClientId` (Android ignores); `eas.json` preview → `ios.simulator:true` (Appetize path, no Apple acct needed). iOS OAuth values: client `349329204088-nmihufdrn14vsqikc5tpotqf37otvaui`.
-- **Health:** tsc=0, 46/46 tests pass after edits.
+- **EAS linked:** project `sofrasavvylabsdev` (owner `savvylabs`, id f4ddb333-3bef-4b83-a470-a98b046a86a8); app.json slug → `sofrasavvylabsdev` (approved; Expo-internal only, Android package id unchanged). Added `ios.infoPlist.ITSAppUsesNonExemptEncryption:false`.
+- **DISCOVERED + FIXED pre-existing EAS-build blocker (affects Android too):** `@expo/vector-icons@15.1.1` peer-needs `expo-font>=14` but SDK52 pins `expo-font@13.0.4` → `npm install` ERESOLVE fails on EAS (and locally). Fix = `.npmrc` `legacy-peer-deps=true` (ZERO version change; dry-run tree identical). **Android production EAS build will need this same .npmrc.**
+- **Health:** tsc=0, 46/46 tests pass. Committed on `ios-setup` as `f514818`.
+- **iOS builds:** #1 `0c7036a9` ERRORED (npm conflict, pre-fix). #2 `e7a0f565` **FINISHED** ✅ — iOS SIMULATOR build (isForIosSimulator=true, SDK52, v1.0.0 build1). Artifact (.tar.gz): https://expo.dev/artifacts/eas/ug9sdxLZ8LsngkQ4dbO9nf0hyXXPfx2Tisu9COOnlks.tar.gz — ready for Appetize.io.
 - **Prior session (2026-08-01):**
 - **Website icon refresh:** feature-card emoji (🍲✨📊…) → 7 branded SVG icons. Live on `sofra.savvylabs.dev`.
 - **iOS deployment research & guides:** Created 4 comprehensive guides (deploy checklist, Firebase setup, App Store submission, quick-ref). Key findings: iOS differs from Android (URL schemes instead of SHA-1, stricter privacy label, silent failures documented).
@@ -24,17 +41,21 @@
 - **Launch readiness:** Android path ready. iOS path fully documented + testing strategy confirmed.
 
 ## Next Up (Sameer's launch path)
-**Android (priority):**
-1. Verify Google Play Developer account.
-2. `eas build -p android --profile production` → Play Console → internal testing.
-3. Compliance + store listing + smoke test.
+**Auth (NOW BLOCKS LAUNCH — verify before building):**
+0. Firebase console: paste email-template copy from `docs/firebase-email-templates.md` (sender name Sofra + subjects/bodies).
+1. Device/Appetize test the new flows: sign-up → verify-email gate → click link → "I've verified" lands in app; Resend works; forgot-password on an EMAIL account delivers; tap Dinner on Home → form opens on Dinner.
 
-**iOS (config wired — Sameer's CLI/console tasks next):**
-1. `eas login` (Sameer's Expo account). First `eas build` will prompt to create/link an EAS project + add `extra.eas.projectId`+`owner` to app.json (EAS-managed, expected).
-2. `eas build -p ios --profile preview` → produces a **simulator** `.tar.gz` (NO Apple Developer account needed).
-3. Upload the .app to Appetize.io → run the 10-point smoke test (watch Google Sign-in especially — simulator OAuth is the main risk).
+**Android (after auth verified):**
+2. Verify Google Play Developer account.
+3. `eas build -p android --profile production` → Play Console → internal testing.
+4. Compliance + store listing + smoke test.
+
+**iOS (simulator build READY — Appetize next):**
+1. ✅ Build #2 FINISHED — artifact URL above. NEXT: create Appetize.io account, upload the .tar.gz (or paste the artifact URL). Guard the free tier (30min/mo, 3min/session) — run the checklist deliberately.
+2. Run the 10-point smoke test (watch Google Sign-in especially — simulator OAuth is the main risk).
+3. If a build fails: `eas build:view <id> --json` → logFiles[0] → `curl -sk --compressed <url>` (it's NDJSON; grep `npm error`/phase).
 4. If all pass → enroll Apple Developer ($99/yr) → signed build → TestFlight → App Store (`ios-deploy-checklist.md`).
-- NOTE: `@react-native-google-signin` needs a dev/custom build (not Expo Go), so use the EAS simulator build, not Expo Go, for real sign-in testing.
+- NOTE: `@react-native-google-signin` needs a dev/custom build (not Expo Go). EAS login is done (sameerrajwade); eas-cli NOT on Sameer's real-terminal PATH (use `npx eas-cli` or `npm i -g eas-cli`).
 - Guides ready: `ios-deploy-checklist.md`, `ios-firebase-setup.md`, `ios-appstore-submission.md`, `ios-quick-ref.md`.
 
 **Post-launch:** Update `#get` button href (line 120) to live Play URL.

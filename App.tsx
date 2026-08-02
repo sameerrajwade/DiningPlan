@@ -104,6 +104,7 @@ function ThemedApp() {
 
 export default function App() {
   const setUser = useAuthStore((s) => s.setUser);
+  const setEmailVerified = useAuthStore((s) => s.setEmailVerified);
   const [isInitializing, setIsInitializing] = useState(true);
   const [fontsLoaded] = useFonts({
     Fraunces_500Medium,
@@ -163,6 +164,9 @@ export default function App() {
             createdAt: new Date(),
           };
           setUser(resolvedUser);
+          // Reflect Firebase's verification status so the app can gate unverified
+          // email/password accounts (Google accounts report verified here).
+          setEmailVerified(firebaseUser.emailVerified);
           // Load household + preferences once at startup so every screen reads a
           // single, in-sync copy (screens must NOT refetch prefs on focus — that
           // would clobber in-memory edits like toggling a meal type off).
@@ -178,9 +182,11 @@ export default function App() {
           }
         } else {
           setUser(null);
+          setEmailVerified(false);
         }
       } catch {
         setUser(null);
+        setEmailVerified(false);
       }
       if (!didFinish) {
         didFinish = true;
@@ -192,7 +198,7 @@ export default function App() {
       unsubscribe();
       clearTimeout(timeout);
     };
-  }, [setUser]);
+  }, [setUser, setEmailVerified]);
 
   if (isInitializing || !fontsLoaded) {
     // Branded cold-boot splash (fonts may not be ready yet, so the wordmark

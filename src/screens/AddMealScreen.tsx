@@ -68,7 +68,9 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
     existingMeal?.date ?? format(new Date(), 'yyyy-MM-dd'),
   );
   const [mealType, setMealType] = useState<MealType>(
-    existingMeal?.mealType ?? getDefaultMealType(preferences?.defaultMeals),
+    // Honor the slot the user tapped on Home (route param) before falling back
+    // to the household's default — otherwise tapping "Dinner" opens on "Lunch".
+    existingMeal?.mealType ?? route.params?.mealType ?? getDefaultMealType(preferences?.defaultMeals),
   );
   const [sourceType, setSourceType] = useState<SourceType>(
     existingMeal?.sourceType ?? 'home',

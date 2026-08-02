@@ -3,6 +3,8 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
+  reload,
   onAuthStateChanged as firebaseOnAuthStateChanged,
   updateProfile,
   GoogleAuthProvider,
@@ -26,6 +28,14 @@ export async function signUpWithEmail(
 ): Promise<FirebaseUser> {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(credential.user, { displayName: name });
+  // Send the verification link immediately. The app gates entry on emailVerified
+  // (see VerifyEmailScreen), so a new email/password account must confirm first.
+  // Google accounts arrive pre-verified and skip this path entirely.
+  try {
+    await sendEmailVerification(credential.user);
+  } catch {
+    // Non-fatal (e.g. rate-limited). User can tap "Resend" on the verify screen.
+  }
   return credential.user;
 }
 
@@ -60,6 +70,20 @@ export async function signOut(): Promise<void> {
 
 export async function resetPassword(email: string): Promise<void> {
   await sendPasswordResetEmail(auth, email);
+}
+
+// Re-sends the verification link to the currently signed-in user.
+export async function resendVerificationEmail(): Promise<void> {
+  if (auth.currentUser) await sendEmailVerification(auth.currentUser);
+}
+
+// Reloads the current user from Firebase and returns whether the email is now
+// verified. Firebase does NOT push emailVerified changes via onAuthStateChanged,
+// so the verify screen calls this after the user clicks the link.
+export async function refreshEmailVerified(): Promise<boolean> {
+  if (!auth.currentUser) return false;
+  await reload(auth.currentUser);
+  return auth.currentUser.emailVerified;
 }
 
 // Deletes the Firebase Auth user. May throw 'auth/requires-recent-login' if the
