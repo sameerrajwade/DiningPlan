@@ -8,7 +8,17 @@
 - **MVP1 features:** multi-dish meals + per-dish ratings, kids-tiffin planning, weekly auto-planner, local notifications, Insights charts, restaurants + dish library, in-app account deletion.
 - **Health:** `tsc=0`, **46/46 Jest tests pass**. Latest RELEASE APK built + installed on Pixel 10 Pro (device `57150DLCH002E1`) over wireless — boots clean, all this session's fixes device-verified.
 - **Firebase:** project `thaliplan`. Firestore rules AND Storage rules DEPLOYED to prod and match repo. `.firebaserc` sets default project (deploys need no `--project` flag now).
-- **⚠️ GIT: ALL of this session's work is UNCOMMITTED on `main`** (~30 modified + new files; new: sanitize.ts/relativeDate.ts + tests, .firebaserc, docs/*, assets/brand/marketing/). Files persist on disk across a restart, but nothing is committed/pushed. **Commit before/after restart.** (On `main` → branch first per workflow, or commit directly if intended.)
+- **GIT: all work SHIPPED.** PR #6 (`launch-prep`) squash-MERGED to `main` (commit `2cacedf`), branch deleted, local main synced. Working tree clean.
+
+## Last Session (2026-08-01, latest)
+- Merged the full launch-prep PR (crash fix + 20+ audit fixes + UI polish + brand kit + generic screens + **website revamp**) to `main`.
+- Website revamp live in `docs/`: consumer nav, OG/Twitter meta (`docs/assets/og.png`), FAQ, "Coming soon on Google Play" section, footer cleanup; index + guide both use the 9 generic screens.
+- **Branding check & icon refresh (this turn):** verified `docs/assets/icon.png` == app `assets/icon.png` == the new steam-bowl mark. **COMPLETED:** website feature-card emoji (🍲✨📊…) replaced with branded SVG icons — 7 minimal stroke-based icons styled to terracotta/sage/amber/kids-blue palette, scale & dark-mode auto.
+- Latest release APK: `android/app/build/outputs/apk/release/app-release.apk` (~69.8MB, Aug 1 21:37, debug-signed) — on Pixel 10 Pro.
+
+## Next Up
+1. Sameer console: `eas build` → Play internal testing → SHA-1 to Firebase → verify sign-in → Data Safety/rating/listing.
+2. After Play launch: swap the `#get` button href in `docs/index.html` to the live Play URL (TODO comment at line 120).
 
 ## Constraints
 - Repo: github.com/sameerrajwade/Sofra. Package id `com.thaliplan.app` must NOT change (Firebase-linked).
