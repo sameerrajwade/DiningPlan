@@ -71,6 +71,7 @@ export const ShareStatModal: React.FC<Props> = ({ stat, onClose }) => {
               {stat.sub ? <Text style={styles.sub}>{stat.sub}</Text> : null}
               <View style={styles.divider} />
               <Text style={styles.tagline}>Your family’s meal memory</Text>
+              <Text style={styles.cta}>Get Sofra free · sofra.savvylabs.dev</Text>
             </View>
           )}
 
@@ -117,6 +118,7 @@ const styles = StyleSheet.create({
   sub: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: CREAM_DIM, textAlign: 'center', marginTop: 4 },
   divider: { height: 1, backgroundColor: 'rgba(251,247,242,0.25)', alignSelf: 'stretch', marginVertical: Spacing.lg },
   tagline: { fontFamily: Fonts.displayMedium, fontSize: FontSize.sm, color: CREAM_DIM },
+  cta: { fontFamily: Fonts.bodyMedium, fontSize: FontSize.xs, color: CREAM_DIM, marginTop: Spacing.sm, letterSpacing: 0.3 },
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
