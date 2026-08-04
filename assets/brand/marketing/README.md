@@ -9,7 +9,16 @@ Assets render via headless Chrome @2× → downscale with sharp. Edit the `.html
 render command from the session notes (Chrome `--headless --screenshot` at the target size, then
 `sharp().resize(w,h)`). Icon renders from SVG via sharp directly (no fonts needed).
 
-## Assets
+## Folder layout
+Platform store assets are split into per-platform folders; cross-platform brand/social assets stay
+at the root. The generic app-screen mockups in `screens/` are shared by both platforms.
+
+- **`android/`** — Google Play store assets (+ their `.html` sources and `icon_play.svg`).
+- **`ios/`** — Apple App Store assets (app icon 1024, branded 6.7"/6.5" screenshots, device frames, iPad).
+- **root** — shared brand/social assets used everywhere.
+- **`screens/`** — shared generic app-screen mockups embedded by both platforms' shots.
+
+### `android/` — Google Play
 | File | Size | Use |
 |------|------|-----|
 | `sofra_icon_512.png` | 512×512 | **Play Store app icon** (full-bleed; Play masks corners). |
@@ -17,6 +26,18 @@ render command from the session notes (Chrome `--headless --screenshot` at the t
 | `sofra_shot_home.png` | 1080×1920 | Play phone screenshot 1 — "meal memory". |
 | `sofra_shot_plan.png` | 1080×1920 | Play phone screenshot 2 — "planned week". |
 | `sofra_shot_insights.png` | 1080×1920 | Play phone screenshot 3 — "insights". |
+
+### `ios/` — Apple App Store
+| File | Size | Use |
+|------|------|-----|
+| `sofra_icon_1024.png` | 1024×1024 | **App Store app icon** (no alpha). |
+| `sofra_ios67_brand_{home,plan,insights}.png` | 1290×2796 | **Branded** 6.7" App Store screenshots (Sofra lockup + headline + generic-data phone). |
+| `sofra_ios65_brand_{home,plan,insights}.png` | 1242×2688 | Same, 6.5" slot. |
+| `sofra_ios_{67,65,ipad}_*.png` | various | Earlier plain device-frame shots (kept as fallback). |
+
+### root — shared brand / social
+| File | Size | Use |
+|------|------|-----|
 | `sofra_reel.png` | 1080×1920 | YouTube Shorts / Instagram Reels cover or end-card. |
 | `sofra_square.png` | 1080×1080 | Instagram feed post. |
 | `sofra_og.png` | 1200×630 | Website Open Graph / social link-preview image. |
