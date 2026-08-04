@@ -16,6 +16,7 @@ import type {
 
 // Screens
 import AuthScreen from '../screens/AuthScreen';
+import VerifyEmailScreen from '../screens/VerifyEmailScreen';
 import HomeScreen from '../screens/HomeScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import PlanScreen from '../screens/PlanScreen';
@@ -186,13 +187,16 @@ function MainTabs() {
 }
 
 export const AppNavigator: React.FC = () => {
-  const { isAuthenticated, user } = useAuth();
-  const needsHousehold = isAuthenticated && user && !user.householdId;
+  const { isAuthenticated, emailVerified, user } = useAuth();
+  const needsVerification = isAuthenticated && !emailVerified;
+  const needsHousehold = isAuthenticated && emailVerified && user && !user.householdId;
 
   return (
     <RootStack.Navigator screenOptions={{ headerShown: false }}>
       {!isAuthenticated ? (
         <RootStack.Screen name="Auth" component={AuthScreen} />
+      ) : needsVerification ? (
+        <RootStack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
       ) : needsHousehold ? (
         <RootStack.Screen
           name="HouseholdSetup"

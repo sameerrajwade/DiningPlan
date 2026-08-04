@@ -222,8 +222,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       .slice(0, 5);
   }, [meals, today]);
 
-  const handleAddMeal = useCallback(() => {
-    navigation.getParent()?.getParent()?.navigate('AddMeal');
+  const handleAddMeal = useCallback((mealType?: MealType) => {
+    navigation.getParent()?.getParent()?.navigate('AddMeal', mealType ? { mealType } : undefined);
   }, [navigation]);
 
   const handleMealPress = useCallback(
@@ -406,7 +406,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 <MealCard
                   meal={meal}
                   placeholder={`No ${MEAL_LABEL[t].toLowerCase()} planned`}
-                  onPress={() => (meal ? handleMealPress(meal) : handleAddMeal())}
+                  onPress={() => (meal ? handleMealPress(meal) : handleAddMeal(t))}
                 />
               </View>
             );
@@ -455,7 +455,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={{ height: 80 }} />
       </ScrollView>
 
-      <FAB icon="plus" style={styles.fab} onPress={handleAddMeal} color={colors.white} accessibilityLabel="Add meal" />
+      <FAB icon="plus" style={styles.fab} onPress={() => handleAddMeal()} color={colors.white} accessibilityLabel="Add meal" />
 
       <ShareStatModal stat={shareStat} onClose={() => setShareStat(null)} />
     </View>

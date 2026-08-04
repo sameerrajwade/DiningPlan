@@ -37,7 +37,9 @@ export const FamilyScreen: React.FC = () => {
     if (!household) return;
     try {
       await Share.share({
-        message: `Join our household on Sofra! Use invite code ${household.inviteCode}.`,
+        message:
+          `Join our household on Sofra! Use invite code ${household.inviteCode}.\n\n` +
+          `Get the app (iOS & Android): https://sofra.savvylabs.dev`,
       });
     } catch {
       Alert.alert('Invite code', household.inviteCode);

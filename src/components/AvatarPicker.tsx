@@ -9,10 +9,17 @@ import {
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 
+// A picked image: local uri (read into a Blob for upload — see services/storage.ts)
+// and its mime type (set as the Storage object's contentType).
+export interface PickedImage {
+  uri: string;
+  type: string;
+}
+
 interface AvatarPickerProps {
   currentAvatar: string | null;
   userName: string;
-  onSelect: (uri: string | null) => void;
+  onSelect: (image: PickedImage | null) => void;
   // When false, renders only the change-photo buttons (the caller shows the
   // avatar itself) — avoids a duplicate avatar on the Profile screen.
   showAvatar?: boolean;
@@ -66,16 +73,23 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
       }
       return;
     }
-    if (result.assets?.[0]?.uri) {
-      onSelect(result.assets[0].uri);
+    const asset = result.assets?.[0];
+    if (asset?.uri) {
+      onSelect({ uri: asset.uri, type: asset.type ?? 'image/jpeg' });
     }
+  };
+
+  // maxWidth/Height cap keeps the avatar under the 1 MB Storage rule.
+  const pickerOptions = {
+    mediaType: 'photo' as const,
+    quality: 0.8 as const,
+    maxWidth: 512,
+    maxHeight: 512,
   };
 
   const handleCamera = async () => {
     try {
-      // Cap dimensions — a full-res phone photo blows past the 1 MB Storage rule
-      // and the upload fails. 512px is ample for an avatar.
-      const result = await launchCamera({ mediaType: 'photo', quality: 0.8, maxWidth: 512, maxHeight: 512 });
+      const result = await launchCamera(pickerOptions);
       handleResult(result, 'Camera');
     } catch {
       Alert.alert('Error', 'Could not open camera.');
@@ -84,7 +98,7 @@ export const AvatarPicker: React.FC<AvatarPickerProps> = ({
 
   const handleGallery = async () => {
     try {
-      const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.8, maxWidth: 512, maxHeight: 512 });
+      const result = await launchImageLibrary(pickerOptions);
       handleResult(result, 'Photos');
     } catch {
       Alert.alert('Error', 'Could not open gallery.');

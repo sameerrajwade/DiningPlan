@@ -1,13 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, ScrollView, Alert, Dimensions } from 'react-native';
-import { Text, Avatar, ActivityIndicator } from 'react-native-paper';
+import { Text, Avatar, ActivityIndicator, Portal, Dialog, TextInput, Button } from 'react-native-paper';
 import Svg, { Circle } from 'react-native-svg';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { format } from 'date-fns';
 import { useFocusEffect } from '@react-navigation/native';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
-import { AvatarPicker } from '../components/AvatarPicker';
+import { AvatarPicker, PickedImage } from '../components/AvatarPicker';
 import { PreferencesSection } from '../components/PreferencesSection';
 import { PressableScale, FadeSlideIn, AnimatedRing } from '../components/motion';
 import { useAuthStore } from '../stores/useAuthStore';
@@ -35,6 +35,32 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const { household, members, fetchHousehold, fetchMembers } = useHouseholdStore();
   const householdId = user?.householdId ?? '';
   const [uploading, setUploading] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [savingName, setSavingName] = useState(false);
+
+  const openNameEdit = useCallback(() => {
+    setNameDraft(user?.name ?? '');
+    setEditingName(true);
+  }, [user?.name]);
+
+  const saveName = useCallback(async () => {
+    const trimmed = nameDraft.trim();
+    if (!user || !trimmed || trimmed === user.name) {
+      setEditingName(false);
+      return;
+    }
+    setSavingName(true);
+    try {
+      await updateUserProfile(user.id, { name: trimmed });
+      useAuthStore.getState().setUser({ ...user, name: trimmed });
+      setEditingName(false);
+    } catch {
+      Alert.alert('Couldn\'t save', 'Your name couldn\'t be updated. Please try again.');
+    } finally {
+      setSavingName(false);
+    }
+  }, [nameDraft, user]);
 
   useEffect(() => {
     if (householdId) {
@@ -52,9 +78,9 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   const handleAvatarChange = useCallback(
-    async (uri: string | null) => {
+    async (image: PickedImage | null) => {
       if (!user) return;
-      if (uri === null) {
+      if (image === null) {
         try {
           await updateUserProfile(user.id, { avatarUrl: null });
           useAuthStore.getState().setUser({ ...user, avatarUrl: null });
@@ -65,11 +91,15 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       }
       setUploading(true);
       try {
-        const remoteUrl = await uploadProfilePicture(user.id, uri);
+        const remoteUrl = await uploadProfilePicture(user.id, image.uri, image.type);
         await updateUserProfile(user.id, { avatarUrl: remoteUrl });
         useAuthStore.getState().setUser({ ...user, avatarUrl: remoteUrl });
-      } catch {
-        Alert.alert('Upload failed', 'Your photo couldn\'t upload. Your current photo is unchanged — try again.');
+      } catch (e: any) {
+        // Surface the real reason (Firebase gives a `code`) so upload failures
+        // are diagnosable instead of a generic "try again".
+        console.error('[avatar upload] failed:', e?.code, e?.message, e);
+        const detail = e?.code || e?.message ? `\n\n(${e?.code ?? ''} ${e?.message ?? ''})`.trimEnd() : '';
+        Alert.alert('Upload failed', `Your photo couldn't upload. Your current photo is unchanged — try again.${detail}`);
       } finally {
         setUploading(false);
       }
@@ -108,7 +138,10 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           )}
         </View>
-        <Text style={styles.name}>{user.name}</Text>
+        <PressableScale style={styles.nameRow} onPress={openNameEdit} accessibilityLabel="Edit name">
+          <Text style={styles.name}>{user.name}</Text>
+          <MaterialCommunityIcons name="pencil-outline" size={16} color={colors.white} style={styles.nameEditIcon} />
+        </PressableScale>
         <Text style={styles.subtitle}>
           {user.email}
           {memberSince ? ` · member since ${memberSince}` : ''}
@@ -183,6 +216,34 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       </FadeSlideIn>
 
       <View style={{ height: Spacing.xxl }} />
+
+      <Portal>
+        <Dialog visible={editingName} onDismiss={() => setEditingName(false)} style={styles.dialog}>
+          <Dialog.Title style={styles.dialogTitle}>Edit name</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label="Your name"
+              value={nameDraft}
+              onChangeText={setNameDraft}
+              mode="outlined"
+              autoFocus
+              maxLength={60}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+              onSubmitEditing={saveName}
+              returnKeyType="done"
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setEditingName(false)} textColor={colors.textSecondary} disabled={savingName}>
+              Cancel
+            </Button>
+            <Button onPress={saveName} loading={savingName} disabled={savingName || !nameDraft.trim()} textColor={colors.primary}>
+              Save
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </ScrollView>
   );
 };
@@ -224,12 +285,16 @@ const makeStyles = (c: ThemeColors) =>
       borderColor: c.white,
     },
     initialsText: { fontFamily: Fonts.display, fontSize: FontSize.xxl, color: c.white },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    nameEditIcon: { opacity: 0.85 },
     name: {
       fontFamily: Fonts.display,
       fontSize: FontSize.xxl,
       color: c.white,
       textAlign: 'center',
     },
+    dialog: { backgroundColor: c.surface },
+    dialogTitle: { fontFamily: Fonts.display, color: c.text },
     subtitle: {
       fontFamily: Fonts.body,
       fontSize: FontSize.sm,

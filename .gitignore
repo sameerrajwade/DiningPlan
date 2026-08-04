@@ -1,4 +1,6 @@
-android/
+# RN/Expo generated native project at the repo root only — not asset folders
+# named "android" (e.g. assets/brand/marketing/android/).
+/android/
 node_modules/
 .expo/
 gradle-dist.zip

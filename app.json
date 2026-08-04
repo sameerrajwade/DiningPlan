@@ -1,15 +1,10 @@
 {
   "expo": {
     "name": "Sofra",
-    "slug": "thaliplan",
-    "version": "1.0.0",
+    "slug": "sofrasavvylabsdev",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FBF7F2"
-    },
     "updates": {
       "fallbackToCacheTimeout": 0
     },
@@ -18,7 +13,13 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.thaliplan.app"
+      "bundleIdentifier": "com.thaliplan.app",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Sofra lets you choose a photo from your library to use as a profile picture for your household members.",
+        "NSCameraUsageDescription": "Sofra lets you take a photo to use as a profile picture for your household members."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -30,6 +31,32 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "scheme": "thaliplan"
+    "scheme": "thaliplan",
+    "plugins": [
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.349329204088-nmihufdrn14vsqikc5tpotqf37otvaui"
+        }
+      ],
+      "expo-apple-authentication",
+      "expo-font",
+      "expo-sharing",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FBF7F2"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f4ddb333-3bef-4b83-a470-a98b046a86a8"
+      }
+    },
+    "owner": "savvylabs"
   }
 }
