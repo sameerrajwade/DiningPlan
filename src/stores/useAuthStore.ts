@@ -24,6 +24,7 @@ interface AuthState {
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   resendVerification: () => Promise<void>;
   refreshEmailVerified: () => Promise<boolean>;
@@ -142,6 +143,34 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
       set({ user: profile, isAuthenticated: true, emailVerified: firebaseUser.emailVerified, isLoading: false });
     } catch (e: any) {
+      set({ error: mapAuthError(e), isLoading: false });
+    }
+  },
+
+  signInWithApple: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const firebaseUser = await authService.signInWithApple();
+      let profile = await getUserProfile(firebaseUser.uid);
+      if (!profile) {
+        profile = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+          email: firebaseUser.email || '',
+          avatarUrl: firebaseUser.photoURL || null,
+          householdId: null,
+          createdAt: new Date(),
+        };
+        await createUserProfile(profile);
+      }
+      // Apple accounts are always email-verified (Apple vouches for the identity).
+      set({ user: profile, isAuthenticated: true, emailVerified: true, isLoading: false });
+    } catch (e: any) {
+      // User-cancelled the native sheet (ERR_REQUEST_CANCELED) is not an error.
+      if (e?.code === 'ERR_REQUEST_CANCELED') {
+        set({ isLoading: false });
+        return;
+      }
       set({ error: mapAuthError(e), isLoading: false });
     }
   },

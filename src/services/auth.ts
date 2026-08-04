@@ -8,10 +8,13 @@ import {
   onAuthStateChanged as firebaseOnAuthStateChanged,
   updateProfile,
   GoogleAuthProvider,
+  OAuthProvider,
   signInWithCredential,
   User as FirebaseUser,
 } from 'firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import { auth } from '../config/firebase';
 
 GoogleSignin.configure({
@@ -57,6 +60,65 @@ export async function signInWithGoogle(): Promise<FirebaseUser> {
   const googleCredential = GoogleAuthProvider.credential(idToken);
   const userCredential = await signInWithCredential(auth, googleCredential);
   return userCredential.user;
+}
+
+// Native Sign in with Apple (iOS only). Apple requires this whenever a third-party
+// social login (Google) is offered — App Store guideline 4.8. Firebase verifies the
+// identity token against a SHA-256 nonce, so we generate a raw nonce, hand Apple the
+// hashed nonce, and hand Firebase the raw one. Apple returns the user's name ONLY on
+// the very first authorization, so we persist it to the Firebase displayName then.
+export async function signInWithApple(): Promise<FirebaseUser> {
+  // Random raw nonce; hashed copy goes to Apple to bind the token to this request.
+  const rawNonce = Crypto.randomUUID();
+  const hashedNonce = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    rawNonce,
+  );
+
+  const appleCredential = await AppleAuthentication.signInAsync({
+    requestedScopes: [
+      AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+      AppleAuthentication.AppleAuthenticationScope.EMAIL,
+    ],
+    nonce: hashedNonce,
+  });
+
+  const { identityToken, fullName } = appleCredential;
+  if (!identityToken) {
+    throw new Error('Apple sign-in failed: no identity token returned');
+  }
+
+  const provider = new OAuthProvider('apple.com');
+  const firebaseCredential = provider.credential({
+    idToken: identityToken,
+    rawNonce,
+  });
+  const userCredential = await signInWithCredential(auth, firebaseCredential);
+
+  // First-run only: Apple gives the name once. Firebase seeds displayName from the
+  // token as "" for Apple, so set it if we have a name and none is stored yet.
+  const displayName = [fullName?.givenName, fullName?.familyName]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  if (displayName && !userCredential.user.displayName) {
+    try {
+      await updateProfile(userCredential.user, { displayName });
+    } catch {
+      // Non-fatal — profile row falls back to the email prefix.
+    }
+  }
+
+  return userCredential.user;
+}
+
+// Whether Sign in with Apple is available (iOS 13+ real devices/simulators).
+export async function isAppleSignInAvailable(): Promise<boolean> {
+  try {
+    return await AppleAuthentication.isAvailableAsync();
+  } catch {
+    return false;
+  }
 }
 
 export async function signOut(): Promise<void> {

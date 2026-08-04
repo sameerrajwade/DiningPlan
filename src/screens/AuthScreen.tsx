@@ -14,10 +14,12 @@ import {
   HelperText,
 } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
+import { isAppleSignInAvailable } from '../services/auth';
 
 type AuthMode = 'signIn' | 'signUp';
 
@@ -31,13 +33,20 @@ const VALUE_PROPS = [
 ];
 
 export const AuthScreen: React.FC = () => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const { signIn, signUp, signInWithGoogle, resetPassword, isLoading, error, clearError } =
+  const { signIn, signUp, signInWithGoogle, signInWithApple, resetPassword, isLoading, error, clearError } =
     useAuthStore();
 
   const [mode, setMode] = useState<AuthMode>('signIn');
+  // Only iOS 13+ devices/simulators expose Sign in with Apple. Hidden everywhere else.
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      isAppleSignInAvailable().then(setAppleAvailable);
+    }
+  }, []);
   const scrollRef = useRef<ScrollView>(null);
   // Toggling sign-in ↔ sign-up keeps the scroll offset otherwise, which left the
   // logo clipped when switching to the taller sign-up form. Reset to top on change.
@@ -109,6 +118,12 @@ export const AuthScreen: React.FC = () => {
     setLocalError(null);
     await signInWithGoogle();
   }, [signInWithGoogle, clearError]);
+
+  const handleAppleSignIn = useCallback(async () => {
+    clearError();
+    setLocalError(null);
+    await signInWithApple();
+  }, [signInWithApple, clearError]);
 
   const handleForgotPassword = useCallback(async () => {
     if (!email.trim()) {
@@ -272,6 +287,24 @@ export const AuthScreen: React.FC = () => {
             Continue with Google
           </Button>
 
+          {appleAvailable && (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={
+                mode === 'signIn'
+                  ? AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN
+                  : AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP
+              }
+              buttonStyle={
+                isDark
+                  ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                  : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+              }
+              cornerRadius={BorderRadius.md}
+              style={styles.appleButton}
+              onPress={handleAppleSignIn}
+            />
+          )}
+
           <Button
             mode="text"
             onPress={toggleMode}
@@ -390,6 +423,10 @@ const makeStyles = (c: ThemeColors) =>
     googleButton: {
       borderColor: c.border,
       borderRadius: BorderRadius.md,
+    },
+    appleButton: {
+      height: 48,
+      marginTop: Spacing.sm,
     },
     toggleButton: {
       marginTop: Spacing.md,

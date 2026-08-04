@@ -19,6 +19,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.thaliplan.app",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -40,7 +41,8 @@
         {
           "iosUrlScheme": "com.googleusercontent.apps.349329204088-nmihufdrn14vsqikc5tpotqf37otvaui"
         }
-      ]
+      ],
+      "expo-apple-authentication"
     ],
     "extra": {
       "eas": {
