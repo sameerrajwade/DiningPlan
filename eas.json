@@ -16,6 +16,9 @@
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
+      },
+      "ios": {
+        "image": "macos-tahoe-26.5-xcode-26.6"
       }
     }
   },
@@ -27,7 +30,8 @@
         "releaseStatus": "draft"
       },
       "ios": {
-        "appleTeamId": "3HQ9T7PKN4"
+        "appleTeamId": "3HQ9T7PKN4",
+        "ascAppId": "6797710095"
       }
     }
   }
