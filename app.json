@@ -16,7 +16,9 @@
       "bundleIdentifier": "com.thaliplan.app",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSPhotoLibraryUsageDescription": "Sofra lets you choose a photo from your library to use as a profile picture for your household members.",
+        "NSCameraUsageDescription": "Sofra lets you take a photo to use as a profile picture for your household members."
       }
     },
     "android": {
