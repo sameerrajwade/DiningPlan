@@ -5,11 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FBF7F2"
-    },
     "updates": {
       "fallbackToCacheTimeout": 0
     },
@@ -42,7 +37,18 @@
           "iosUrlScheme": "com.googleusercontent.apps.349329204088-nmihufdrn14vsqikc5tpotqf37otvaui"
         }
       ],
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      "expo-font",
+      "expo-sharing",
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FBF7F2"
+        }
+      ]
     ],
     "extra": {
       "eas": {

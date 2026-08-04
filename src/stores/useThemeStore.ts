@@ -18,7 +18,7 @@ interface ThemeState {
 // render half-dark; flip default to 'auto' once all slices are dark-aware.
 export const useThemeStore = create<ThemeState>((set) => ({
   mode: 'light',
-  systemScheme: Appearance.getColorScheme() ?? 'light',
+  systemScheme: Appearance.getColorScheme() === 'dark' ? 'dark' : 'light',
 
   setMode: (mode) => {
     set({ mode });

@@ -129,7 +129,7 @@ export default function App() {
       }
     });
     const appearanceSub = Appearance.addChangeListener(({ colorScheme }) => {
-      useThemeStore.getState().setSystemScheme(colorScheme ?? 'light');
+      useThemeStore.getState().setSystemScheme(colorScheme === 'dark' ? 'dark' : 'light');
     });
     return () => {
       notifSub.remove();
