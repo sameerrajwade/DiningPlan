@@ -22,6 +22,30 @@
           }
         },
         {
+          "client_id": "349329204088-k2mdggia0imi8in1e68vknmq3nqgm324.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.thaliplan.app",
+            "certificate_hash": "ee408f10c5d2fe2669e198218b7c21df6281ffa3"
+          }
+        },
+        {
+          "client_id": "349329204088-mvhnna695vfdtpmcm3aq3621unkln1kg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.thaliplan.app",
+            "certificate_hash": "41c8b0c840c6719f5dc314064da21e76b72fc1f9"
+          }
+        },
+        {
+          "client_id": "349329204088-qajiepncp5pksg5eoa1k9sve1rduua45.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.thaliplan.app",
+            "certificate_hash": "17f7873fa24047e6ef49fddfe6e523e950d5f0db"
+          }
+        },
+        {
           "client_id": "349329204088-vpdrenka8ercjq62offbc5emm0rm86d8.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -45,6 +69,13 @@
             {
               "client_id": "349329204088-6d984s5kj2sbnngtth6567cib4e846di.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "349329204088-nmihufdrn14vsqikc5tpotqf37otvaui.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.thaliplan.app"
+              }
             }
           ]
         }
