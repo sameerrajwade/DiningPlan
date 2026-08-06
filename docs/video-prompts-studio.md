@@ -14,6 +14,20 @@ softly blurred**. Generate clean base footage, then **composite the real assets 
 
 Deliver **9:16 1080×1920** as primary (Shorts/Reels), with a 16:9 cutdown for YouTube.
 
+## THE SELLING & BRANDING LAYER (this is where you sell)
+The AI footage is only the *emotional canvas* — **all Sofra branding rides on top as a post overlay**,
+pixel-perfect (more controlled than letting AI hallucinate a melted logo). Every spot carries:
+1. **The product moment (7–12s):** composite a REAL app screen (`docs/assets/screens/*.png`) into the
+   actor's phone so viewers SEE the app do the thing.
+2. **Feature super (1 line, at the product moment):** Fraunces, terracotta, e.g. *"Rate it once.
+   Remember it forever."*
+3. **End-card (2–3s hard sell):** `sofra_lockup.png` on cream + tagline **"Plan meals, remember it
+   all."** + **"Free on Google Play"** badge + **sofra.savvylabs.dev**.
+4. Optional: a small persistent Sofra logo bug in a corner.
+
+**Selling points — rotate one per spot:** shared household in sync · one-tap weekly plan · rate &
+never forget a dish · home-vs-eating-out spend · remember every restaurant order · kids-tiffin variety.
+
 ---
 
 # PART A — App Walkthrough / Product Demo (~50–55s)
