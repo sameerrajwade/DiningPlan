@@ -7,10 +7,14 @@ Website: sofra.savvylabs.dev. Generic mockup data = "The Rivera Family".
 
 ## Structure
 - **`prompts/`** — video & commercial scripts/prompts
+  - `commercials-scene-script.md` — **LTX Studio / Google Flow ready** scene-by-scene script for
+    the 3 commercials (shot-by-shot, per-language VO + supers, reference images).
   - `video-prompts-studio.md` — app-walkthrough storyboard + 3 localized brand commercials
     (American/English, N-Indian/Hindi, Maharashtrian/Marathi), tool-agnostic (Veo 3, Runway, Sora…).
   - `video-prompts.md` — 10× 20-second brand-commercial briefs (real-people shoots).
   - `launch-teaser.md` — WhatsApp launch teaser kit.
+- **`production/`** — batch generation: `shots.json` manifest + `generate_commercials.py`
+  (Veo via `google-genai`) to render all shots from one command. See `production/README.md`.
 - **`logo/`** — master logo sources (`icon_full.svg`, `icon_round.svg`, `mark_cream.svg`, `mark_terracotta.svg`).
 - **`assets/`** — marketing exports (icon, feature graphic, store screenshots, social cards, lockup),
   plus `ios/` + `android/` platform sets, `screens/` HTML mockup sources, and `end-cards/`.

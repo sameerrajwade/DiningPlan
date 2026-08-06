@@ -1,0 +1,108 @@
+{
+  "project": "sofra-commercials",
+  "engine": "veo",
+  "output_dir": "renders",
+  "reference_images_dir": "../..",
+  "shared_negative": "fake app UI, readable phone screen, distorted hands or faces, extra fingers, warped text, glossy studio food, stock-ad look, watermark, logo artifacts, subtitles",
+  "commercials": [
+    {
+      "id": "b1_american",
+      "language": "en",
+      "language_name": "English",
+      "aspect_ratio": "9:16",
+      "vo_line": "Every family has a hundred little meals they love — and slowly forget. Sofra remembers them all, so the ones that matter never get lost.",
+      "shots": [
+        {
+          "id": "s1_pause",
+          "duration_seconds": 8,
+          "reference_image": null,
+          "prompt": "Bright open-plan suburban kitchen, golden-hour light through big windows, wood island, subway tile, herbs on the sill. A relaxed mid-30s parent opens the fridge, pauses thoughtfully as if deciding what to cook, then glances at a phone held low and angled away from camera (screen not visible), a small knowing smile. Gentle handheld, shallow depth of field, warm cinematic grade, slow push-in."
+        },
+        {
+          "id": "s2_cooking",
+          "duration_seconds": 8,
+          "reference_image": null,
+          "prompt": "The same suburban family cooks together easily: two kids about 7 and 10 and the other parent; a kid steals a bite; warm laughter; roast chicken, a fresh salad and a pot of pasta on the counter. Unhurried, gentle handheld medium shots, warm cinematic grade."
+        },
+        {
+          "id": "s3_table",
+          "duration_seconds": 8,
+          "reference_image": null,
+          "prompt": "The same family sits at the table and eats together, content and warm; soft golden light; a calm, breathing final beat. Slow pull-back, shallow depth of field, cinematic."
+        },
+        {
+          "id": "endcard",
+          "type": "static",
+          "asset": "branding/assets/end-cards/sofra_endcard_9x16.png",
+          "duration_seconds": 3
+        }
+      ]
+    },
+    {
+      "id": "b2_hindi",
+      "language": "hi",
+      "language_name": "Hindi",
+      "aspect_ratio": "9:16",
+      "vo_line": "हर घर में माँ के हाथ का एक ऐसा खाना होता है, जो सबको याद रहता है, और कुछ ऐसे भी, जो धीरे-धीरे भूल जाते हैं। Sofra हर स्वाद को याद रखता है, ताकि आपका परिवार उसे कभी न भूले।",
+      "shots": [
+        {
+          "id": "s1_kitchen",
+          "duration_seconds": 8,
+          "reference_image": null,
+          "prompt": "Cozy North-Indian home kitchen: stainless-steel utensils, a masala dabba, a pressure cooker, earthy warm tones, a small shelf with a diya. A grandmother in a soft saree and the mother in a cotton kurti cook together, gentle steam rising, easy chatter; the mother glances at a phone held low and angled away from camera (screen not visible), a warm nod. Handheld, shallow depth of field, golden cinematic grade."
+        },
+        {
+          "id": "s2_gathering",
+          "duration_seconds": 8,
+          "reference_image": null,
+          "prompt": "The same North-Indian joint family gathers: young parents, two kids, one child holding a steel tiffin; kids reach for food; the grandmother serves; roti puffs on the tawa; rajma-chawal, dal and a simple sabzi on the table. Warm laughter, handheld medium shots, warm cinematic grade."
+        },
+        {
+          "id": "s3_eating",
+          "duration_seconds": 8,
+          "reference_image": null,
+          "prompt": "The same family eats together, seated close on a floor mat or at the table, content and warm; soft warm light; calm final beat. Slow pull-back, shallow depth of field, cinematic."
+        },
+        {
+          "id": "endcard",
+          "type": "static",
+          "asset": "branding/assets/end-cards/sofra_endcard_9x16.png",
+          "duration_seconds": 3
+        }
+      ]
+    },
+    {
+      "id": "b3_marathi",
+      "language": "mr",
+      "language_name": "Marathi",
+      "aspect_ratio": "9:16",
+      "vo_line": "प्रत्येक घरात आईच्या हातचं एक खास जेवण असतं, जे सगळ्यांना आठवतं, आणि काही असंही, जे हळूहळू विसरलं जातं. Sofra प्रत्येक चव लक्षात ठेवतं, म्हणजे तुमचं कुटुंब ती कधीच विसरणार नाही.",
+      "shots": [
+        {
+          "id": "s1_kitchen",
+          "duration_seconds": 8,
+          "reference_image": null,
+          "prompt": "Traditional Maharashtrian home kitchen: brass and steel vessels, warm wood, soft daylight. A grandmother in a cotton nauvari saree and the mother in a simple cotton saree cook together, gentle steam, quiet warmth; the mother checks a phone held low and angled away from camera (screen not visible), a soft smile. Handheld, shallow depth of field, warm natural cinematic grade."
+        },
+        {
+          "id": "s2_gathering",
+          "duration_seconds": 8,
+          "reference_image": null,
+          "prompt": "The same Maharashtrian family gathers: parents and a school-age child with a steel dabba; the child is served first; varan-bhaat with a spoon of ghee, poli-bhaji, and a plate of thalipeeth on the table. Easy laughter, handheld medium shots, warm cinematic grade."
+        },
+        {
+          "id": "s3_eating",
+          "duration_seconds": 8,
+          "reference_image": null,
+          "prompt": "The same family eats together, content and rooted; warm light; calm final beat. Slow pull-back, shallow depth of field, cinematic."
+        },
+        {
+          "id": "endcard",
+          "type": "static",
+          "asset": "branding/assets/end-cards/sofra_endcard_9x16.png",
+          "duration_seconds": 3
+        }
+      ]
+    }
+  ]
+}
