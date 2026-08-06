@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--terra:#C0532E;--sage:#5E8B6A;--amber:#E0A63C;--bg:#FBF7F2;
+    --card:#FFFFFF;--sv:#F3EEE7;--tx:#241E1B;--tx2:#6E645C;--tx3:#A79C93;--bd:#EAE2D8;--red:#B23B2E}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1280px;height:2706px}
+  .phone{width:1280px;height:2706px;background:var(--bg);position:relative;overflow:hidden;
+    font-family:'Inter',sans-serif;color:var(--tx);padding:70px 48px 0}
+  .frns{font-family:'Fraunces',serif}
+  .title{font-size:68px;font-weight:600;margin-bottom:44px}
+  .hero{display:flex;align-items:center;gap:36px;margin-bottom:44px}
+  .av{width:180px;height:180px;border-radius:50%;background:linear-gradient(135deg,var(--terra),#D9793F);
+    display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Fraunces',serif;font-size:78px;font-weight:600;flex-shrink:0}
+  .hname{font-family:'Fraunces',serif;font-size:60px;font-weight:600;display:flex;align-items:center;gap:20px}
+  .hmail{font-size:36px;color:var(--tx2);margin-top:10px}
+  .pencil{width:40px;height:40px}
+  .sect{font-size:32px;font-weight:600;color:var(--tx3);letter-spacing:2px;text-transform:uppercase;margin:8px 6px 20px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:30px;padding:8px 44px;margin-bottom:36px}
+  .row{display:flex;align-items:center;gap:26px;padding:38px 0;border-bottom:1px solid var(--bd)}
+  .row:last-child{border-bottom:none}
+  .ic{width:56px;height:56px;flex-shrink:0}
+  .rlabel{font-size:42px;flex:1}
+  .rval{font-size:38px;color:var(--tx2)}
+  .rlabel.red{color:var(--red)}
+  .chev{color:var(--tx3)}
+  .toggle{width:96px;height:56px;border-radius:30px;background:var(--sage);position:relative;flex-shrink:0}
+  .toggle .k{position:absolute;top:6px;right:6px;width:44px;height:44px;border-radius:50%;background:#fff}
+  .nav{position:absolute;left:0;right:0;bottom:0;height:190px;background:var(--bg);border-top:1px solid var(--bd);display:flex;padding:26px 30px 40px}
+  .nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:27px;color:var(--tx3);font-weight:500}
+  .nav a.on{color:var(--terra)}
+  svg{display:block}
+</style></head>
+<body>
+<div class="phone">
+  <div class="title frns">Profile</div>
+
+  <div class="hero">
+    <div class="av">AR</div>
+    <div>
+      <div class="hname">Alex Rivera
+        <svg class="pencil" viewBox="0 0 24 24"><path fill="none" stroke="#C0532E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 20l4-1L20 7l-3-3L5 16z M14 6l3 3"/></svg>
+      </div>
+      <div class="hmail">alex.rivera@email.com</div>
+    </div>
+  </div>
+
+  <div class="sect">Household</div>
+  <div class="card">
+    <div class="row">
+      <svg class="ic" viewBox="0 0 24 24"><path fill="none" stroke="#5E8B6A" stroke-width="1.8" d="M3 11l9-7 9 7 M5 10v9h14v-9"/></svg>
+      <div class="rlabel">The Rivera Family</div><div class="rval">4 members</div>
+    </div>
+    <div class="row">
+      <svg class="ic" viewBox="0 0 24 24"><path fill="none" stroke="#5E8B6A" stroke-width="1.8" stroke-linecap="round" d="M9 12l6-6 M6 9l-2 2a3 3 0 004 4l2-2 M15 15l2-2a3 3 0 00-4-4l-2 2"/></svg>
+      <div class="rlabel">Invite code</div><div class="rval">RIVERA-7K2</div>
+    </div>
+  </div>
+
+  <div class="sect">Preferences</div>
+  <div class="card">
+    <div class="row">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5" fill="none" stroke="#E0A63C" stroke-width="1.8"/><path stroke="#E0A63C" stroke-width="1.8" stroke-linecap="round" d="M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M19 5l-2 2 M7 17l-2 2"/></svg>
+      <div class="rlabel">Appearance</div><div class="rval">Auto</div>
+      <svg class="chev ic" style="width:36px;height:36px" viewBox="0 0 24 24"><path fill="none" stroke="#A79C93" stroke-width="2" stroke-linecap="round" d="M9 6l6 6-6 6"/></svg>
+    </div>
+    <div class="row">
+      <svg class="ic" viewBox="0 0 24 24"><path fill="none" stroke="#C0532E" stroke-width="1.8" stroke-linecap="round" d="M6 9a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6z M10 20a2 2 0 004 0"/></svg>
+      <div class="rlabel">Notifications</div>
+      <div class="toggle"><div class="k"></div></div>
+    </div>
+  </div>
+
+  <div class="sect">Account</div>
+  <div class="card">
+    <div class="row">
+      <svg class="ic" viewBox="0 0 24 24"><path fill="none" stroke="#6E645C" stroke-width="1.8" stroke-linecap="round" d="M16 17l5-5-5-5 M21 12H9 M12 3H5v18h7"/></svg>
+      <div class="rlabel">Sign out</div>
+    </div>
+    <div class="row">
+      <svg class="ic" viewBox="0 0 24 24"><path fill="none" stroke="#B23B2E" stroke-width="1.8" stroke-linecap="round" d="M5 7h14 M9 7V4h6v3 M7 7l1 14h8l1-14 M10 11v6 M14 11v6"/></svg>
+      <div class="rlabel red">Delete account</div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <a><svg width="46" height="46" viewBox="0 0 24 24"><path fill="#A79C93" d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3z"/></svg>Home</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="none" stroke="#A79C93" stroke-width="2" d="M4 5h16v16H4z M4 9h16 M8 3v4 M16 3v4"/></svg>Calendar</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="none" stroke="#A79C93" stroke-width="2" stroke-linecap="round" d="M5 19 15 9l-1-1L4 18z M15 9l2-2 M16 4l1 1 M20 8l-1-1"/></svg>Plan</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="#A79C93" d="M4 13h3v7H4z M10 8h3v12h-3z M16 4h3v16h-3z"/></svg>Insights</a>
+    <a class="on"><svg width="44" height="44" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="#C0532E"/><path fill="#C0532E" d="M4 21c0-4 4-6 8-6s8 2 8 6z"/></svg>Profile</a>
+  </div>
+</div>
+</body></html>
