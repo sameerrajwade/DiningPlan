@@ -72,7 +72,7 @@ small proud smile. 16–19s pours a glass, satisfied. 19–20s end-card. **Scree
 
 ## Production notes
 - **Format:** shoot vertical 9:16 (1080×1920) for Shorts/Reels; a 16:9 cutdown for YouTube pre-roll.
-- **App inserts:** use the branded screenshot frames in `assets/brand/marketing/sofra_shot_*.png`, or
+- **App inserts:** use the branded screenshot frames in `branding/assets/sofra_shot_*.png`, or
   screen-record the live app for authenticity (recapture with clean data first).
 - **Consistent end-card:** `sofra_lockup.png` on cream, tagline, Google Play badge. Hold ~2s.
 - **Casting:** keep it globally relatable — the app is not region-specific; vary households across spots.

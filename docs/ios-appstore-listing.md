@@ -59,7 +59,7 @@ Sign in with Apple, Google, or email.
 - **Marketing URL (optional):** https://sofra.savvylabs.dev
 - **Privacy Policy URL:** https://sofra.savvylabs.dev/privacy.html
 
-## 3. Screenshots (upload from `assets/brand/marketing/ios/`)
+## 3. Screenshots (upload from `branding/assets/ios/`)
 
 - **iPhone 6.7" (required, 1290×2796):** `sofra_ios_67_home.png`, `sofra_ios_67_plan.png`,
   `sofra_ios_67_insights.png`, `sofra_ios_67_addmeal.png`, `sofra_ios_67_celebration.png`

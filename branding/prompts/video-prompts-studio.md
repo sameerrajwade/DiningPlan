@@ -9,7 +9,7 @@ sage `#5E8B6A`, warm paper `#FBF7F2`; fonts Fraunces (display) + Inter (body); t
 text — it will garble them.** In every human/lifestyle shot, keep the phone **angled, off, or
 softly blurred**. Generate clean base footage, then **composite the real assets in post**:
 - Real app screens: `docs/assets/screens/*.png` (or a live screen recording — the gold standard).
-- Logo end-card: `assets/brand/marketing/sofra_lockup.png` on cream + tagline + Google Play badge (~2s).
+- Logo end-card: `branding/assets/sofra_lockup.png` on cream + tagline + Google Play badge (~2s).
 - All brand supers/captions: add in editing (CapCut / Premiere / After Effects), not in the generator.
 
 Deliver **9:16 1080×1920** as primary (Shorts/Reels), with a 16:9 cutdown for YouTube.
@@ -21,8 +21,10 @@ pixel-perfect (more controlled than letting AI hallucinate a melted logo). Every
    actor's phone so viewers SEE the app do the thing.
 2. **Feature super (1 line, at the product moment):** Fraunces, terracotta, e.g. *"Rate it once.
    Remember it forever."*
-3. **End-card (2–3s hard sell):** `sofra_lockup.png` on cream + tagline **"Plan meals, remember it
-   all."** + **"Free on Google Play"** badge + **sofra.savvylabs.dev**.
+3. **End-card (2–3s hard sell):** use the ready-made cards in `branding/assets/end-cards/`
+   (`sofra_endcard_9x16.png` for Reels/Shorts, `sofra_endcard_16x9.png` for YouTube) — Sofra lockup
+   + tagline **"Plan meals, remember it all."** + **"Free on the App Store / Google Play"** +
+   **sofra.savvylabs.dev**. Hold ~2–3s. (HTML sources alongside if you want to tweak.)
 4. Optional: a small persistent Sofra logo bug in a corner.
 
 **Selling points — rotate one per spot:** shared household in sync · one-tap weekly plan · rate &

@@ -45,6 +45,6 @@ meal planner, family meals, dinner ideas, cooking log, weekly menu, tiffin
 • Support email: sameerrajwade@gmail.com
 
 ## Graphics needed (see checklist E)
-• App icon 512×512 (have brand source in assets/brand/)
+• App icon 512×512 (have brand source in branding/logo/)
 • Feature graphic 1024×500 (can generate)
 • Phone screenshots ×2–8 (regenerate — some show old "Dine Outs" copy)

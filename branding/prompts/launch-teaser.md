@@ -69,7 +69,7 @@ Use this only if you want a moving logo sting; otherwise just hold the static PN
   image-to-video reveal.
 - **App-screen inserts** (drop 1 into the "relief" beat, in editing — not into Veo):
   - `sofra_ios65_brand_hero.png` (hero), `sofra_ios_67_home.png`, `..._plan.png`, `..._insights.png`.
-  All in `assets/brand/marketing/ios/`.
+  All in `branding/assets/ios/`.
 
 Music: add in edit — warm, gentle acoustic (fingerpicked guitar / soft piano). Keep it under the SFX.
 

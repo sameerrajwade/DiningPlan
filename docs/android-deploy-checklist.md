@@ -66,7 +66,7 @@ locally. More control, but he handles passwords.
   before production access. Org accounts with a D-U-N-S number skip this.
 - **Internal testing** (up to 100 testers, instant install, no 14-day gate) is the right first step regardless.
 
-## E. Store listing assets  (all in `assets/brand/marketing/` — see its README)
+## E. Store listing assets  (all in `branding/assets/` — see its README)
 - ✅ App icon **512×512** → `sofra_icon_512.png` (full-bleed, Play masks corners).
 - ✅ **Feature graphic 1024×500** → `sofra_feature.png`.
 - ✅ **Phone screenshot frames** ×3 → `sofra_shot_home/plan/insights.png` (1080×1920, branded).

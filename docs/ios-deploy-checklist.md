@@ -284,7 +284,7 @@ Goal: ship Sofra iOS to the Apple App Store via TestFlight. App is feature-compl
   - Embed a brief descriptive text on each (e.g., "Plan meals for your family" on screen 1)
 - ☐ **App Preview (video, optional):**
   - iOS supports a 30-second promotional video (not required)
-  - Can use one of the 20-second brand-commercial briefs from `docs/video-prompts.md`
+  - Can use one of the 20-second brand-commercial briefs from `branding/prompts/video-prompts.md`
   - Format: .mov, .mp4; max 500MB; landscape or portrait
 - ☐ **Description text:**
   - Use text from `docs/store-listing.md` (same as Android)
