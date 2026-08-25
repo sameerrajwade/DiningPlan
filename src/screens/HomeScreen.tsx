@@ -23,6 +23,7 @@ import { getCurrencySymbol } from '../utils/currency';
 import { mealTypeIcon } from '../utils/icons';
 import { getFestival } from '../utils/festival';
 import { computeLoggingStreak } from '../utils/streak';
+import { StreakCard } from '../components/StreakCard';
 import { useTourStore } from '../stores/useTourStore';
 import type { HomeStackScreenProps } from '../navigation/types';
 import type { MealType } from '../types';
@@ -177,14 +178,18 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   // Logging streak — the visible habit loop. Any meal (family or kids) counts a
-  // day as logged. Drives the Home banner and the reminder copy.
-  const { streak, loggedToday } = useMemo(() => {
+  // day as logged. Drives the Home streak card and the reminder copy.
+  const loggedDates = useMemo(() => {
     const dates = new Set<string>();
     meals.forEach((m) => {
       if (m.date && m.date <= today) dates.add(m.date);
     });
-    return computeLoggingStreak(dates, today);
+    return dates;
   }, [meals, today]);
+  const { streak, loggedToday } = useMemo(
+    () => computeLoggingStreak(loggedDates, today),
+    [loggedDates, today],
+  );
 
   // Keep the daily reminder's text fresh + streak-aware (local notifications
   // carry fixed text, so we re-schedule with current content whenever Home is
@@ -192,6 +197,13 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const dailyOn = useNotificationStore((s) => s.daily);
   const dailyHour = useNotificationStore((s) => s.dailyHour);
   const notifHydrated = useNotificationStore((s) => s.hydrated);
+  // Default-on reminders: once past onboarding, make sure OS permission is in
+  // place (prompts contextually here, never at the login screen).
+  useEffect(() => {
+    if (notifHydrated && householdId) {
+      useNotificationStore.getState().assertDaily().catch(() => {});
+    }
+  }, [notifHydrated, householdId]);
   useEffect(() => {
     if (!notifHydrated || !dailyOn) return;
     const body = loggedToday
@@ -329,40 +341,13 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             history; the empty state covers the very first meal. Tapping logs. */}
         {meals.length > 0 && (
           <FadeSlideIn>
-            <PressableScale onPress={() => handleAddMeal()}>
-              <View style={[styles.streakCard, !loggedToday && styles.streakCardNudge]}>
-                <View style={[styles.streakIcon, { backgroundColor: (streak > 0 ? colors.takeout : colors.primary) + '22' }]}>
-                  <MaterialCommunityIcons
-                    name={streak > 0 ? 'fire' : 'silverware-fork-knife'}
-                    size={22}
-                    color={streak > 0 ? colors.takeout : colors.primary}
-                  />
-                </View>
-                <View style={styles.streakTextWrap}>
-                  <Text style={styles.streakTitle}>
-                    {loggedToday
-                      ? streak >= 2
-                        ? `${streak}-day logging streak`
-                        : 'Logged today — nice start'
-                      : streak >= 1
-                        ? `Keep your ${streak}-day streak`
-                        : 'Log today’s meals'}
-                  </Text>
-                  <Text style={styles.streakSub}>
-                    {loggedToday
-                      ? streak >= 2
-                        ? 'You logged today. Come back tomorrow to keep it going.'
-                        : 'Log again tomorrow to start a streak.'
-                      : streak >= 1
-                        ? 'Add today’s meals before midnight to keep it alive.'
-                        : 'Add what you ate in about 10 seconds.'}
-                  </Text>
-                </View>
-                {!loggedToday && (
-                  <MaterialCommunityIcons name="plus-circle" size={26} color={colors.primary} />
-                )}
-              </View>
-            </PressableScale>
+            <StreakCard
+              streak={streak}
+              loggedToday={loggedToday}
+              loggedDates={loggedDates}
+              today={today}
+              onPress={() => handleAddMeal()}
+            />
           </FadeSlideIn>
         )}
 
@@ -581,29 +566,6 @@ const makeStyles = (c: ThemeColors) =>
       color: c.textMuted,
       letterSpacing: 1,
     },
-    streakCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: Spacing.md,
-      backgroundColor: c.surface,
-      borderRadius: BorderRadius.md,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: c.border,
-      paddingVertical: Spacing.md,
-      paddingHorizontal: Spacing.md,
-      marginTop: Spacing.sm,
-    },
-    streakCardNudge: { borderColor: c.primary, borderWidth: 1 },
-    streakIcon: {
-      width: 40,
-      height: 40,
-      borderRadius: BorderRadius.full,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    streakTextWrap: { flex: 1 },
-    streakTitle: { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.md, color: c.text },
-    streakSub: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: c.textMuted, marginTop: 1 },
     metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -Spacing.xs },
     metricCol: { width: '50%', paddingHorizontal: Spacing.xs },
     todayMeals: { marginBottom: Spacing.sm },

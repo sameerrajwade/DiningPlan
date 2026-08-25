@@ -10,7 +10,10 @@ export const PLAY_STORE_URL =
   'https://play.google.com/store/apps/details?id=com.thaliplan.app';
 export const WEBSITE_URL = 'https://sofra.savvylabs.dev';
 
-// True once the Android app is public on Google Play. Flip to `true` at Android
-// launch to switch invite/share copy from "coming soon" to a live link — the URL
-// itself never changes.
-export const PLAY_STORE_LIVE = false;
+// Whether to surface the Google Play link in in-app sharing. Sameer's call: keep
+// this ON now (app is in testing / rolling to production) so the share card ships
+// both store links and we never have to rebuild + reinstall to add Android later.
+// NOTE: this only affects in-app sharing — the marketing website keeps its Play
+// button as "coming soon" until the public listing is live (a dead public link
+// there would hurt), flipped separately in docs/index.html.
+export const PLAY_STORE_LIVE = true;

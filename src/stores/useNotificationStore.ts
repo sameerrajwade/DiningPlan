@@ -18,11 +18,14 @@ export interface NotifPrefs {
   monthly: boolean;
 }
 
-const DEFAULTS: NotifPrefs = { daily: false, dailyHour: 19, weekly: false, monthly: false };
+// Daily reminder is ON by default (the retention lever) — users opt OUT in
+// Settings. Weekly/monthly stay opt-in.
+const DEFAULTS: NotifPrefs = { daily: true, dailyHour: 19, weekly: false, monthly: false };
 
 interface NotifState extends NotifPrefs {
   hydrated: boolean;
   hydrate: () => Promise<void>;
+  assertDaily: () => Promise<void>;
   setDaily: (on: boolean) => Promise<boolean>;
   setDailyHour: (hour: number) => Promise<void>;
   setWeekly: (on: boolean) => Promise<boolean>;
@@ -48,6 +51,21 @@ export const useNotificationStore = create<NotifState>((set, get) => ({
       if (prefs.monthly) await scheduleMonthly();
     } catch {
       set({ hydrated: true });
+    }
+  },
+
+  // Called from Home (post-onboarding) so default-on reminders get OS permission
+  // at a sensible moment — not at the login screen. If the user already granted,
+  // it just re-schedules; if they deny, we reflect that as off.
+  assertDaily: async () => {
+    const s = get();
+    if (!s.daily) return;
+    const ok = await ensurePermission();
+    if (ok) {
+      await scheduleDaily(s.dailyHour);
+    } else {
+      set({ daily: false });
+      persist({ ...currentPrefs(get), daily: false });
     }
   },
 

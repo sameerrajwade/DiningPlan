@@ -1,13 +1,12 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { StyleSheet, View, ScrollView, Alert, Modal } from 'react-native';
-import { Text, Switch, TextInput, Button } from 'react-native-paper';
+import { StyleSheet, View, ScrollView, Alert } from 'react-native';
+import { Text, Switch } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useThemeStore, ThemeMode } from '../stores/useThemeStore';
 import { useAuthStore } from '../stores/useAuthStore';
-import { useHouseholdStore } from '../stores/useHouseholdStore';
 import { deleteUserData } from '../services/firestore';
 import { deleteCurrentUser } from '../services/auth';
 import { useNotificationStore } from '../stores/useNotificationStore';
@@ -31,31 +30,8 @@ export const SettingsScreen: React.FC = () => {
   const setMode = useThemeStore((s) => s.setMode);
 
   const { user, signOut } = useAuthStore();
-  const { household, switchHousehold } = useHouseholdStore();
   const householdId = user?.householdId ?? null;
   const [deleting, setDeleting] = useState(false);
-
-  // Switch which household the user is active in (by invite code). One active
-  // household at a time; the user can switch back later with the other code.
-  const [showSwitch, setShowSwitch] = useState(false);
-  const [switchCode, setSwitchCode] = useState('');
-  const [switching, setSwitching] = useState(false);
-
-  const handleSwitchSubmit = useCallback(async () => {
-    const code = switchCode.trim();
-    if (!code || !user) return;
-    setSwitching(true);
-    try {
-      await switchHousehold(code, user.id);
-      setShowSwitch(false);
-      setSwitchCode('');
-      Alert.alert('Household switched', 'You’re now active in the new household.');
-    } catch (e: any) {
-      Alert.alert('Couldn’t switch', e?.message ?? 'Check the code and try again.');
-    } finally {
-      setSwitching(false);
-    }
-  }, [switchCode, user, switchHousehold]);
 
   const handleDeleteAccount = useCallback(() => {
     Alert.alert(
@@ -190,19 +166,8 @@ export const SettingsScreen: React.FC = () => {
         </View>
       </View>
 
-      <Text style={styles.sectionLabel}>Household</Text>
+      <Text style={styles.sectionLabel}>Guide</Text>
       <View style={styles.card}>
-        <PressableScale style={styles.navRow} onPress={() => setShowSwitch(true)}>
-          <MaterialCommunityIcons name="home-switch-outline" size={20} color={colors.textSecondary} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.navText}>Switch household</Text>
-            {household?.name ? (
-              <Text style={styles.reminderSub}>Currently in {household.name}</Text>
-            ) : null}
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textMuted} />
-        </PressableScale>
-        <View style={styles.divider} />
         <PressableScale style={styles.navRow} onPress={() => useTourStore.getState().start()}>
           <MaterialCommunityIcons name="gesture-tap" size={20} color={colors.textSecondary} />
           <Text style={styles.navText}>See product tour</Text>
@@ -239,52 +204,6 @@ export const SettingsScreen: React.FC = () => {
 
       <Text style={styles.footer}>Your family's meal memory</Text>
       <View style={{ height: Spacing.xxl }} />
-
-      {/* Switch household — enter another household's invite code to become
-          active there. One active household at a time. */}
-      <Modal visible={showSwitch} transparent animationType="fade" onRequestClose={() => setShowSwitch(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Switch household</Text>
-            <Text style={styles.modalBody}>
-              Enter another household’s invite code to become active there. You can switch
-              back anytime with your current code — you’re only ever active in one at a time.
-            </Text>
-            <TextInput
-              value={switchCode}
-              onChangeText={(t) => setSwitchCode(t.toUpperCase())}
-              mode="outlined"
-              autoCapitalize="characters"
-              autoCorrect={false}
-              placeholder="Invite code"
-              style={styles.modalInput}
-              outlineColor={colors.border}
-              activeOutlineColor={colors.primary}
-              accessibilityLabel="Household invite code"
-            />
-            <View style={styles.modalActions}>
-              <Button
-                mode="text"
-                onPress={() => { setShowSwitch(false); setSwitchCode(''); }}
-                textColor={colors.textSecondary}
-                disabled={switching}
-              >
-                Cancel
-              </Button>
-              <Button
-                mode="contained"
-                onPress={handleSwitchSubmit}
-                loading={switching}
-                disabled={switching || !switchCode.trim()}
-                buttonColor={colors.primary}
-                textColor={colors.white}
-              >
-                Switch
-              </Button>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 };
@@ -329,12 +248,6 @@ const makeStyles = (c: ThemeColors) =>
     reminderInfo: { flex: 1 },
     reminderTitle: { fontFamily: Fonts.body, fontSize: FontSize.md, color: c.text },
     reminderSub: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: c.textMuted, marginTop: 1 },
-    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: Spacing.lg },
-    modalCard: { width: '100%', maxWidth: 360, backgroundColor: c.surface, borderRadius: BorderRadius.lg, padding: Spacing.lg },
-    modalTitle: { fontFamily: Fonts.display, fontSize: FontSize.xl, color: c.text, marginBottom: Spacing.sm },
-    modalBody: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: c.textSecondary, lineHeight: 20, marginBottom: Spacing.md },
-    modalInput: { backgroundColor: c.surface, marginBottom: Spacing.md },
-    modalActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: Spacing.sm },
     timeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginBottom: Spacing.sm },
     timeChip: {
       paddingHorizontal: Spacing.md,
