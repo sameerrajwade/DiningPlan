@@ -35,9 +35,16 @@ export type HomeStackParamList = {
       }
     | undefined;
   Restaurants: undefined;
-  RestaurantDetail: { name: string };
+  // `range` carries the time window selected on the Restaurants list so the
+  // detail opens on the SAME period the user was looking at (This month → This
+  // month, etc.) instead of jumping to all-time.
+  RestaurantDetail: { name: string; range?: RestaurantRange };
   History: undefined;
 };
+
+// Shared time windows for the Restaurants list and a restaurant's detail, so the
+// two always agree on what "This month" means.
+export type RestaurantRange = 'month' | 'lastMonth' | '3months' | 'all';
 
 export type ProfileStackParamList = {
   ProfileMain: undefined;

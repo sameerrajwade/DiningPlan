@@ -11,3 +11,7 @@ app-logs.txt
 # Play Store service account key (secret — never commit)
 play-service-account.json
 branding/production/renders/
+
+# Local sideload builds (debug-signed; never commit / never upload to a store)
+*.apk
+*.aab

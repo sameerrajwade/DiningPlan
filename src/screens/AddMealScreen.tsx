@@ -18,6 +18,7 @@ import { useTheme } from '../hooks/useTheme';
 import { MealTypeToggle } from '../components/MealTypeToggle';
 import { SourceTypeToggle } from '../components/SourceTypeToggle';
 import { DishPicker } from '../components/DishPicker';
+import { DishSuggestInput } from '../components/DishSuggestInput';
 import { CuisineChips } from '../components/CuisineChips';
 import { AudienceToggle } from '../components/AudienceToggle';
 import { StarRating } from '../components/StarRating';
@@ -132,6 +133,18 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
     return Array.from(dishMap.values());
   }, [dishes, allMeals]);
 
+  // Plain name list powering the as-you-type suggestions on the additional-dish
+  // rows (both home "more dishes" and restaurant "dishes ordered").
+  const dishNameSuggestions = useMemo(
+    () => allKnownDishes.map((d) => d.name),
+    [allKnownDishes],
+  );
+
+  // Track which newly-added row should grab focus. autoFocus only fires at
+  // mount, so we set this to the incoming index BEFORE appending the row.
+  const [focusSideIdx, setFocusSideIdx] = useState<number | null>(null);
+  const [focusItemIdx, setFocusItemIdx] = useState<number | null>(null);
+
   const recentDishNames = useMemo(() => {
     return allKnownDishes
       .filter((d) => d.lastCookedDate)
@@ -161,7 +174,10 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
       prev.map((it, i) => (i === idx ? { ...it, rating: it.rating === rating ? undefined : rating } : it)),
     );
   }, []);
-  const addItemRow = useCallback(() => setItems((prev) => [...prev, { name: '' }]), []);
+  const addItemRow = useCallback(() => {
+    setFocusItemIdx(items.length); // new row lands at the current length
+    setItems((prev) => [...prev, { name: '' }]);
+  }, [items.length]);
   const removeItemRow = useCallback((idx: number) => {
     setItems((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)));
   }, []);
@@ -169,7 +185,10 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
   const setSide = useCallback((idx: number, name: string) => {
     setSides((prev) => prev.map((s, i) => (i === idx ? name : s)));
   }, []);
-  const addSide = useCallback(() => setSides((prev) => [...prev, '']), []);
+  const addSide = useCallback(() => {
+    setFocusSideIdx(sides.length); // new row lands at the current length
+    setSides((prev) => [...prev, '']);
+  }, [sides.length]);
   const removeSide = useCallback((idx: number) => {
     setSides((prev) => prev.filter((_, i) => i !== idx));
   }, []);
@@ -451,14 +470,12 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
             )}
             {sides.map((s, idx) => (
               <View key={idx} style={styles.sideRow}>
-                <TextInput
+                <DishSuggestInput
                   value={s}
                   onChangeText={(t) => setSide(idx, t)}
-                  mode="outlined"
-                  dense
+                  suggestions={dishNameSuggestions}
+                  autoFocus={focusSideIdx === idx}
                   style={styles.sideInput}
-                  outlineColor={colors.border}
-                  activeOutlineColor={colors.primary}
                   left={<TextInput.Icon icon="silverware-variant" color={colors.textMuted} />}
                   placeholder={`Dish ${idx + 2} (e.g. Rice, Roti, Dal)`}
                   accessibilityLabel={`Dish ${idx + 2}`}
@@ -503,14 +520,12 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
             {items.map((it, idx) => (
               <View key={idx} style={styles.dishItemRow}>
                 <View style={styles.dishItemMain}>
-                  <TextInput
+                  <DishSuggestInput
                     value={it.name}
                     onChangeText={(t) => setItemName(idx, t)}
-                    mode="outlined"
-                    dense
+                    suggestions={dishNameSuggestions}
+                    autoFocus={focusItemIdx === idx}
                     style={styles.dishItemInput}
-                    outlineColor={colors.border}
-                    activeOutlineColor={colors.primary}
                     placeholder={`Dish ${idx + 1}`}
                     accessibilityLabel={`Dish ${idx + 1} name`}
                   />

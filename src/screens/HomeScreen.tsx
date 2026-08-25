@@ -3,7 +3,7 @@ import { StyleSheet, View, ScrollView, RefreshControl, TouchableOpacity, Dimensi
 import Svg, { Defs, RadialGradient, Stop, Rect, Circle } from 'react-native-svg';
 import { Text, ActivityIndicator, FAB } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { format, addDays, differenceInDays, parseISO, startOfMonth, subMonths } from 'date-fns';
+import { format, differenceInDays, parseISO, startOfMonth, subMonths } from 'date-fns';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
@@ -22,6 +22,8 @@ import { scheduleDaily } from '../services/notifications';
 import { getCurrencySymbol } from '../utils/currency';
 import { mealTypeIcon } from '../utils/icons';
 import { getFestival } from '../utils/festival';
+import { computeLoggingStreak } from '../utils/streak';
+import { useTourStore } from '../stores/useTourStore';
 import type { HomeStackScreenProps } from '../navigation/types';
 import type { MealType } from '../types';
 
@@ -174,26 +176,33 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     [meals, today],
   );
 
-  // Keep the daily reminder's text in sync with tomorrow's actual plan (local
-  // notifications carry fixed text, so we re-schedule with fresh content here).
+  // Logging streak — the visible habit loop. Any meal (family or kids) counts a
+  // day as logged. Drives the Home banner and the reminder copy.
+  const { streak, loggedToday } = useMemo(() => {
+    const dates = new Set<string>();
+    meals.forEach((m) => {
+      if (m.date && m.date <= today) dates.add(m.date);
+    });
+    return computeLoggingStreak(dates, today);
+  }, [meals, today]);
+
+  // Keep the daily reminder's text fresh + streak-aware (local notifications
+  // carry fixed text, so we re-schedule with current content whenever Home is
+  // used). Copy nudges LOGGING and leans on the streak to build the habit.
   const dailyOn = useNotificationStore((s) => s.daily);
   const dailyHour = useNotificationStore((s) => s.dailyHour);
   const notifHydrated = useNotificationStore((s) => s.hydrated);
   useEffect(() => {
     if (!notifHydrated || !dailyOn) return;
-    const tomorrow = format(addDays(new Date(), 1), 'yyyy-MM-dd');
-    const lunch = meals.find((m) => m.date === tomorrow && m.mealType === 'lunch' && m.audience !== 'kids');
-    const dinner = meals.find((m) => m.date === tomorrow && m.mealType === 'dinner' && m.audience !== 'kids');
-    const kids = meals.find((m) => m.date === tomorrow && m.audience === 'kids');
-    const parts: string[] = [];
-    if (lunch?.dishName) parts.push(`Lunch: ${lunch.dishName}`);
-    if (dinner?.dishName) parts.push(`Dinner: ${dinner.dishName}`);
-    if (kids?.dishName) parts.push(`Kids: ${kids.dishName}`);
-    const body = parts.length
-      ? `Tomorrow — ${parts.join(' · ')}`
-      : 'Nothing planned for tomorrow yet. Tap to plan.';
+    const body = loggedToday
+      ? streak >= 2
+        ? `You're on a ${streak}-day streak. Log again tomorrow to keep it going.`
+        : `Logged today — log again tomorrow to build your streak.`
+      : streak >= 1
+        ? `Keep your ${streak}-day streak alive — log today's meals.`
+        : `What did the family eat today? Log it in about 10 seconds.`;
     scheduleDaily(dailyHour, body).catch(() => {});
-  }, [meals, dailyOn, dailyHour, notifHydrated, today]);
+  }, [dailyOn, dailyHour, notifHydrated, streak, loggedToday]);
 
   // Dishes not cooked at home in 30+ days, longest-ago first, top 5. Derive the
   // real last-cooked date from actual meals (incl. thali sides in `items`) rather
@@ -221,6 +230,16 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       .sort((a, b) => b.days - a.days)
       .slice(0, 5);
   }, [meals, today]);
+
+  // First-run product tour — auto-start once, after onboarding, when Home is
+  // ready. `finish` sets `seen`, so it never re-triggers on its own.
+  const tourHydrated = useTourStore((s) => s.hydrated);
+  const tourSeen = useTourStore((s) => s.seen);
+  const tourActive = useTourStore((s) => s.active);
+  const startTour = useTourStore((s) => s.start);
+  useEffect(() => {
+    if (tourHydrated && !tourSeen && !tourActive && householdId) startTour();
+  }, [tourHydrated, tourSeen, tourActive, householdId, startTour]);
 
   const handleAddMeal = useCallback((mealType?: MealType) => {
     navigation.getParent()?.getParent()?.navigate('AddMeal', mealType ? { mealType } : undefined);
@@ -305,6 +324,47 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.brandTagline}>Your family's meal memory</Text>
           </View>
         </View>
+
+        {/* Logging streak — the visible habit loop. Shown once there's any
+            history; the empty state covers the very first meal. Tapping logs. */}
+        {meals.length > 0 && (
+          <FadeSlideIn>
+            <PressableScale onPress={() => handleAddMeal()}>
+              <View style={[styles.streakCard, !loggedToday && styles.streakCardNudge]}>
+                <View style={[styles.streakIcon, { backgroundColor: (streak > 0 ? colors.takeout : colors.primary) + '22' }]}>
+                  <MaterialCommunityIcons
+                    name={streak > 0 ? 'fire' : 'silverware-fork-knife'}
+                    size={22}
+                    color={streak > 0 ? colors.takeout : colors.primary}
+                  />
+                </View>
+                <View style={styles.streakTextWrap}>
+                  <Text style={styles.streakTitle}>
+                    {loggedToday
+                      ? streak >= 2
+                        ? `${streak}-day logging streak`
+                        : 'Logged today — nice start'
+                      : streak >= 1
+                        ? `Keep your ${streak}-day streak`
+                        : 'Log today’s meals'}
+                  </Text>
+                  <Text style={styles.streakSub}>
+                    {loggedToday
+                      ? streak >= 2
+                        ? 'You logged today. Come back tomorrow to keep it going.'
+                        : 'Log again tomorrow to start a streak.'
+                      : streak >= 1
+                        ? 'Add today’s meals before midnight to keep it alive.'
+                        : 'Add what you ate in about 10 seconds.'}
+                  </Text>
+                </View>
+                {!loggedToday && (
+                  <MaterialCommunityIcons name="plus-circle" size={26} color={colors.primary} />
+                )}
+              </View>
+            </PressableScale>
+          </FadeSlideIn>
+        )}
 
         <Text style={styles.sectionTitle}>This month</Text>
         {mealsLoading && monthMeals.length === 0 ? (
@@ -521,6 +581,29 @@ const makeStyles = (c: ThemeColors) =>
       color: c.textMuted,
       letterSpacing: 1,
     },
+    streakCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.md,
+      backgroundColor: c.surface,
+      borderRadius: BorderRadius.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      paddingVertical: Spacing.md,
+      paddingHorizontal: Spacing.md,
+      marginTop: Spacing.sm,
+    },
+    streakCardNudge: { borderColor: c.primary, borderWidth: 1 },
+    streakIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: BorderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    streakTextWrap: { flex: 1 },
+    streakTitle: { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.md, color: c.text },
+    streakSub: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: c.textMuted, marginTop: 1 },
     metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -Spacing.xs },
     metricCol: { width: '50%', paddingHorizontal: Spacing.xs },
     todayMeals: { marginBottom: Spacing.sm },

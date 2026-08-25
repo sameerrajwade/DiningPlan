@@ -8,6 +8,7 @@ import { useTheme } from '../hooks/useTheme';
 import { PressableScale, FadeSlideIn } from '../components/motion';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
+import { APP_STORE_URL, PLAY_STORE_URL, PLAY_STORE_LIVE } from '../config/links';
 
 const getInitials = (name: string): string => {
   const parts = name.trim().split(/\s+/);
@@ -36,13 +37,22 @@ export const FamilyScreen: React.FC = () => {
   const handleInvite = useCallback(async () => {
     if (!household) return;
     try {
+      // Direct store links (not the website) so a tap goes straight to install.
+      // Android line switches from "coming soon" to a live link via the single
+      // PLAY_STORE_LIVE flag at Android launch — no other code change needed.
+      const androidLine = PLAY_STORE_LIVE
+        ? `Android: ${PLAY_STORE_URL}`
+        : `Android: coming soon on Google Play`;
       await Share.share({
         message:
-          `Join our household on Sofra! Use invite code ${household.inviteCode}.\n\n` +
-          `Get the app (iOS & Android): https://sofra.savvylabs.dev`,
+          `Join our family on Sofra — our shared meal memory.\n\n` +
+          `1. Download the app:\n` +
+          `   iPhone: ${APP_STORE_URL}\n` +
+          `   ${androidLine}\n\n` +
+          `2. Enter our family code when you sign up: ${household.inviteCode}`,
       });
     } catch {
-      Alert.alert('Invite code', household.inviteCode);
+      Alert.alert('Family code', household.inviteCode);
     }
   }, [household]);
 
