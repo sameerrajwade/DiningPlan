@@ -26,7 +26,15 @@
 - **✅ APK BUILT + INSTALLED on Pixel 10 Pro.** Incremental rebuild (2m26s, native cached) → `sofra-release.apk` (94 MB, debug-signed). Uninstalled old Play-signed split-APK build, installed new, launched clean (pid, no FATAL). `*.apk`/`*.aab` now gitignored.
 - **✅ COMMITTED + MERGED to `main`** (`c363341`, via branch `retention-onboarding-switch`) + pushed. Also added `docs/release-playbook.md` (Apple + Android launch steps, verified vs current store rules).
 - **Website Android link:** NOT updated — correct. Android app is in CLOSED TESTING, not production, so there is NO public Play link yet (`details?id=com.thaliplan.app` 404s for non-testers). Website already shows iOS live button + "Coming soon on Google Play". At Android production launch: flip `PLAY_STORE_LIVE=true` (app) + update Play button in `docs/index.html` (TODO present).
-- **⛔ NEXT:** (1) Sameer device-tests everything tomorrow (onboarding permission prompt, streak card, coach-mark tour, switch household, restaurant ranges, share text). (2) Android: after 14-day closed test completes → Apply for production (see playbook). (3) For store releases build via EAS + bump versions (never upload the debug APK). (4) EAS iOS 1.1.0 later. (5) ASO title decision open.
+- **✅ FEEDBACK ROUND 2 (2026-08-25) — 6 refinements, all done (tsc=0, 56/56):**
+  1. **Tour redesign:** dropped the bottom spotlight cutout+ring (looked bad against the card). Now a clean coach card (bottom-sheet, icon badge, dots, Skip/Back/Next) over a soft scrim; still navigates the REAL screens. `TourOverlay.tsx` rewritten.
+  2. **Share = branded CARD (not plain text):** new `src/components/ShareAppCard.tsx` — captureRef PNG (Sofra brand + tagline + big family code + App Store & Google Play) shared via expo-sharing, with a message carrying BOTH tappable store links + code.
+  3. **Google Play link included now:** `PLAY_STORE_LIVE=true` (in-app sharing only; website stays "coming soon"). Avoids a rebuild when Android goes public.
+  4. **Switch/join family moved OUT of Settings → Family tab** (`FamilyScreen`): shows family name + invite code, "Share invite & app" (card), and "Switch or join a family" (code modal → switchHousehold). Removed the Settings Household section.
+  5. **"See product tour" kept separate** in Settings under its own "Guide" section.
+  6. **Fancier streak card:** new `src/components/StreakCard.tsx` — SVG gradient (primary→takeout), flame badge, big count, 7-day activity strip, "Log" CTA when not logged today. Replaces the plain inline card.
+  7. **Notifications truly default-ON:** `DEFAULTS.daily=true` + new `assertDaily()` called from Home (prompts OS permission contextually, not at login). Fixes "why did it ask me to enable it" — the create/join-only enable missed reinstalls into an existing household.
+- **⛔ NEXT:** (1) rebuild+install refined APK on Pixel (in progress), Sameer device-tests. (2) Commit + merge round-2. (3) Android: after 14-day closed test → Apply for production (playbook). (4) Store releases via EAS + version bump (never the debug APK). (5) EAS iOS 1.1.0 later. (6) ASO title open.
 
 ## Prior Session (2026-08-18 — iOS APPROVED + website wired to App Store ✅)
 - **Apple approved Sofra — app is now LIVE on the App Store.** Public link `apps.apple.com/app/id6797710095` resolves.
