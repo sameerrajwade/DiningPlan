@@ -44,9 +44,11 @@ export async function scheduleDaily(hour: number, body?: string): Promise<void> 
   await Notifications.scheduleNotificationAsync({
     identifier: NOTIF_IDS.daily,
     content: {
-      title: 'Tomorrow’s meals',
-      body: body ?? 'Tap to plan what you’re making tomorrow.',
-      data: { screen: 'Plan' },
+      // Logging (not planning) is the habit we need first — planning only pays
+      // off once there's history. Copy nudges the user to log today's meals.
+      title: 'Log today’s meals',
+      body: body ?? 'What did the family eat today? Add it in about 10 seconds.',
+      data: { screen: 'Home' },
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,

@@ -17,8 +17,9 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
 import { useMealStore } from '../stores/useMealStore';
 import { getCurrencySymbol } from '../utils/currency';
+import type { RestaurantRange } from '../navigation/types';
 
-type TimeRange = 'month' | 'lastMonth' | '3months' | 'all';
+type TimeRange = RestaurantRange;
 
 const TIME_RANGES: { value: TimeRange; label: string }[] = [
   { value: 'month', label: 'This month' },
@@ -143,7 +144,7 @@ export const RestaurantScreen: React.FC = () => {
     ({ item }: { item: RestaurantSummary }) => (
       <Card
         style={styles.compactCard}
-        onPress={() => navigation.navigate('RestaurantDetail', { name: item.name })}
+        onPress={() => navigation.navigate('RestaurantDetail', { name: item.name, range: timeRange })}
       >
         <Card.Content style={styles.compactContent}>
           <View style={styles.compactInfo}>
@@ -158,7 +159,7 @@ export const RestaurantScreen: React.FC = () => {
         </Card.Content>
       </Card>
     ),
-    [styles, colors, navigation],
+    [styles, colors, navigation, timeRange],
   );
 
   const renderRestaurant = useCallback(
@@ -167,7 +168,7 @@ export const RestaurantScreen: React.FC = () => {
       return (
         <Card
           style={styles.restaurantCard}
-          onPress={() => navigation.navigate('RestaurantDetail', { name: item.name })}
+          onPress={() => navigation.navigate('RestaurantDetail', { name: item.name, range: timeRange })}
         >
           <Card.Content>
             <View style={styles.restaurantHeader}>
@@ -204,7 +205,7 @@ export const RestaurantScreen: React.FC = () => {
         </Card>
       );
     },
-    [currencySymbol, styles, colors, navigation],
+    [currencySymbol, styles, colors, navigation, timeRange],
   );
 
   if (isLoading && meals.length === 0) {

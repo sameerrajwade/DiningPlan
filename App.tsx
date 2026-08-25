@@ -35,6 +35,7 @@ import { useDishStore } from './src/stores/useDishStore';
 import * as Notifications from 'expo-notifications';
 import { useThemeStore } from './src/stores/useThemeStore';
 import { useNotificationStore } from './src/stores/useNotificationStore';
+import { useTourStore } from './src/stores/useTourStore';
 import { navigationRef, navigate } from './src/navigation/navigationRef';
 import { migrateDishNamesToTitleCase } from './src/services/migration';
 
@@ -118,6 +119,7 @@ export default function App() {
   useEffect(() => {
     useThemeStore.getState().hydrate();
     useNotificationStore.getState().hydrate().catch(() => {});
+    useTourStore.getState().hydrate().catch(() => {});
 
     // Route to the right screen when the user taps a reminder notification.
     const notifSub = Notifications.addNotificationResponseReceivedListener((response) => {

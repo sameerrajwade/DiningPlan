@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -31,6 +31,7 @@ import RestaurantDetailScreen from '../screens/RestaurantDetailScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import AddMealScreen from '../screens/AddMealScreen';
 import HouseholdSetupScreen from '../screens/HouseholdSetupScreen';
+import TourOverlay from '../components/TourOverlay';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -131,6 +132,7 @@ function MainTabs() {
     headerTitleAlign: 'left' as const,
   });
   return (
+    <View style={{ flex: 1 }}>
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ color, size }) => (
@@ -183,6 +185,8 @@ function MainTabs() {
         })}
       />
     </Tab.Navigator>
+    <TourOverlay />
+    </View>
   );
 }
 

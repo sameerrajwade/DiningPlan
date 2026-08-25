@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, subMonths, startOfMonth } from 'date-fns';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { FadeSlideIn } from '../components/motion';
@@ -11,9 +11,36 @@ import { useMealStore } from '../stores/useMealStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
 import { getCurrencySymbol } from '../utils/currency';
 import { getRestaurantByName, setRestaurantDishRating } from '../services/firestore';
-import type { HomeStackScreenProps } from '../navigation/types';
+import type { HomeStackScreenProps, RestaurantRange } from '../navigation/types';
 
 type Props = HomeStackScreenProps<'RestaurantDetail'>;
+
+// Time windows for a restaurant's visit stats — identical set to the Restaurants
+// list, so the detail opens on the SAME period the user tapped from. Without
+// this, tapping a restaurant showed every visit ever — so "2 visits · $100"
+// could span years even though the list was filtered to "This month".
+const RANGE_ORDER: RestaurantRange[] = ['month', 'lastMonth', '3months', 'all'];
+const RANGE_LABELS: Record<RestaurantRange, string> = {
+  month: 'This month',
+  lastMonth: 'Last month',
+  '3months': 'Last 3 months',
+  all: 'All',
+};
+// Closed [start, end] window (yyyy-MM-dd). start '' = no lower bound; end ''
+// = up to today. Mirrors RestaurantScreen.getRange so both agree exactly.
+function getRange(range: RestaurantRange, now: Date): { start: string; end: string } {
+  const fmt = (d: Date) => format(d, 'yyyy-MM-dd');
+  switch (range) {
+    case 'month':
+      return { start: fmt(startOfMonth(now)), end: '' };
+    case 'lastMonth':
+      return { start: fmt(subMonths(startOfMonth(now), 1)), end: fmt(new Date(now.getFullYear(), now.getMonth(), 0)) };
+    case '3months':
+      return { start: fmt(subMonths(startOfMonth(now), 2)), end: '' };
+    case 'all':
+      return { start: '', end: '' };
+  }
+}
 
 const StarRating: React.FC<{ value: number; onRate: (n: number) => void; color: string; muted: string }> = ({
   value,
@@ -32,6 +59,8 @@ const StarRating: React.FC<{ value: number; onRate: (n: number) => void; color: 
 
 export const RestaurantDetailScreen: React.FC<Props> = ({ route }) => {
   const { name } = route.params;
+  // Open on the same window the user had selected on the Restaurants list.
+  const initialRange: RestaurantRange = route.params.range ?? 'month';
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -43,6 +72,7 @@ export const RestaurantDetailScreen: React.FC<Props> = ({ route }) => {
 
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [range, setRange] = useState<RestaurantRange>(initialRange);
 
   useEffect(() => {
     if (householdId) fetchAllMeals(householdId).catch(() => {});
@@ -62,10 +92,15 @@ export const RestaurantDetailScreen: React.FC<Props> = ({ route }) => {
     // isn't a visit yet.
     const now = new Date();
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const { start, end } = getRange(range, now);
+    const upper = end || today; // never count future/planned meals
     return meals.filter(
-      (m) => m.restaurantName?.toLowerCase() === name.toLowerCase() && m.date <= today,
+      (m) =>
+        m.restaurantName?.toLowerCase() === name.toLowerCase() &&
+        m.date <= upper &&
+        (start === '' || m.date >= start),
     );
-  }, [meals, name]);
+  }, [meals, name, range]);
 
   const totalSpend = useMemo(() => visits.reduce((s, m) => s + (m.cost ?? 0), 0), [visits]);
   const lastVisit = useMemo(() => {
@@ -105,6 +140,30 @@ export const RestaurantDetailScreen: React.FC<Props> = ({ route }) => {
       <FadeSlideIn>
         <Text style={styles.name}>{name}</Text>
         {cuisine ? <Text style={styles.cuisine}>{cuisine}</Text> : null}
+
+        {/* Time window — so visits/spend reflect a chosen period, not all time. */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.rangeRow}
+        >
+          {RANGE_ORDER.map((r) => {
+            const selected = range === r;
+            return (
+              <Pressable
+                key={r}
+                onPress={() => setRange(r)}
+                style={[styles.rangePill, selected && styles.rangePillSelected]}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+              >
+                <Text style={[styles.segmentText, selected && styles.segmentTextSelected]} numberOfLines={1}>
+                  {RANGE_LABELS[r]}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
 
         <View style={styles.statsRow}>
           <View style={styles.stat}>
@@ -157,6 +216,18 @@ const makeStyles = (c: ThemeColors) =>
     content: { padding: Spacing.md },
     name: { fontFamily: Fonts.display, fontSize: FontSize.xxl, color: c.text },
     cuisine: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: c.textMuted, marginTop: 2 },
+    rangeRow: { gap: Spacing.xs, paddingRight: Spacing.md, marginTop: Spacing.md },
+    rangePill: {
+      paddingVertical: 7,
+      paddingHorizontal: Spacing.md,
+      borderRadius: BorderRadius.full,
+      backgroundColor: c.surfaceVariant,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    rangePillSelected: { backgroundColor: c.primary },
+    segmentText: { fontFamily: Fonts.bodyMedium, fontSize: FontSize.sm, color: c.textSecondary },
+    segmentTextSelected: { color: c.white, fontFamily: Fonts.bodySemiBold },
     statsRow: {
       flexDirection: 'row',
       gap: Spacing.md,
