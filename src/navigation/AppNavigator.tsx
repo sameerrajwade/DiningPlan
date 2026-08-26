@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, FontSize, Fonts } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useAuth } from '../hooks/useAuth';
@@ -122,6 +123,7 @@ function HomeStackNavigator() {
 
 function MainTabs() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const tabHeader = (title: string) => ({
     headerShown: true,
     headerTitle: title,
@@ -144,7 +146,18 @@ function MainTabs() {
         ),
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: [styles.tabBar, { backgroundColor: colors.surface, borderTopColor: colors.border }],
+        // Grow the bar into the bottom safe-area so its surface paints behind the
+        // system nav (fixes tabs sitting under Samsung 3-button nav + the dark-mode
+        // strip where the bar used to stop short of the system bar).
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
+            height: 60 + insets.bottom,
+            paddingBottom: 4 + insets.bottom,
+          },
+        ],
         tabBarLabelStyle: styles.tabLabel,
         headerShown: false,
       })}

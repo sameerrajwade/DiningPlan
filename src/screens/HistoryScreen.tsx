@@ -21,6 +21,8 @@ import {
 } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { sourceIcon } from '../utils/icons';
+import { mealDiet } from '../utils/diet';
+import { VegMark } from '../components/VegMark';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useMealStore } from '../stores/useMealStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
@@ -204,9 +206,12 @@ export const HistoryScreen: React.FC<Props> = ({ navigation }) => {
         accessibilityLabel={`${type}: ${meal.dishName}`}
       >
         <Text style={styles.mealTypeLabel}>{type}</Text>
-        <Text style={styles.mealDishName} numberOfLines={1}>
-          {meal.dishName}
-        </Text>
+        <View style={styles.dishNameRow}>
+          <VegMark diet={mealDiet(meal)} size={12} />
+          <Text style={[styles.mealDishName, styles.dishNameFlex]} numberOfLines={1}>
+            {meal.dishName}
+          </Text>
+        </View>
         {meal.items && meal.items.length > 1 && (
           <Text style={styles.itemsMore}>+{meal.items.length - 1} more</Text>
         )}
@@ -431,6 +436,8 @@ const makeStyles = (c: ThemeColors) =>
       color: c.text,
       marginBottom: Spacing.xs,
     },
+    dishNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: Spacing.xs },
+    dishNameFlex: { flex: 1, marginBottom: 0 },
     emptyMealText: {
       fontSize: FontSize.md,
       fontFamily: Fonts.body,

@@ -1,9 +1,10 @@
 import React, { useRef, useState, useCallback } from 'react';
-import { StyleSheet, View, Modal, Share, Alert, Pressable } from 'react-native';
+import { StyleSheet, View, Modal, Pressable } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
+import RNShare from 'react-native-share';
+import { WEBSITE_URL } from '../config/links';
 import { Spacing, FontSize, BorderRadius, Fonts } from '../config/theme';
 
 export interface ShareStat {
@@ -32,20 +33,17 @@ export const ShareStatModal: React.FC<Props> = ({ stat, onClose }) => {
     setBusy(true);
     try {
       const uri = await captureRef(cardRef, { format: 'png', quality: 1, result: 'tmpfile' });
-      // Sharing.shareAsync sends the actual PNG on both Android & iOS. React
-      // Native's Share.share only carries `url` on iOS, so on Android it would
-      // drop the image and share plain text — hence expo-sharing here.
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'image/png',
-          UTI: 'public.png',
-          dialogTitle: 'Share your Sofra stat',
-        });
-      } else {
-        await Share.share({ url: uri, message: 'My family’s meal memory — Sofra' });
-      }
+      const fileUrl = uri.startsWith('file://') ? uri : `file://${uri}`;
+      // The branded stat PNG + a short message with the site link, in ONE sheet
+      // on both platforms. failOnCancel:false so a dismiss is a no-op.
+      await RNShare.open({
+        url: fileUrl,
+        type: 'image/png',
+        message: `My family’s meal memory — Sofra 🍽️\nGet Sofra free: ${WEBSITE_URL}`,
+        failOnCancel: false,
+      });
     } catch {
-      Alert.alert('Couldn’t share', 'Please try again.');
+      // Swallow — user dismissed or the target rejected.
     } finally {
       setBusy(false);
     }
@@ -65,7 +63,9 @@ export const ShareStatModal: React.FC<Props> = ({ stat, onClose }) => {
               </View>
               <View style={styles.valueWrap}>
                 <View style={[styles.accentDot, { backgroundColor: stat.accent ?? SAGE }]} />
-                <Text style={styles.value}>{stat.value}</Text>
+                <Text style={styles.value} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.5}>
+                  {stat.value}
+                </Text>
               </View>
               <Text style={styles.headline}>{stat.headline}</Text>
               {stat.sub ? <Text style={styles.sub}>{stat.sub}</Text> : null}
@@ -111,9 +111,9 @@ const styles = StyleSheet.create({
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: Spacing.lg },
   brand: { fontFamily: Fonts.display, fontSize: 22, color: CREAM, letterSpacing: 0.5 },
-  valueWrap: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  valueWrap: { flexDirection: 'row', alignItems: 'center', gap: 10, alignSelf: 'stretch', justifyContent: 'center' },
   accentDot: { width: 14, height: 14, borderRadius: 7 },
-  value: { fontFamily: Fonts.display, fontSize: 64, color: CREAM, lineHeight: 70 },
+  value: { fontFamily: Fonts.display, fontSize: 64, color: CREAM, lineHeight: 70, flexShrink: 1, textAlign: 'center' },
   headline: { fontFamily: Fonts.bodyMedium, fontSize: FontSize.lg, color: CREAM, textAlign: 'center', marginTop: Spacing.sm },
   sub: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: CREAM_DIM, textAlign: 'center', marginTop: 4 },
   divider: { height: 1, backgroundColor: 'rgba(251,247,242,0.25)', alignSelf: 'stretch', marginVertical: Spacing.lg },

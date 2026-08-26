@@ -7,6 +7,8 @@ import { Meal } from '../types';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { sourceIcon, cuisineIcon } from '../utils/icons';
+import { mealDiet } from '../utils/diet';
+import { VegMark } from './VegMark';
 
 // Translucent tint of an accent hex, for the food thumbnail.
 function withAlpha(hex: string, alpha: number): string {
@@ -103,6 +105,7 @@ export const MealCard: React.FC<MealCardProps> = ({ meal, onPress, placeholder }
         </View>
         <View style={styles.textCol}>
           <View style={styles.row}>
+            <VegMark diet={mealDiet(meal)} size={14} />
             <Text style={styles.dishName} numberOfLines={1}>
               {title}
             </Text>
@@ -165,7 +168,7 @@ const makeStyles = (c: ThemeColors) =>
       borderColor: c.border,
       borderStyle: 'dashed',
     },
-    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 6 },
     dishName: {
       fontFamily: Fonts.bodyMedium,
       fontSize: FontSize.md,

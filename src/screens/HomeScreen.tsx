@@ -23,7 +23,7 @@ import { getCurrencySymbol } from '../utils/currency';
 import { mealTypeIcon } from '../utils/icons';
 import { getFestival } from '../utils/festival';
 import { computeLoggingStreak } from '../utils/streak';
-import { StreakCard } from '../components/StreakCard';
+import { StreakPill } from '../components/StreakPill';
 import { useTourStore } from '../stores/useTourStore';
 import type { HomeStackScreenProps } from '../navigation/types';
 import type { MealType } from '../types';
@@ -337,21 +337,18 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Logging streak — the visible habit loop. Shown once there's any
-            history; the empty state covers the very first meal. Tapping logs. */}
-        {meals.length > 0 && (
-          <FadeSlideIn>
-            <StreakCard
+        {/* "This month" header with the logging-streak pill on the right (the
+            visible habit loop). Pill shows once there's any history. */}
+        <View style={styles.monthHeaderRow}>
+          <Text style={[styles.sectionTitle, styles.monthHeaderTitle]}>This month</Text>
+          {meals.length > 0 && (
+            <StreakPill
               streak={streak}
               loggedToday={loggedToday}
-              loggedDates={loggedDates}
-              today={today}
               onPress={() => handleAddMeal()}
             />
-          </FadeSlideIn>
-        )}
-
-        <Text style={styles.sectionTitle}>This month</Text>
+          )}
+        </View>
         {mealsLoading && monthMeals.length === 0 ? (
           <ActivityIndicator style={styles.loader} color={colors.primary} />
         ) : hasMonthData ? (
@@ -520,6 +517,8 @@ const makeStyles = (c: ThemeColors) =>
       marginTop: Spacing.lg,
       marginBottom: Spacing.sm,
     },
+    monthHeaderRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: Spacing.sm },
+    monthHeaderTitle: { marginBottom: 0 },
     brandHeaderWrap: {
       marginHorizontal: -Spacing.md, // full-bleed wash to screen edges
       marginBottom: Spacing.xs,
