@@ -47,7 +47,7 @@ export const FamilyScreen: React.FC = () => {
       await switchHousehold(code, user.id);
       setShowSwitch(false);
       setSwitchCode('');
-      Alert.alert('Family switched', 'You’re now active in the new family.');
+      Alert.alert('Home switched', 'You’re now in this home.');
     } catch (e: any) {
       Alert.alert('Couldn’t switch', e?.message ?? 'Check the code and try again.');
     } finally {
@@ -109,14 +109,14 @@ export const FamilyScreen: React.FC = () => {
         </PressableScale>
       </View>
 
-      {/* Switch to / join another family by code. */}
-      <Text style={styles.sectionLabel}>Another family</Text>
+      {/* Switch which home is active (a family can have more than one home code). */}
+      <Text style={styles.sectionLabel}>Other homes</Text>
       <View style={styles.card}>
         <PressableScale style={styles.navRow} onPress={() => setShowSwitch(true)}>
           <MaterialCommunityIcons name="home-switch-outline" size={22} color={colors.textSecondary} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.navText}>Switch or join a family</Text>
-            <Text style={styles.navSub}>Enter another family’s code to become active there</Text>
+            <Text style={styles.navText}>Switch to another home</Text>
+            <Text style={styles.navSub}>Have more than one home code? Choose the one to use</Text>
           </View>
           <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textMuted} />
         </PressableScale>
@@ -134,10 +134,11 @@ export const FamilyScreen: React.FC = () => {
       <Modal visible={showSwitch} transparent animationType="fade" onRequestClose={() => setShowSwitch(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Switch or join a family</Text>
+            <Text style={styles.modalTitle}>Switch to another home</Text>
             <Text style={styles.modalBody}>
-              Enter another family’s code to become active there. You can switch back anytime
-              with your current code — you’re only ever active in one family at a time.
+              If your family uses more than one home code, enter the one you’d like to use.
+              Sofra keeps you in a single home at a time, and you can switch back whenever you
+              like — nothing is lost.
             </Text>
             <TextInput
               value={switchCode}

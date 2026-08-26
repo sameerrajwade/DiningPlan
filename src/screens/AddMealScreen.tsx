@@ -29,8 +29,10 @@ import { useHouseholdStore } from '../stores/useHouseholdStore';
 import { getCurrencySymbol } from '../utils/currency';
 import { setRestaurantDishRating } from '../services/firestore';
 import type { RootStackScreenProps } from '../navigation/types';
-import type { Meal, MealType, SourceType, CuisineTag, MealItem, MealAudience } from '../types';
+import type { Meal, MealType, SourceType, CuisineTag, MealItem, MealAudience, Diet } from '../types';
 import { toTitleCase } from '../utils/text';
+import { inferDietFromNames } from '../utils/diet';
+import { VegMark } from '../components/VegMark';
 
 type Props = RootStackScreenProps<'AddMeal'>;
 
@@ -101,6 +103,11 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
     existingMeal?.cost !== undefined ? String(existingMeal.cost) : '',
   );
   const [notes, setNotes] = useState(existingMeal?.notes ?? '');
+  // Veg / Non-veg mark. Auto-inferred from the dish names as the user types, but
+  // once they tap the toggle their choice sticks (dietTouched) and we stop
+  // auto-following. Editing an old meal that has no stored diet stays auto.
+  const [diet, setDiet] = useState<Diet>(existingMeal?.diet ?? 'veg');
+  const [dietTouched, setDietTouched] = useState<boolean>(!!existingMeal?.diet);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [pickerMonth, setPickerMonth] = useState(() => {
     const d = date ? new Date(date + 'T00:00:00') : new Date();
@@ -139,6 +146,17 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
     () => allKnownDishes.map((d) => d.name),
     [allKnownDishes],
   );
+
+  // Auto-set the veg/non-veg mark from whatever dishes are currently entered
+  // (home: main + sides; outside: dishes ordered) until the user overrides it.
+  const dietNames = useMemo(
+    () => (sourceType === 'home' ? [dishName, ...sides] : items.map((i) => i.name)),
+    [sourceType, dishName, sides, items],
+  );
+  useEffect(() => {
+    if (dietTouched) return;
+    setDiet(inferDietFromNames(dietNames));
+  }, [dietNames, dietTouched]);
 
   // Track which newly-added row should grab focus. autoFocus only fires at
   // mount, so we set this to the incoming index BEFORE appending the row.
@@ -271,6 +289,7 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
         cost: safeCost,
         notes: notes.trim() || '',
         audience,
+        diet,
         // ALWAYS write `items` (never omit the key). updateMeal is a merge, so
         // omitting it on edit left the OLD array intact — a cleared dish or a
         // home→outside switch kept showing stale dishes. An empty array cleanly
@@ -336,7 +355,7 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
   }, [
     dishName, householdId, isEditing, existingMeal, date, mealType,
     sourceType, cuisineTag, restaurantName, cost, notes, user,
-    items, sides, audience, addMeal, updateMeal, navigation,
+    items, sides, audience, diet, addMeal, updateMeal, navigation,
   ]);
 
   const handleDelete = useCallback(() => {
@@ -451,6 +470,29 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
         <Text style={[styles.label, { marginTop: Spacing.md }]}>Source</Text>
         <SourceTypeToggle selected={sourceType} onSelect={setSourceType} />
 
+        {/* Veg / Non-veg — auto-set from the dish names, tap to override */}
+        <Text style={[styles.label, { marginTop: Spacing.md }]}>Veg / Non-veg</Text>
+        <View style={styles.dietRow}>
+          {(['veg', 'nonveg'] as Diet[]).map((d) => {
+            const active = diet === d;
+            return (
+              <TouchableOpacity
+                key={d}
+                style={[styles.dietOption, active && styles.dietOptionActive]}
+                onPress={() => { setDiet(d); setDietTouched(true); }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={d === 'veg' ? 'Vegetarian' : 'Non-vegetarian'}
+              >
+                <VegMark diet={d} size={16} />
+                <Text style={[styles.dietText, active && styles.dietTextActive]}>
+                  {d === 'veg' ? 'Veg' : 'Non-veg'}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
         {/* Dish Name — single field for home; outside meals use the multi-dish
             editor inside the restaurant block below. */}
         {sourceType === 'home' && (
@@ -554,7 +596,12 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
             <Text style={styles.label}>Cost</Text>
             <TextInput
               value={cost}
-              onChangeText={setCost}
+              // decimal-pad is only a hint on Android — some keyboards (and paste)
+              // still inject letters. Strip anything non-numeric and collapse any
+              // extra decimal points so the field can never hold junk.
+              onChangeText={(t) =>
+                setCost(t.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'))
+              }
               mode="outlined"
               style={styles.input}
               outlineColor={colors.border}
@@ -677,6 +724,24 @@ const makeStyles = (c: ThemeColors) =>
       marginBottom: Spacing.sm,
     },
     addDishText: { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.sm, color: c.primary },
+    // Matches MealTypeToggle / SourceTypeToggle so all the selectors are the
+    // same height and shape.
+    dietRow: { flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.xs },
+    dietOption: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: Spacing.sm,
+      borderRadius: BorderRadius.sm,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: c.surfaceVariant,
+    },
+    dietOptionActive: { borderColor: c.primary, backgroundColor: c.primary },
+    dietText: { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.sm, color: c.textSecondary },
+    dietTextActive: { color: c.white },
     dateButton: {
       backgroundColor: c.surface,
       borderWidth: 1,

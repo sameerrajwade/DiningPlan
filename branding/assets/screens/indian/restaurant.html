@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--terra:#C0532E;--sage:#5E8B6A;--amber:#E0A63C;--bg:#FBF7F2;
+    --card:#FFFFFF;--sv:#F3EEE7;--tx:#241E1B;--tx2:#6E645C;--tx3:#A79C93;--bd:#EAE2D8}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1280px;height:2706px}
+  .phone{width:1280px;height:2706px;background:var(--bg);position:relative;overflow:hidden;
+    font-family:'Inter',sans-serif;color:var(--tx);padding:70px 48px 0}
+  .frns{font-family:'Fraunces',serif}
+  .back{display:flex;align-items:center;gap:20px;color:var(--tx2);font-size:34px;font-weight:500;margin-bottom:30px}
+  .title{font-size:72px;font-weight:600;margin-bottom:14px}
+  .sub{font-size:36px;color:var(--tx2);margin-bottom:40px}
+  .sub .dot{color:var(--tx3);margin:0 14px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:30px;padding:44px;margin-bottom:30px}
+  .ch{display:flex;align-items:center;margin-bottom:34px}
+  .ch h3{font-size:50px;font-weight:600}
+  .ovr{display:flex;align-items:center;gap:40px}
+  .ovr .num{font-family:'Fraunces',serif;font-size:120px;font-weight:600;color:var(--terra);line-height:1}
+  .ovr .meta{font-size:36px;color:var(--tx2)}
+  .stars{font-size:56px;letter-spacing:6px;line-height:1}
+  .stars .f{color:var(--amber)}
+  .stars .e{color:#E3D9CD}
+  .drow{display:flex;align-items:center;margin:30px 0;gap:24px}
+  .drow:first-of-type{margin-top:0}
+  .dname{font-size:44px;color:#3a322d;flex:1}
+  .dtimes{font-size:32px;color:var(--tx3);margin-top:8px}
+  .dstars{font-size:40px;letter-spacing:4px;white-space:nowrap}
+  .dstars .f{color:var(--amber)}
+  .dstars .e{color:#E3D9CD}
+  .kv{display:flex;justify-content:space-between;align-items:baseline;font-size:40px;margin:26px 0;color:var(--tx2)}
+  .kv:first-of-type{margin-top:0}
+  .kv:last-of-type{margin-bottom:0}
+  .kv b{color:var(--tx);font-weight:600}
+  .nav{position:absolute;left:0;right:0;bottom:0;height:190px;background:var(--bg);border-top:1px solid var(--bd);display:flex;padding:26px 30px 40px}
+  .nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:27px;color:var(--tx3);font-weight:500}
+  .nav a.on{color:var(--terra)}
+  svg{display:block}
+</style></head>
+<body>
+<div class="phone">
+  <div class="back"><svg width="40" height="40" viewBox="0 0 24 24"><path fill="none" stroke="#6E645C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" d="M15 5l-7 7 7 7"/></svg>Restaurants</div>
+  <div class="title frns">Sagar Ratna</div>
+  <div class="sub">South Indian<span class="dot">•</span>3 visits<span class="dot">•</span>Last: 12 days ago</div>
+
+  <div class="card">
+    <div class="ovr">
+      <div class="num">4.5</div>
+      <div>
+        <div class="stars"><span class="f">★★★★</span><span class="e">★</span></div>
+        <div class="meta" style="margin-top:14px">Average of 4 rated dishes</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><h3 class="frns">Dishes you've had</h3></div>
+    <div class="drow">
+      <div><div class="dname">Masala Dosa</div><div class="dtimes">Ordered 3×</div></div>
+      <div class="dstars"><span class="f">★★★★★</span></div>
+    </div>
+    <div class="drow">
+      <div><div class="dname">Idli Sambar</div><div class="dtimes">Ordered 2×</div></div>
+      <div class="dstars"><span class="f">★★★★</span><span class="e">★</span></div>
+    </div>
+    <div class="drow">
+      <div><div class="dname">Rava Kesari</div><div class="dtimes">Ordered 2×</div></div>
+      <div class="dstars"><span class="f">★★★★★</span></div>
+    </div>
+    <div class="drow">
+      <div><div class="dname">Medu Vada</div><div class="dtimes">Ordered 1×</div></div>
+      <div class="dstars"><span class="f">★★★</span><span class="e">★★</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:0">
+    <div class="ch"><h3 class="frns">At a glance</h3></div>
+    <div class="kv">Favourite dish <b>Masala Dosa</b></div>
+    <div class="kv">Typical spend <b>₹640 / visit</b></div>
+    <div class="kv">First visited <b>Mar 2026</b></div>
+  </div>
+
+  <div class="nav">
+    <a><svg width="46" height="46" viewBox="0 0 24 24"><path fill="#A79C93" d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3z"/></svg>Home</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="none" stroke="#A79C93" stroke-width="2" d="M4 5h16v16H4z M4 9h16 M8 3v4 M16 3v4"/></svg>Calendar</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="none" stroke="#A79C93" stroke-width="2" stroke-linecap="round" d="M5 19 15 9l-1-1L4 18z M15 9l2-2 M16 4l1 1 M20 8l-1-1"/></svg>Plan</a>
+    <a class="on"><svg width="44" height="44" viewBox="0 0 24 24"><path fill="#C0532E" d="M4 13h3v7H4z M10 8h3v12h-3z M16 4h3v16h-3z"/></svg>Insights</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="#A79C93"/><path fill="#A79C93" d="M4 21c0-4 4-6 8-6s8 2 8 6z"/></svg>Profile</a>
+  </div>
+</div>
+</body></html>

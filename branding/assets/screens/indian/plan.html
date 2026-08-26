@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--terra:#C0532E;--sage:#5E8B6A;--kids:#4A6FA5;--kidsL:#E7EEF6;--bg:#FBF7F2;--card:#FFFFFF;
+    --sv:#F3EEE7;--tx:#241E1B;--tx2:#6E645C;--tx3:#A79C93;--bd:#EAE2D8}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1280px;height:2706px}
+  .phone{width:1280px;height:2706px;background:var(--bg);position:relative;overflow:hidden;
+    font-family:'Inter',sans-serif;color:var(--tx);padding:70px 48px 0}
+  .frns{font-family:'Fraunces',serif}
+  .title{font-size:66px;font-weight:600;display:flex;align-items:center;gap:22px}
+  .wk{display:flex;align-items:center;justify-content:center;gap:44px;margin:40px 0 22px;font-family:'Fraunces',serif;font-size:46px;font-weight:600}
+  .wk span{color:var(--tx3);font-size:56px}
+  .hint{text-align:left;font-size:33px;color:var(--tx2);margin-bottom:34px}
+  .chips{display:flex;gap:22px;margin-bottom:34px;flex-wrap:wrap}
+  .chip{background:var(--sv);border-radius:44px;padding:20px 32px;font-size:31px;font-weight:500;display:flex;align-items:center;gap:14px}
+  .badge{background:var(--terra);color:#fff;font-size:20px;font-weight:700;padding:5px 12px;border-radius:8px;letter-spacing:.5px}
+  .toggle{background:var(--card);border:1px solid var(--bd);border-radius:28px;padding:34px 38px;display:flex;align-items:center;margin-bottom:30px}
+  .toggle .t{font-size:44px;font-weight:600;display:flex;align-items:center;gap:18px}
+  .sw{margin-left:auto;width:104px;height:58px;border-radius:34px;background:#9CB6D8;position:relative}
+  .sw::after{content:"";position:absolute;right:6px;top:6px;width:46px;height:46px;border-radius:50%;background:#fff}
+  .day{background:var(--card);border:1px solid var(--bd);border-radius:30px;padding:40px 42px;margin-bottom:28px}
+  .dnum{font-family:'Fraunces',serif;font-size:44px;font-weight:700;letter-spacing:1px;margin-bottom:26px}
+  .row{display:flex;gap:40px}
+  .col{flex:1}
+  .ml{font-size:28px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--tx3);display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .ml .g{width:18px;height:18px;border-radius:50%;background:var(--sage)}
+  .dish{font-size:44px;font-weight:500;color:#3a322d}
+  .kidsrow{margin-top:30px;border-top:1px solid var(--bd);padding-top:26px}
+  .ml.k{color:var(--kids)}
+  .nav{position:absolute;left:0;right:0;bottom:0;height:190px;background:var(--bg);border-top:1px solid var(--bd);display:flex;padding:26px 30px 40px}
+  .nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:27px;color:var(--tx3);font-weight:500}
+  .nav a.on{color:var(--terra)}
+  svg{display:block}
+</style></head>
+<body>
+<div class="phone">
+  <div class="title frns"><span style="font-size:60px">🪄</span>Plan your week</div>
+  <div class="wk"><span>‹</span>Jun 2 – Jun 8<span>›</span></div>
+  <div class="hint">Some days are planned — generate to fill the rest</div>
+  <div class="chips">
+    <div class="chip">🚫 Max 1 dine-outs</div>
+    <div class="chip">🍽 Mix cuisines</div>
+    <div class="chip"><span class="badge">NEW</span> Include new</div>
+  </div>
+  <div class="toggle"><div class="t" style="color:var(--kids)">🙂 Include kids tiffin</div><div class="sw"></div></div>
+
+  <div class="day">
+    <div class="dnum">MON 2</div>
+    <div class="row">
+      <div class="col"><div class="ml"><span class="g"></span>Lunch</div><div class="dish">Poha</div></div>
+      <div class="col"><div class="ml"><span class="g"></span>Dinner</div><div class="dish">Rajma Chawal</div></div>
+    </div>
+    <div class="kidsrow"><div class="ml k">🙂 Kids Tiffin</div><div class="dish">Veg Frankie</div></div>
+  </div>
+  <div class="day">
+    <div class="dnum">TUE 3</div>
+    <div class="row">
+      <div class="col"><div class="ml"><span class="g"></span>Lunch</div><div class="dish">Chole</div></div>
+      <div class="col"><div class="ml"><span class="g"></span>Dinner</div><div class="dish">Paneer Butter Masala</div></div>
+    </div>
+    <div class="kidsrow"><div class="ml k">🙂 Kids Tiffin</div><div class="dish">Aloo Paratha</div></div>
+  </div>
+  <div class="day">
+    <div class="dnum">WED 4</div>
+    <div class="row">
+      <div class="col"><div class="ml"><span class="g"></span>Lunch</div><div class="dish">Aloo Gobi</div></div>
+      <div class="col"><div class="ml"><span class="g"></span>Dinner</div><div class="dish">Veg Pulao</div></div>
+    </div>
+    <div class="kidsrow"><div class="ml k">🙂 Kids Tiffin</div><div class="dish">Idli</div></div>
+  </div>
+  <div class="day">
+    <div class="dnum">THU 5</div>
+    <div class="row">
+      <div class="col"><div class="ml"><span class="g"></span>Lunch</div><div class="dish">Lemon Rice</div></div>
+      <div class="col"><div class="ml"><span class="g"></span>Dinner</div><div class="dish">Chicken Curry</div></div>
+    </div>
+    <div class="kidsrow"><div class="ml k">🙂 Kids Tiffin</div><div class="dish">Veg Cutlet</div></div>
+  </div>
+
+  <div class="nav">
+    <a><svg width="46" height="46" viewBox="0 0 24 24"><path fill="#A79C93" d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3z"/></svg>Home</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="none" stroke="#A79C93" stroke-width="2" d="M4 5h16v16H4z M4 9h16 M8 3v4 M16 3v4"/></svg>Calendar</a>
+    <a class="on"><svg width="44" height="44" viewBox="0 0 24 24"><path fill="none" stroke="#C0532E" stroke-width="2" stroke-linecap="round" d="M5 19 15 9l-1-1L4 18z M15 9l2-2 M16 4l1 1 M20 8l-1-1"/></svg>Plan</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="#A79C93" d="M4 13h3v7H4z M10 8h3v12h-3z M16 4h3v16h-3z"/></svg>Insights</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="#A79C93"/><path fill="#A79C93" d="M4 21c0-4 4-6 8-6s8 2 8 6z"/></svg>Profile</a>
+  </div>
+</div>
+</body></html>

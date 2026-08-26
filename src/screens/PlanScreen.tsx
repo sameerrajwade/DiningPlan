@@ -420,6 +420,8 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
     return plan.some((d) => d.date >= todayStr && (!d.lunch.dishName || !d.dinner.dishName));
   }, [plan]);
 
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+
   if (isGenerating && plan.length === 0) {
     return (
       <View style={styles.loadingContainer}>
@@ -459,7 +461,7 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
               ? hasSaved
                 ? 'Some days are planned — generate to fill the rest'
                 : 'No plan yet for this week'
-              : 'This week is fully planned'}
+              : 'Upcoming days are all planned'}
           </Text>
         </View>
 
@@ -513,18 +515,42 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
           </Surface>
         )}
 
+        {/* Thin-pool nudge — you CAN generate with 1-2 dishes, but plans will be
+            repetitive. Nudge for more variety without gating generation. */}
+        {allDishes.length > 0 && allDishes.length < 3 && (
+          <Surface style={styles.calendarBanner} elevation={1}>
+            <MaterialCommunityIcons name="lightbulb-outline" size={20} color={colors.primary} />
+            <Text style={styles.calendarBannerText}>
+              You can generate a plan now, but adding a few more home dishes gives Sofra more variety to work with.
+            </Text>
+          </Surface>
+        )}
+
         {/* Plan list */}
         {plan.map((day, idx) => {
           const date = parseISO(day.date);
           const isDayToday = isToday(date);
+          // Past days are never plannable — populating them would be fake data.
+          // Mute them and mark "Past" so a blank past day reads as "already gone",
+          // not "missing from your plan". Logged past meals still show through.
+          const isPast = day.date < todayStr;
           return (
-            <Surface key={day.date} style={[styles.dayRow, isDayToday && styles.dayRowToday]} elevation={1}>
+            <Surface
+              key={day.date}
+              style={[styles.dayRow, isDayToday && styles.dayRowToday, isPast && styles.dayRowPast]}
+              elevation={isPast ? 0 : 1}
+            >
               <View style={styles.dayHeader}>
                 <View style={styles.dayNameRow}>
                   <Text style={[styles.dayName, isDayToday && styles.todayText]}>{format(date, 'EEEE')}</Text>
                   {isDayToday && (
                     <View style={styles.todayPill}>
                       <Text style={styles.todayPillText}>Today</Text>
+                    </View>
+                  )}
+                  {isPast && (
+                    <View style={styles.pastPill}>
+                      <Text style={styles.pastPillText}>Past</Text>
                     </View>
                   )}
                 </View>
@@ -788,6 +814,7 @@ const makeStyles = (c: ThemeColors) =>
       marginBottom: Spacing.sm,
     },
     dayRowToday: { borderColor: c.primary, borderWidth: 1 },
+    dayRowPast: { opacity: 0.5, backgroundColor: c.surfaceVariant },
     dayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: Spacing.sm },
     dayNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     // Matches CalendarScreen's day header exactly (Fraunces lg name + body sm date).
@@ -796,6 +823,8 @@ const makeStyles = (c: ThemeColors) =>
     todayPill: { backgroundColor: c.primary, borderRadius: BorderRadius.full, paddingHorizontal: 9, paddingVertical: 2 },
     todayPillText: { fontFamily: Fonts.bodySemiBold, fontSize: 10, color: c.white, textTransform: 'uppercase', letterSpacing: 0.5 },
     todayText: { color: c.primary },
+    pastPill: { backgroundColor: c.textMuted, borderRadius: BorderRadius.full, paddingHorizontal: 9, paddingVertical: 2 },
+    pastPillText: { fontFamily: Fonts.bodySemiBold, fontSize: 10, color: c.white, textTransform: 'uppercase', letterSpacing: 0.5 },
     refreshBtn: { margin: 0, marginVertical: -8, marginRight: -8 },
     restSub: { fontFamily: Fonts.body, fontSize: FontSize.xs, color: c.textMuted, marginBottom: Spacing.xs, marginTop: -2 },
     mealRow: { flexDirection: 'row', gap: Spacing.md },

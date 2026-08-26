@@ -20,6 +20,8 @@ import { useMealStore } from '../stores/useMealStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
 import { useAuthStore } from '../stores/useAuthStore';
 import { getCurrencySymbol } from '../utils/currency';
+import { mealDiet } from '../utils/diet';
+import { VegMark } from '../components/VegMark';
 import { getRange, TimeRange } from '../utils/insightsRange';
 import type { MainTabScreenProps } from '../navigation/types';
 
@@ -32,6 +34,10 @@ const TIME_RANGE_LABELS: Record<TimeRange, string> = {
 };
 
 const screenWidth = Dimensions.get('window').width;
+
+// Veg / non-veg mark colors (match the VegMark component).
+const VEG_COLOR = '#3C8C3C';
+const NONVEG_COLOR = '#B00020';
 
 export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route, navigation }) => {
   const { insights, isLoading, computeFromMeals } = useInsightStore();
@@ -150,7 +156,35 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `today` keys the date rollover
   }, [meals, timeRange, today]);
 
-  // Kids tiffin summary for the selected range (count, top dish, variety).
+  // Family veg vs non-veg split for the window (meal-level mark). Excludes kids
+  // (their split shows in the Kids tiffin card). Also compares against the
+  // previous period so the share card can show a trend.
+  const dietSplit = useMemo(() => {
+    const { start, end, prevStart, prevEnd } = getRange(timeRange);
+    const cur = meals.filter((m) => m.date >= start && m.date <= end && m.audience !== 'kids');
+    const total = cur.length;
+    if (total === 0) return null;
+    const nonveg = cur.filter((m) => mealDiet(m) === 'nonveg').length;
+    const veg = total - nonveg;
+    const vegPercent = Math.round((veg / total) * 100);
+
+    // Previous-period veg share, for the trend delta (only when there's history).
+    const prev = meals.filter((m) => m.date >= prevStart && m.date <= prevEnd && m.audience !== 'kids');
+    const prevVegPercent = prev.length ? Math.round((prev.filter((m) => mealDiet(m) === 'veg').length / prev.length) * 100) : null;
+    const vegTrend = prevVegPercent === null ? null : vegPercent - prevVegPercent;
+
+    return {
+      veg,
+      nonveg,
+      total,
+      vegPercent,
+      nonvegPercent: 100 - vegPercent,
+      vegTrend, // +/- percentage points of veg vs last period (null if no history)
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `today` keys the date rollover
+  }, [meals, timeRange, today]);
+
+  // Kids tiffin summary for the selected range (count, top dish, variety, diet).
   const kidsStats = useMemo(() => {
     const { start, end } = getRange(timeRange);
     const cur = meals.filter((m) => m.date >= start && m.date <= end && m.audience === 'kids');
@@ -161,11 +195,14 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
       counts.set(n, (counts.get(n) ?? 0) + 1);
     });
     const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+    const nonveg = cur.filter((m) => mealDiet(m) === 'nonveg').length;
     return {
       count: cur.length,
       unique: counts.size,
       topName: top?.[0] ?? '',
       topCount: top?.[1] ?? 0,
+      veg: cur.length - nonveg,
+      nonveg,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `today` keys the date rollover
   }, [meals, timeRange, today]);
@@ -263,6 +300,15 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
             <View style={styles.kidsStatRow}>
               <Text style={styles.kidsStatLabel}>Variety</Text>
               <Text style={styles.kidsStatSub}>{kidsStats.unique} unique</Text>
+            </View>
+            <View style={styles.kidsStatRow}>
+              <Text style={styles.kidsStatLabel}>Veg / Non-veg</Text>
+              <View style={styles.kidsDietRow}>
+                <VegMark diet="veg" size={12} />
+                <Text style={styles.kidsStatSub}>{kidsStats.veg}</Text>
+                <VegMark diet="nonveg" size={12} />
+                <Text style={styles.kidsStatSub}>{kidsStats.nonveg}</Text>
+              </View>
             </View>
             {kidsStats.topCount >= 3 && (
               <View style={styles.alertRow}>
@@ -364,6 +410,83 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
                 </Text>
               )}
             </Surface>
+
+            {/* Veg vs Non-veg split */}
+            {dietSplit && (
+              <Surface style={styles.section} elevation={1}>
+                <View style={styles.sectionHead}>
+                  <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Veg vs. Non-veg</Text>
+                  <Pressable
+                    onPress={() => {
+                      const t = dietSplit.vegTrend;
+                      const trendTxt =
+                        t === null || t === 0
+                          ? ''
+                          : `  ·  ${t > 0 ? '▲' : '▼'}${Math.abs(t)} pts vs last period`;
+                      setShareStat({
+                        headline: `Veg meals · ${TIME_RANGE_LABELS[timeRange]}`,
+                        value: `${dietSplit.vegPercent}%`,
+                        sub: `Non-veg ${dietSplit.nonvegPercent}%${trendTxt}`,
+                        accent: VEG_COLOR,
+                      });
+                    }}
+                    hitSlop={10}
+                    accessibilityLabel="Share veg vs non-veg insight"
+                  >
+                    <MaterialCommunityIcons name="share-variant" size={18} color={colors.textMuted} />
+                  </Pressable>
+                </View>
+                <View style={styles.ratioBar}>
+                  <View
+                    style={[
+                      styles.ratioSegment,
+                      {
+                        flex: dietSplit.veg || 0,
+                        backgroundColor: VEG_COLOR,
+                        borderTopLeftRadius: BorderRadius.sm,
+                        borderBottomLeftRadius: BorderRadius.sm,
+                        borderTopRightRadius: dietSplit.nonveg === 0 ? BorderRadius.sm : 0,
+                        borderBottomRightRadius: dietSplit.nonveg === 0 ? BorderRadius.sm : 0,
+                      },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.ratioSegment,
+                      {
+                        flex: dietSplit.nonveg || 0,
+                        backgroundColor: NONVEG_COLOR,
+                        borderTopRightRadius: BorderRadius.sm,
+                        borderBottomRightRadius: BorderRadius.sm,
+                        borderTopLeftRadius: dietSplit.veg === 0 ? BorderRadius.sm : 0,
+                        borderBottomLeftRadius: dietSplit.veg === 0 ? BorderRadius.sm : 0,
+                      },
+                    ]}
+                  />
+                </View>
+                <View style={styles.legendRow}>
+                  <Chip
+                    icon={() => <VegMark diet="veg" size={12} />}
+                    style={styles.legendChip}
+                    textStyle={styles.legendChipText}
+                  >
+                    Veg {dietSplit.vegPercent}%
+                  </Chip>
+                  <Chip
+                    icon={() => <VegMark diet="nonveg" size={12} />}
+                    style={styles.legendChip}
+                    textStyle={styles.legendChipText}
+                  >
+                    Non-veg {dietSplit.nonvegPercent}%
+                  </Chip>
+                </View>
+                {dietSplit.vegTrend !== null && dietSplit.vegTrend !== 0 && (
+                  <Text style={styles.comparisonText}>
+                    Last period was {dietSplit.vegPercent - dietSplit.vegTrend}% veg
+                  </Text>
+                )}
+              </Surface>
+            )}
 
             {/* Top restaurants */}
             {insights.topRestaurants.length > 0 && (
@@ -545,6 +668,7 @@ const makeStyles = (c: ThemeColors) =>
     kidsStatLabel: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: c.textSecondary },
     kidsStatValue: { fontFamily: Fonts.display, fontSize: FontSize.lg },
     kidsStatSub: { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.sm, color: c.text },
+    kidsDietRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
     sectionTitleStandalone: {
       fontFamily: Fonts.display,
       fontSize: FontSize.lg,

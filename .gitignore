@@ -12,6 +12,11 @@ app-logs.txt
 play-service-account.json
 branding/production/renders/
 
+# Marketing video (large binaries — keep out of git history; live in cloud/local)
+branding/Video/
+branding/assets/video/
+*.mp4
+
 # Local sideload builds (debug-signed; never commit / never upload to a store)
 *.apk
 *.aab

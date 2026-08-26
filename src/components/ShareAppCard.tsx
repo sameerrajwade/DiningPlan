@@ -1,9 +1,9 @@
 import React, { useRef, useState, useCallback } from 'react';
-import { StyleSheet, View, Modal, Share, Alert, Pressable } from 'react-native';
+import { StyleSheet, View, Modal, Pressable } from 'react-native';
 import { Text, Button } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
+import RNShare from 'react-native-share';
 import { Spacing, FontSize, BorderRadius, Fonts } from '../config/theme';
 import { APP_STORE_URL, PLAY_STORE_URL } from '../config/links';
 
@@ -19,9 +19,9 @@ const CREAM = '#FBF7F2';
 const CREAM_DIM = 'rgba(251,247,242,0.82)';
 
 // A branded, shareable image inviting someone to Sofra: brand + tagline + the
-// family code + both app stores. The captured PNG carries the visuals; the OS
-// share message carries the tappable store links + code (a link baked into an
-// image isn't clickable, so we send both).
+// family code + both app stores. react-native-share sends the captured PNG AND
+// the message (tappable store links + code) together in ONE sheet on BOTH iOS
+// and Android — the branded card is the hero, the links make the app findable.
 export const ShareAppCard: React.FC<Props> = ({ visible, code, onClose }) => {
   const cardRef = useRef<View>(null);
   const [busy, setBusy] = useState(false);
@@ -38,24 +38,18 @@ export const ShareAppCard: React.FC<Props> = ({ visible, code, onClose }) => {
     setBusy(true);
     try {
       const uri = await captureRef(cardRef, { format: 'png', quality: 1, result: 'tmpfile' });
-      // Send the PNG + the message text together so recipients get the branded
-      // card AND tappable store links. expo-sharing carries the image on both
-      // platforms; RN Share is the fallback.
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'image/png',
-          UTI: 'public.png',
-          dialogTitle: 'Share Sofra',
-        });
-        // expo-sharing sends only the file; follow with a text share so the
-        // links are available too (some targets take the image, some the text).
-        await Share.share({ message: shareMessage }).catch(() => {});
-      } else {
-        await Share.share({ url: uri, message: shareMessage });
-      }
+      const fileUrl = uri.startsWith('file://') ? uri : `file://${uri}`;
+      // ONE share sheet carrying the branded PNG + the message (tappable store
+      // links + code) on BOTH platforms. failOnCancel:false so a dismiss is a
+      // no-op, not an error.
+      await RNShare.open({
+        url: fileUrl,
+        type: 'image/png',
+        message: shareMessage,
+        failOnCancel: false,
+      });
     } catch {
-      // Fall back to a plain text invite so sharing never hard-fails.
-      await Share.share({ message: shareMessage }).catch(() => {});
+      // Swallow — user dismissed or the target rejected; nothing else to do.
     } finally {
       setBusy(false);
     }

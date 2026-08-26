@@ -38,6 +38,11 @@ export interface MealItem {
 // Who the meal is for. 'kids' powers the Lean kids-tiffin track; absent = family.
 export type MealAudience = 'family' | 'kids';
 
+// Vegetarian / non-vegetarian mark for a meal. Auto-inferred from the dish
+// names at save time, user-overridable. Absent on meals logged before this
+// feature — read via mealDiet() which falls back to inference.
+export type Diet = 'veg' | 'nonveg';
+
 export interface Meal {
   id: string;
   date: string; // YYYY-MM-DD
@@ -46,6 +51,7 @@ export interface Meal {
   dishName: string; // primary/summary dish (items[0] when multiple)
   items?: MealItem[]; // multiple dishes ordered, each with an optional rating
   audience?: MealAudience; // 'kids' = kids tiffin track; undefined = family
+  diet?: Diet; // 'veg' | 'nonveg'; auto-set from dish names, user-overridable
   cuisineTag: CuisineTag;
   restaurantName?: string;
   cost?: number;
