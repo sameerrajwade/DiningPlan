@@ -36,7 +36,11 @@ export const FamilyScreen: React.FC = () => {
   const [showImport, setShowImport] = useState(false);
   const [sharingDishes, setSharingDishes] = useState(false);
 
-  const dishNames = useDishStore((s) => s.dishes.map((d) => d.name));
+  // Select the STABLE dishes array, then derive names with useMemo. Mapping
+  // inside the selector returns a new array every render, which makes Zustand's
+  // useSyncExternalStore see a changed snapshot each time → infinite re-render.
+  const dishes = useDishStore((s) => s.dishes);
+  const dishNames = useMemo(() => dishes.map((d) => d.name), [dishes]);
 
   // Build a shareable dish pack (definitions only — no meals/ratings/spend) and
   // hand the code to the OS share sheet. Loads dishes/meals/restaurants fresh so
