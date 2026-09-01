@@ -22,6 +22,7 @@ import HomeScreen from '../screens/HomeScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import PlanScreen from '../screens/PlanScreen';
 import InsightsScreen from '../screens/InsightsScreen';
+import GroceryScreen from '../screens/GroceryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import FamilyScreen from '../screens/FamilyScreen';
 import SettingsScreen from '../screens/SettingsScreen';
@@ -84,6 +85,7 @@ const TAB_ICONS: Record<keyof MainTabParamList, string> = {
   Home: 'home',
   Calendar: 'calendar-week',
   Plan: 'auto-fix',
+  Grocery: 'cart',
   Insights: 'chart-bar',
   Profile: 'account',
 };
@@ -181,6 +183,11 @@ function MainTabs() {
         name="Plan"
         component={PlanScreen}
         options={{ headerShown: false }}
+      />
+      <Tab.Screen
+        name="Grocery"
+        component={GroceryScreen}
+        options={tabHeader('Grocery')}
       />
       <Tab.Screen
         name="Insights"

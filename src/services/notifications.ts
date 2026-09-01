@@ -48,7 +48,9 @@ export async function scheduleDaily(hour: number, body?: string): Promise<void> 
       // off once there's history. Copy nudges the user to log today's meals.
       title: 'Log today’s meals',
       body: body ?? 'What did the family eat today? Add it in about 10 seconds.',
-      data: { screen: 'Home' },
+      // Tapping opens tomorrow's menu (the listener resolves "tomorrow" at tap
+      // time, since a repeating notification's date can't be baked in).
+      data: { screen: 'Calendar', focus: 'tomorrow' },
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.DAILY,
@@ -64,9 +66,9 @@ export async function scheduleWeekly(): Promise<void> {
   await Notifications.scheduleNotificationAsync({
     identifier: NOTIF_IDS.weekly,
     content: {
-      title: 'Your week in meals',
-      body: 'See how your home-vs-outside balance looked this week.',
-      data: { screen: 'Insights', range: '7d' },
+      title: 'Plan the week ahead',
+      body: 'Tap to see a fresh meal plan for the week — tweak it, then save.',
+      data: { screen: 'Plan', autoGenerate: true },
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.WEEKLY,

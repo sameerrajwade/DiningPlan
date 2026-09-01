@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View, ScrollView, Alert, Modal } from 'react-native';
+import { StyleSheet, View, ScrollView, Alert, Modal, Share } from 'react-native';
 import { Text, Avatar, TextInput, Button } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -7,8 +7,13 @@ import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/t
 import { useTheme } from '../hooks/useTheme';
 import { PressableScale, FadeSlideIn } from '../components/motion';
 import { ShareAppCard } from '../components/ShareAppCard';
+import { DishPackImport } from '../components/DishPackImport';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
+import { useDishStore } from '../stores/useDishStore';
+import { useMealStore } from '../stores/useMealStore';
+import { getRestaurants, createDishPack } from '../services/firestore';
+import { buildDishPack, generatePackCode } from '../utils/dishPack';
 
 const getInitials = (name: string): string => {
   const parts = name.trim().split(/\s+/);
@@ -28,6 +33,56 @@ export const FamilyScreen: React.FC = () => {
   const [showSwitch, setShowSwitch] = useState(false);
   const [switchCode, setSwitchCode] = useState('');
   const [switching, setSwitching] = useState(false);
+  const [showImport, setShowImport] = useState(false);
+  const [sharingDishes, setSharingDishes] = useState(false);
+
+  const dishNames = useDishStore((s) => s.dishes.map((d) => d.name));
+
+  // Build a shareable dish pack (definitions only — no meals/ratings/spend) and
+  // hand the code to the OS share sheet. Loads dishes/meals/restaurants fresh so
+  // the pack reflects the full library even if this tab hasn't loaded them yet.
+  const handleShareDishes = useCallback(async () => {
+    if (!householdId || !user || sharingDishes) return;
+    setSharingDishes(true);
+    try {
+      await Promise.all([
+        useDishStore.getState().fetchDishes(householdId),
+        useMealStore.getState().fetchAllMeals(householdId),
+      ]);
+      const dishes = useDishStore.getState().dishes;
+      const meals = useMealStore.getState().meals;
+      if (dishes.length === 0) {
+        Alert.alert('No dishes yet', 'Add some dishes to your library first, then share them.');
+        return;
+      }
+      const restaurants = await getRestaurants(householdId).catch(() => []);
+      const code = generatePackCode();
+      const pack = buildDishPack({
+        code,
+        userId: user.id,
+        householdName: household?.name ?? 'a Sofra family',
+        dishes,
+        meals,
+        restaurants,
+      });
+      await createDishPack(pack);
+      const counts = [
+        `${pack.dishes.length} ${pack.dishes.length === 1 ? 'dish' : 'dishes'}`,
+        pack.kidsDishes.length ? `${pack.kidsDishes.length} kids tiffins` : '',
+        pack.restaurants.length ? `${pack.restaurants.length} restaurants` : '',
+      ].filter(Boolean).join(', ');
+      await Share.share({
+        message:
+          `I'm sharing my Sofra dish collection with you! (${counts})\n\n` +
+          `In Sofra, go to Family → “Import dishes from a code” and enter:\n\n${code}\n\n` +
+          `Sofra — your family's meal memory.`,
+      });
+    } catch (e: any) {
+      Alert.alert('Could not share', e?.message ?? 'Something went wrong creating your dish pack.');
+    } finally {
+      setSharingDishes(false);
+    }
+  }, [householdId, user, household, sharingDishes]);
 
   useEffect(() => {
     if (householdId) fetchMembers(householdId).catch(() => {});
@@ -109,6 +164,28 @@ export const FamilyScreen: React.FC = () => {
         </PressableScale>
       </View>
 
+      {/* Share your dish collection with another household, or import theirs. */}
+      <Text style={styles.sectionLabel}>Share & import dishes</Text>
+      <View style={styles.card}>
+        <PressableScale style={styles.navRow} onPress={handleShareDishes} disabled={sharingDishes}>
+          <MaterialCommunityIcons name="gift-outline" size={22} color={colors.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.navText}>{sharingDishes ? 'Preparing your pack…' : 'Share your dishes'}</Text>
+            <Text style={styles.navSub}>Send your dish collection to another family via a code</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textMuted} />
+        </PressableScale>
+        <View style={styles.rowDivider} />
+        <PressableScale style={styles.navRow} onPress={() => setShowImport(true)}>
+          <MaterialCommunityIcons name="import" size={22} color={colors.home} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.navText}>Import dishes from a code</Text>
+            <Text style={styles.navSub}>Bring another family's dishes into your library</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textMuted} />
+        </PressableScale>
+      </View>
+
       {/* Switch which home is active (a family can have more than one home code). */}
       <Text style={styles.sectionLabel}>Other homes</Text>
       <View style={styles.card}>
@@ -128,6 +205,14 @@ export const FamilyScreen: React.FC = () => {
         visible={showShare}
         code={household?.inviteCode ?? null}
         onClose={() => setShowShare(false)}
+      />
+
+      <DishPackImport
+        visible={showImport}
+        householdId={householdId}
+        existingDishNames={dishNames}
+        onClose={() => setShowImport(false)}
+        onImported={() => { if (householdId) useDishStore.getState().fetchDishes(householdId, true); }}
       />
 
       {/* Switch / join by code */}
@@ -240,6 +325,7 @@ const makeStyles = (c: ThemeColors) =>
     },
     shareBtnText: { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.md, color: c.white },
     navRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md },
+    rowDivider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border },
     navText: { fontFamily: Fonts.bodyMedium, fontSize: FontSize.md, color: c.text },
     navSub: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: c.textMuted, marginTop: 1 },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: Spacing.lg },

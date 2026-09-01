@@ -62,6 +62,14 @@ export interface Meal {
   updatedAt: Date;
 }
 
+// How a dish's recipe is stored: a YouTube link, any web URL, or free text the
+// household typed ("how I make it"). Kept on the DISH so logging stays 10s.
+export type RecipeType = 'youtube' | 'url' | 'text';
+export interface Recipe {
+  type: RecipeType;
+  value: string; // normalized URL for youtube/url; raw text for 'text'
+}
+
 export interface Dish {
   id: string;
   name: string;
@@ -71,6 +79,38 @@ export interface Dish {
   timesCooked: number;
   lastCookedDate: string;
   householdId: string;
+  // Optional shopping staples for this dish (schemaless, no migration). Seeded
+  // from the starter catalog and used by the grocery list (Phase 2).
+  ingredients?: string[];
+  // Optional recipe (Phase 3): a link or typed steps, editable in the dish
+  // detail sheet. Schemaless/optional — no migration.
+  recipe?: Recipe;
+}
+
+// ── Dish-pack sharing (Phase 4) ─────────────────────────────────────────────
+// A household can share a "pack" of its dish DEFINITIONS with another household
+// via a short code. Privacy-scoped: only names/cuisine/diet/ingredients/recipe
+// for dishes, distinct kids-tiffin dish names, and restaurant NAMES — NEVER
+// meals, ratings, spend, budget, or any history.
+export interface DishPackDish {
+  name: string;
+  cuisineTag: CuisineTag;
+  categoryTags?: string[];
+  ingredients?: string[];
+  recipe?: Recipe;
+}
+export interface DishPackRestaurant {
+  name: string;
+  cuisineType: string;
+}
+export interface DishPack {
+  code: string; // 6-char share code (doc id)
+  createdBy: string; // uid of the sharer
+  householdName: string; // for display on import ("from the Rajwade Family")
+  dishes: DishPackDish[]; // family dishes
+  kidsDishes: DishPackDish[]; // distinct kids-tiffin dishes
+  restaurants: DishPackRestaurant[]; // names + cuisine only
+  createdAt: Date;
 }
 
 export interface Restaurant {
@@ -83,6 +123,19 @@ export interface Restaurant {
   householdId: string;
   // Per-dish star ratings (1–5) the household assigns for this restaurant.
   dishRatings?: Record<string, number>;
+}
+
+// One line on the household's single shared grocery/shopping checklist. Items
+// come from dish ingredients ("Add to grocery") or are typed manually (e.g.
+// dishwashing pods). One combined, de-duplicated list — never per-dish.
+export interface GroceryItem {
+  id: string;
+  text: string;
+  checked: boolean;
+  source: 'dish' | 'manual';
+  dishId?: string; // when source==='dish', the dish it came from (best-effort)
+  createdAt: Date;
+  householdId: string;
 }
 
 export interface MealPlanSlot {

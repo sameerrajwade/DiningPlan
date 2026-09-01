@@ -14,6 +14,7 @@ import {
   arrayUnion,
   arrayRemove,
   setDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import {
@@ -23,8 +24,32 @@ import {
   Household,
   User,
   UserPreferences,
+  GroceryItem,
+  DishPack,
 } from '../types';
 import { stripUndefined } from '../utils/sanitize';
+
+// ── Dish-pack sharing (Phase 4) ─────────────────────────────────────────────
+// Top-level `dishPacks/{code}` docs hold shareable dish DEFINITIONS keyed by a
+// short code (see utils/dishPack). Any signed-in user can read a pack by code
+// (the code is the access token); only the creator can write it.
+export async function createDishPack(pack: Omit<DishPack, 'createdAt'>): Promise<void> {
+  await setDoc(doc(db, 'dishPacks', pack.code), stripUndefined({
+    ...pack,
+    createdAt: Timestamp.now(),
+  }));
+}
+
+export async function getDishPack(code: string): Promise<DishPack | null> {
+  const snap = await getDoc(doc(db, 'dishPacks', code));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  return {
+    ...(d as DishPack),
+    code: snap.id,
+    createdAt: toDate(d.createdAt),
+  };
+}
 
 // ─── Helpers ───
 
@@ -36,6 +61,9 @@ function dishesCol(householdId: string) {
 }
 function restaurantsCol(householdId: string) {
   return collection(db, `households/${householdId}/restaurants`);
+}
+function groceryCol(householdId: string) {
+  return collection(db, `households/${householdId}/grocery`);
 }
 
 function toDate(ts: any): Date {
@@ -135,6 +163,28 @@ export async function addDish(
   return ref.id;
 }
 
+// Seed many dishes in a SINGLE atomic write (used by starter-catalog seeding and
+// dish-pack import) instead of N round-trips. Returns the new document ids in the
+// same order as the input. Firestore batches cap at 500 ops, so we chunk.
+export async function addDishesBatch(
+  householdId: string,
+  dishes: Omit<Dish, 'id'>[],
+): Promise<string[]> {
+  const ids: string[] = [];
+  const CHUNK = 450;
+  for (let i = 0; i < dishes.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    const slice = dishes.slice(i, i + CHUNK);
+    for (const dish of slice) {
+      const ref = doc(dishesCol(householdId));
+      batch.set(ref, stripUndefined({ ...dish, householdId }));
+      ids.push(ref.id);
+    }
+    await batch.commit();
+  }
+  return ids;
+}
+
 export async function updateDish(
   householdId: string,
   dishId: string,
@@ -208,6 +258,28 @@ export async function getRestaurants(householdId: string): Promise<Restaurant[]>
   return snap.docs.map((d) => ({ ...d.data(), id: d.id } as Restaurant));
 }
 
+// Create a restaurant NAME with no visit history (used by dish-pack import).
+// Unlike addOrUpdateRestaurant this never fabricates a visit/spend — an imported
+// place starts at zero until the household actually eats there. Skips if a
+// restaurant with that name already exists. Returns true if it created one.
+export async function createRestaurantIfMissing(
+  householdId: string,
+  name: string,
+  cuisineType: string,
+): Promise<boolean> {
+  const existing = await getRestaurantByName(householdId, name);
+  if (existing) return false;
+  await addDoc(restaurantsCol(householdId), stripUndefined({
+    name,
+    cuisineType,
+    totalVisits: 0,
+    totalSpend: 0,
+    lastVisitDate: '',
+    householdId,
+  }));
+  return true;
+}
+
 export async function getRestaurantByName(
   householdId: string,
   name: string,
@@ -243,6 +315,93 @@ export async function setRestaurantDishRating(
   const ref = snap.docs[0].ref;
   const existing = (snap.docs[0].data().dishRatings ?? {}) as Record<string, number>;
   await updateDoc(ref, { dishRatings: { ...existing, [dishName]: rating } });
+}
+
+// ─── Grocery (one shared household checklist) ───
+
+function groceryFromDoc(docSnap: any): GroceryItem {
+  const d = docSnap.data();
+  return {
+    id: docSnap.id,
+    text: d.text,
+    checked: !!d.checked,
+    source: d.source ?? 'manual',
+    dishId: d.dishId,
+    createdAt: toDate(d.createdAt),
+    householdId: d.householdId,
+  };
+}
+
+export async function getGroceryItems(householdId: string): Promise<GroceryItem[]> {
+  const snap = await getDocs(groceryCol(householdId));
+  return snap.docs
+    .map(groceryFromDoc)
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+}
+
+// Add several items in one atomic write. Caller is responsible for de-duplication
+// (see utils/grocery.dedupeNewItems); this just persists. Returns the new items
+// (with ids) so the store can update its cache without a re-read.
+export async function addGroceryItems(
+  householdId: string,
+  items: { text: string; source: 'dish' | 'manual'; dishId?: string }[],
+): Promise<GroceryItem[]> {
+  const now = Timestamp.now();
+  const batch = writeBatch(db);
+  const created: GroceryItem[] = [];
+  for (const it of items) {
+    const ref = doc(groceryCol(householdId));
+    const data = stripUndefined({
+      text: it.text,
+      checked: false,
+      source: it.source,
+      dishId: it.dishId,
+      householdId,
+      createdAt: now,
+    });
+    batch.set(ref, data);
+    created.push({
+      id: ref.id,
+      text: it.text,
+      checked: false,
+      source: it.source,
+      dishId: it.dishId,
+      createdAt: now.toDate(),
+      householdId,
+    });
+  }
+  await batch.commit();
+  return created;
+}
+
+export async function setGroceryChecked(
+  householdId: string,
+  itemId: string,
+  checked: boolean,
+): Promise<void> {
+  await updateDoc(doc(db, `households/${householdId}/grocery`, itemId), { checked });
+}
+
+export async function deleteGroceryItem(
+  householdId: string,
+  itemId: string,
+): Promise<void> {
+  await deleteDoc(doc(db, `households/${householdId}/grocery`, itemId));
+}
+
+// Bulk delete (Clear checked / Clear all). Pass the ids to remove.
+export async function deleteGroceryItems(
+  householdId: string,
+  itemIds: string[],
+): Promise<void> {
+  const CHUNK = 450;
+  for (let i = 0; i < itemIds.length; i += CHUNK) {
+    const batch = writeBatch(db);
+    for (const id of itemIds.slice(i, i + CHUNK)) {
+      batch.delete(doc(db, `households/${householdId}/grocery`, id));
+    }
+    await batch.commit();
+  }
 }
 
 // ─── Households ───

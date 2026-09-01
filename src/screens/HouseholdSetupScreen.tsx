@@ -6,6 +6,8 @@ import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/t
 import { useTheme } from '../hooks/useTheme';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
+import { StarterDishPicker } from '../components/StarterDishPicker';
+import { CatalogEntry } from '../data/starterCatalog';
 
 export const HouseholdSetupScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -13,18 +15,25 @@ export const HouseholdSetupScreen: React.FC = () => {
 
   const { user } = useAuthStore();
   const { createHousehold, joinHousehold, isLoading } = useHouseholdStore();
-  const [mode, setMode] = useState<'choose' | 'create' | 'join'>('choose');
+  const [mode, setMode] = useState<'choose' | 'create' | 'seed' | 'join'>('choose');
   const [householdName, setHouseholdName] = useState('');
   const [inviteCode, setInviteCode] = useState('');
 
-  const handleCreate = async () => {
+  // Name step just advances to the starter-dish picker; the household is actually
+  // created on commit/skip there (so seeded dishes are written before the app
+  // navigates into the main tabs on householdId flip).
+  const handleNameContinue = () => {
     if (!householdName.trim()) {
       Alert.alert('Required', 'Please enter a household name');
       return;
     }
+    setMode('seed');
+  };
+
+  const finishCreate = async (seed?: CatalogEntry[]) => {
     if (!user) return;
     try {
-      await createHousehold(householdName.trim(), user.id);
+      await createHousehold(householdName.trim(), user.id, seed);
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to create household');
     }
@@ -102,14 +111,27 @@ export const HouseholdSetupScreen: React.FC = () => {
             outlineColor={colors.border}
             activeOutlineColor={colors.primary}
           />
-          <Button mode="contained" onPress={handleCreate} loading={isLoading} disabled={isLoading} style={styles.button} buttonColor={colors.primary}>
-            Create household
+          <Button mode="contained" onPress={handleNameContinue} disabled={isLoading} style={styles.button} buttonColor={colors.primary}>
+            Continue
           </Button>
           <Button mode="text" onPress={() => setMode('choose')} textColor={colors.textSecondary}>
             Back
           </Button>
         </View>
       </KeyboardAvoidingView>
+    );
+  }
+
+  if (mode === 'seed') {
+    return (
+      <View style={styles.container}>
+        <StarterDishPicker
+          mode="onboarding"
+          committing={isLoading}
+          onCommit={(entries) => finishCreate(entries)}
+          onSkip={() => finishCreate()}
+        />
+      </View>
     );
   }
 

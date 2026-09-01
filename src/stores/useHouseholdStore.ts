@@ -1,10 +1,13 @@
 import { create } from 'zustand';
 import { Household, User, UserPreferences } from '../types';
 import * as firestoreService from '../services/firestore';
+import { CatalogEntry } from '../data/starterCatalog';
+import { catalogEntriesToDishes } from '../utils/starterDishes';
 import { useAuthStore } from './useAuthStore';
 import { useNotificationStore } from './useNotificationStore';
 import { useMealStore } from './useMealStore';
 import { useDishStore } from './useDishStore';
+import { useShoppingStore } from './useShoppingStore';
 
 // Turn on the daily "log today's meals" reminder as an opt-out at onboarding —
 // this is the retention lever, so it should be ON by default (the user can turn
@@ -21,7 +24,11 @@ interface HouseholdState {
   isLoading: boolean;
   error: string | null;
   inviteCode: string | null;
-  createHousehold: (name: string, userId: string) => Promise<void>;
+  createHousehold: (
+    name: string,
+    userId: string,
+    seedCatalog?: CatalogEntry[],
+  ) => Promise<void>;
   joinHousehold: (inviteCode: string, userId: string) => Promise<void>;
   switchHousehold: (inviteCode: string, userId: string) => Promise<string>;
   fetchHousehold: (householdId: string, userId?: string) => Promise<void>;
@@ -38,11 +45,24 @@ export const useHouseholdStore = create<HouseholdState>((set) => ({
   error: null,
   inviteCode: null,
 
-  createHousehold: async (name, userId) => {
+  createHousehold: async (name, userId, seedCatalog) => {
     set({ isLoading: true, error: null });
     try {
       const id = await firestoreService.createHousehold(name, userId);
       const household = await firestoreService.getHousehold(id);
+      // Seed the starter dishes the user picked BEFORE flipping their householdId
+      // — flipping it navigates the app to the main tabs, so the write must finish
+      // first for the library/planner to be populated on first load. Non-fatal:
+      // a seeding failure must never block getting into the app.
+      if (seedCatalog && seedCatalog.length) {
+        try {
+          await useDishStore
+            .getState()
+            .addDishesBatch(id, catalogEntriesToDishes(seedCatalog, id));
+        } catch {
+          // ignore — user still enters an (empty) household and can add dishes
+        }
+      }
       set({
         household,
         members: [],
@@ -113,6 +133,7 @@ export const useHouseholdStore = create<HouseholdState>((set) => ({
       // Drop the old household's caches so its data can't bleed into the new one.
       useMealStore.getState().clear();
       useDishStore.getState().clear();
+      useShoppingStore.getState().clear();
       const [household, members, preferences] = await Promise.all([
         firestoreService.getHousehold(id).catch(() => null),
         firestoreService.getHouseholdMembers(id).catch(() => [] as User[]),

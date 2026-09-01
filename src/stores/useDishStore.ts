@@ -1,6 +1,11 @@
 import { create } from 'zustand';
 import { Dish } from '../types';
-import { getDishes, addDish as addDishApi, updateDish as updateDishApi } from '../services/firestore';
+import {
+  getDishes,
+  addDish as addDishApi,
+  addDishesBatch as addDishesBatchApi,
+  updateDish as updateDishApi,
+} from '../services/firestore';
 
 interface DishState {
   dishes: Dish[];
@@ -9,6 +14,7 @@ interface DishState {
   error: string | null;
   fetchDishes: (householdId: string, force?: boolean) => Promise<void>;
   addDish: (householdId: string, dish: Omit<Dish, 'id'>) => Promise<string>;
+  addDishesBatch: (householdId: string, dishes: Omit<Dish, 'id'>[]) => Promise<string[]>;
   updateDish: (householdId: string, dishId: string, data: Partial<Dish>) => Promise<void>;
   toggleFavorite: (householdId: string, dishId: string) => Promise<void>;
   searchDishes: (query: string) => Dish[];
@@ -55,6 +61,32 @@ export const useDishStore = create<DishState>((set, get) => ({
         isLoading: false,
       }));
       return id;
+    } catch (e: any) {
+      set({ error: e.message, isLoading: false });
+      throw e;
+    }
+  },
+
+  // Seed many dishes at once (starter catalog / pack import). De-dupes against
+  // dishes already in memory by case-insensitive name so re-running "Explore
+  // dishes" never creates duplicates. Returns the ids actually written.
+  addDishesBatch: async (householdId, dishes) => {
+    const existing = new Set(get().dishes.map((d) => d.name.trim().toLowerCase()));
+    const fresh = dishes.filter((d) => {
+      const key = d.name.trim().toLowerCase();
+      if (existing.has(key)) return false;
+      existing.add(key);
+      return true;
+    });
+    if (fresh.length === 0) return [];
+    set({ isLoading: true, error: null });
+    try {
+      const ids = await addDishesBatchApi(householdId, fresh);
+      set((state) => ({
+        dishes: [...state.dishes, ...fresh.map((d, i) => ({ ...d, id: ids[i] }))],
+        isLoading: false,
+      }));
+      return ids;
     } catch (e: any) {
       set({ error: e.message, isLoading: false });
       throw e;

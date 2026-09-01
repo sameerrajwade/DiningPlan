@@ -53,8 +53,11 @@ export const TourOverlay: React.FC = () => {
   const current = STEPS[step];
 
   // End the tour by landing back on Home — never strand the user on the last
-  // step's screen (Settings). Used by both Skip and Done.
+  // step's screen (Settings). Used by both Skip and Done. Also reset the Profile
+  // tab to its main screen so the walkthrough's last step doesn't leave that tab
+  // deep-stacked on Settings (which read as "still in the demo" afterwards).
   const handleFinish = () => {
+    navigation.navigate('Main', { screen: 'Profile', params: { screen: 'ProfileMain' } });
     navigation.navigate('Main', { screen: 'Home', params: { screen: 'HomeMain' } });
     finish();
   };

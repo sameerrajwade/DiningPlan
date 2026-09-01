@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  ScrollView,
 } from 'react-native';
 import {
   Searchbar,
@@ -19,15 +20,23 @@ import {
   Switch,
   ActivityIndicator,
   Menu,
+  Modal,
+  IconButton,
+  Divider,
 } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRoute, useNavigation, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { Dish, CuisineTag } from '../types';
 import { toTitleCase } from '../utils/text';
+import { parseRecipeInput } from '../utils/recipe';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import type { HomeStackParamList } from '../navigation/types';
 import { CuisineChips } from '../components/CuisineChips';
+import { StarterDishPicker } from '../components/StarterDishPicker';
+import { DishDetailSheet } from '../components/DishDetailSheet';
+import { CatalogEntry } from '../data/starterCatalog';
+import { catalogEntriesToDishes } from '../utils/starterDishes';
 import { cuisineIcon } from '../utils/icons';
 import { useDishStore } from '../stores/useDishStore';
 import { useMealStore } from '../stores/useMealStore';
@@ -57,7 +66,10 @@ export const DishLibraryScreen: React.FC = () => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
-  const { dishes, isLoading, error, fetchDishes, addDish, updateDish, toggleFavorite: storeFavorite } = useDishStore();
+  const { dishes, isLoading, error, fetchDishes, addDish, addDishesBatch, updateDish, toggleFavorite: storeFavorite } = useDishStore();
+  const [exploreVisible, setExploreVisible] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [detailDish, setDetailDish] = useState<Dish | null>(null);
   const { user } = useAuthStore();
   const householdId = user?.householdId ?? '';
 
@@ -110,8 +122,7 @@ export const DishLibraryScreen: React.FC = () => {
   const [sortMode, setSortMode] = useState<SortMode>(initialFilter === 'stale' ? 'lastMade' : 'mostMade');
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(initialFilter ?? 'all');
   const [cuisineFilter, setCuisineFilter] = useState<CuisineTag | null>(null);
-  const [sortMenuVisible, setSortMenuVisible] = useState(false);
-  const [cuisineMenuVisible, setCuisineMenuVisible] = useState(false);
+  const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // Add dialog state
@@ -119,6 +130,8 @@ export const DishLibraryScreen: React.FC = () => {
   const [newName, setNewName] = useState('');
   const [newCuisine, setNewCuisine] = useState<CuisineTag>('Indian');
   const [newTags, setNewTags] = useState('');
+  const [newIngredients, setNewIngredients] = useState('');
+  const [newRecipe, setNewRecipe] = useState('');
   const [newFavorite, setNewFavorite] = useState(false);
   const [addingDish, setAddingDish] = useState(false);
 
@@ -216,6 +229,11 @@ export const DishLibraryScreen: React.FC = () => {
     if (!householdId || !newName.trim()) return;
     setAddingDish(true);
     try {
+      const ingList = newIngredients
+        .split(',')
+        .map((t) => t.trim().toLowerCase())
+        .filter(Boolean);
+      const recipe = parseRecipeInput(newRecipe);
       await addDish(householdId, {
         name: toTitleCase(newName.trim()),
         cuisineTag: newCuisine,
@@ -227,11 +245,15 @@ export const DishLibraryScreen: React.FC = () => {
         timesCooked: 0,
         lastCookedDate: '',
         householdId,
+        ...(ingList.length ? { ingredients: ingList } : {}),
+        ...(recipe ? { recipe } : {}),
       });
       await fetchDishes(householdId);
       setDialogVisible(false);
       setNewName('');
       setNewTags('');
+      setNewIngredients('');
+      setNewRecipe('');
       setNewFavorite(false);
     } catch {
       Alert.alert('Error', 'Could not add dish.');
@@ -239,6 +261,33 @@ export const DishLibraryScreen: React.FC = () => {
       setAddingDish(false);
     }
   }, [householdId, newName, newCuisine, newTags, newFavorite, addDish, fetchDishes]);
+
+  const handleExploreCommit = useCallback(
+    async (entries: CatalogEntry[]) => {
+      if (!householdId || entries.length === 0) {
+        setExploreVisible(false);
+        return;
+      }
+      setSeeding(true);
+      try {
+        const added = await addDishesBatch(householdId, catalogEntriesToDishes(entries, householdId));
+        setExploreVisible(false);
+        Alert.alert(
+          'Dishes added',
+          added.length
+            ? `Added ${added.length} ${added.length === 1 ? 'dish' : 'dishes'} to your library.`
+            : 'Those dishes are already in your library.',
+        );
+      } catch {
+        Alert.alert('Error', 'Could not add dishes. Please try again.');
+      } finally {
+        setSeeding(false);
+      }
+    },
+    [householdId, addDishesBatch],
+  );
+
+  const existingNames = useMemo(() => dishes.map((d) => d.name), [dishes]);
 
   const uniqueCuisines = useMemo(() => {
     const set = new Set(dishes.map((d) => d.cuisineTag));
@@ -253,15 +302,21 @@ export const DishLibraryScreen: React.FC = () => {
       return (
         <TouchableOpacity
           style={styles.dishRow}
-          onPress={() => toggleFavorite(item)}
-          accessibilityLabel={`${item.name}, ${item.cuisineTag}, made ${item.timesCooked} times`}
+          onPress={() => setDetailDish(item)}
+          accessibilityLabel={`${item.name}, ${item.cuisineTag}, made ${item.timesCooked} times. Opens ingredients.`}
         >
-          <MaterialCommunityIcons
-            name={item.isFavorite ? 'star' : 'star-outline'}
-            size={24}
-            color={item.isFavorite ? colors.warning : colors.textMuted}
-            style={styles.starIcon}
-          />
+          <TouchableOpacity
+            onPress={() => toggleFavorite(item)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityLabel={item.isFavorite ? `Unfavorite ${item.name}` : `Favorite ${item.name}`}
+          >
+            <MaterialCommunityIcons
+              name={item.isFavorite ? 'star' : 'star-outline'}
+              size={24}
+              color={item.isFavorite ? colors.warning : colors.textMuted}
+              style={styles.starIcon}
+            />
+          </TouchableOpacity>
           <View style={styles.dishInfo}>
             <Text style={styles.dishName} numberOfLines={1}>
               {item.name}
@@ -275,11 +330,27 @@ export const DishLibraryScreen: React.FC = () => {
                 />
                 <Text style={styles.cuisinePillText}>{item.cuisineTag}</Text>
               </View>
-              {item.categoryTags.slice(0, 2).map((tag) => (
-                <Text key={tag} style={styles.categoryTag}>
-                  {tag}
+              {/* Discoverability pills — make it obvious a dish holds ingredients
+                  and a recipe. Both open the same detail sheet; active style when
+                  the dish already has that content. */}
+              <TouchableOpacity
+                style={[styles.metaPill, item.ingredients?.length ? styles.metaPillActive : null]}
+                onPress={() => setDetailDish(item)}
+                accessibilityLabel={`Ingredients for ${item.name}`}
+              >
+                <MaterialCommunityIcons name="basket-outline" size={11} color={item.ingredients?.length ? colors.primary : colors.textSecondary} />
+                <Text style={[styles.metaPillText, item.ingredients?.length ? styles.metaPillTextActive : null]}>
+                  {item.ingredients?.length ? `Ingredients · ${item.ingredients.length}` : 'Ingredients'}
                 </Text>
-              ))}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.metaPill, item.recipe ? styles.metaPillActive : null]}
+                onPress={() => setDetailDish(item)}
+                accessibilityLabel={`Recipe for ${item.name}`}
+              >
+                <MaterialCommunityIcons name={item.recipe?.type === 'youtube' ? 'youtube' : 'book-open-variant'} size={11} color={item.recipe ? colors.primary : colors.textSecondary} />
+                <Text style={[styles.metaPillText, item.recipe ? styles.metaPillTextActive : null]}>Recipe</Text>
+              </TouchableOpacity>
             </View>
           </View>
           <View style={styles.dishStats}>
@@ -305,79 +376,70 @@ export const DishLibraryScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Searchbar
-        placeholder="Search dishes..."
-        value={search}
-        onChangeText={setSearch}
-        style={styles.searchbar}
-        inputStyle={styles.searchInput}
-        iconColor={colors.textSecondary}
-        placeholderTextColor={colors.textMuted}
-      />
-
-      {/* Filters row */}
-      <View style={styles.filterRow}>
+      {/* Search + a single filter control (sort + cuisine together) */}
+      <View style={styles.searchRow}>
+        <Searchbar
+          placeholder="Search dishes..."
+          value={search}
+          onChangeText={setSearch}
+          style={styles.searchbar}
+          inputStyle={styles.searchInput}
+          iconColor={colors.textSecondary}
+          placeholderTextColor={colors.textMuted}
+        />
         <Menu
-          visible={cuisineMenuVisible}
-          onDismiss={() => setCuisineMenuVisible(false)}
+          visible={filterMenuVisible}
+          onDismiss={() => setFilterMenuVisible(false)}
           anchor={
-            <Chip
-              icon="filter-variant"
-              onPress={() => setCuisineMenuVisible(true)}
-              style={styles.filterChip}
-              textStyle={styles.filterChipText}
-            >
-              {cuisineFilter ?? 'All cuisines'}
-            </Chip>
+            <IconButton
+              icon="tune-variant"
+              mode="contained-tonal"
+              size={22}
+              onPress={() => setFilterMenuVisible(true)}
+              iconColor={cuisineFilter || sortMode !== 'mostMade' ? colors.primary : colors.textSecondary}
+              style={styles.filterIconBtn}
+              accessibilityLabel="Sort and filter"
+            />
           }
         >
+          <Text style={styles.menuHeader}>Sort by</Text>
+          {SORT_OPTIONS.map((opt) => (
+            <Menu.Item
+              key={opt.value}
+              title={opt.label}
+              trailingIcon={sortMode === opt.value ? 'check' : undefined}
+              onPress={() => {
+                setSortMode(opt.value);
+                setFilterMenuVisible(false);
+              }}
+            />
+          ))}
+          <Divider />
+          <Text style={styles.menuHeader}>Cuisine</Text>
           <Menu.Item
             title="All cuisines"
+            trailingIcon={!cuisineFilter ? 'check' : undefined}
             onPress={() => {
               setCuisineFilter(null);
-              setCuisineMenuVisible(false);
+              setFilterMenuVisible(false);
             }}
           />
           {uniqueCuisines.map((c) => (
             <Menu.Item
               key={c}
               title={c}
+              trailingIcon={cuisineFilter === c ? 'check' : undefined}
               onPress={() => {
                 setCuisineFilter(c);
-                setCuisineMenuVisible(false);
-              }}
-            />
-          ))}
-        </Menu>
-
-        <Menu
-          visible={sortMenuVisible}
-          onDismiss={() => setSortMenuVisible(false)}
-          anchor={
-            <Chip
-              icon="sort"
-              onPress={() => setSortMenuVisible(true)}
-              style={styles.filterChip}
-              textStyle={styles.filterChipText}
-            >
-              {SORT_OPTIONS.find((s) => s.value === sortMode)?.label}
-            </Chip>
-          }
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <Menu.Item
-              key={opt.value}
-              title={opt.label}
-              onPress={() => {
-                setSortMode(opt.value);
-                setSortMenuVisible(false);
+                setFilterMenuVisible(false);
               }}
             />
           ))}
         </Menu>
       </View>
 
-      {/* Quick filter chips ("All" becomes "Show all" when viewing a subset) */}
+      {/* Quick filters — a wrapping row (NOT a horizontal ScrollView, which
+          stretched vertically and overlapped the Explore row below). */}
       <View style={styles.quickFilterRow}>
         {(
           [
@@ -396,8 +458,6 @@ export const DishLibraryScreen: React.FC = () => {
               selected={selected}
               onPress={() => {
                 if (isAll && scoped) {
-                  // Drop the scoped context (subset + window) to show the full
-                  // all-time library.
                   navigation.setParams({ monthDishes: undefined, title: undefined, window: undefined });
                 }
                 setQuickFilter(key);
@@ -410,6 +470,18 @@ export const DishLibraryScreen: React.FC = () => {
           );
         })}
       </View>
+
+      {/* Explore = add more dishes from the global catalog. Its own full-width
+          row so the label never clips inside the horizontal filter scroll. */}
+      <TouchableOpacity
+        onPress={() => setExploreVisible(true)}
+        style={styles.exploreRow}
+        accessibilityLabel="Explore dishes to add"
+      >
+        <MaterialCommunityIcons name="earth" size={18} color={colors.primary} />
+        <Text style={styles.exploreRowText}>Explore more dishes</Text>
+        <MaterialCommunityIcons name="chevron-right" size={18} color={colors.primary} />
+      </TouchableOpacity>
 
       {dateWindow && (
         <Text style={styles.windowNote}>
@@ -466,6 +538,7 @@ export const DishLibraryScreen: React.FC = () => {
         <Dialog visible={dialogVisible} onDismiss={() => setDialogVisible(false)} style={styles.dialog}>
           <Dialog.Title style={styles.dialogTitle}>Add Dish</Dialog.Title>
           <Dialog.Content>
+           <ScrollView style={styles.dialogScroll} keyboardShouldPersistTaps="handled">
             <TextInput
               label="Dish name"
               value={newName}
@@ -486,6 +559,27 @@ export const DishLibraryScreen: React.FC = () => {
               outlineColor={colors.border}
               activeOutlineColor={colors.primary}
             />
+            <TextInput
+              label="Ingredients (comma separated)"
+              value={newIngredients}
+              onChangeText={setNewIngredients}
+              mode="outlined"
+              placeholder="e.g. rice, dal, onion, tomato"
+              style={styles.dialogInput}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+            />
+            <TextInput
+              label="Recipe (link or steps)"
+              value={newRecipe}
+              onChangeText={setNewRecipe}
+              mode="outlined"
+              multiline
+              placeholder="Paste a YouTube / recipe link, or type how you make it"
+              style={styles.dialogInput}
+              outlineColor={colors.border}
+              activeOutlineColor={colors.primary}
+            />
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>Favorite</Text>
               <Switch
@@ -494,6 +588,7 @@ export const DishLibraryScreen: React.FC = () => {
                 color={colors.primary}
               />
             </View>
+           </ScrollView>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setDialogVisible(false)}>Cancel</Button>
@@ -506,7 +601,28 @@ export const DishLibraryScreen: React.FC = () => {
             </Button>
           </Dialog.Actions>
         </Dialog>
+
+        {/* Explore dishes — reuses the onboarding starter picker */}
+        <Modal
+          visible={exploreVisible}
+          onDismiss={() => !seeding && setExploreVisible(false)}
+          contentContainerStyle={styles.exploreModal}
+        >
+          <StarterDishPicker
+            mode="explore"
+            existingNames={existingNames}
+            committing={seeding}
+            onCommit={handleExploreCommit}
+            onSkip={() => setExploreVisible(false)}
+          />
+        </Modal>
       </Portal>
+
+      <DishDetailSheet
+        dish={detailDish}
+        householdId={householdId}
+        onDismiss={() => setDetailDish(null)}
+      />
     </View>
   );
 };
@@ -523,11 +639,63 @@ const makeStyles = (c: ThemeColors) =>
       alignItems: 'center',
       padding: Spacing.xl,
     },
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: Spacing.md,
+      paddingTop: Spacing.sm,
+      gap: Spacing.xs,
+    },
     searchbar: {
-      margin: Spacing.md,
+      flex: 1,
       backgroundColor: c.surface,
       borderRadius: BorderRadius.md,
       elevation: 1,
+    },
+    filterIconBtn: {
+      margin: 0,
+      backgroundColor: c.surface,
+      borderRadius: BorderRadius.md,
+    },
+    menuHeader: {
+      paddingHorizontal: Spacing.md,
+      paddingTop: Spacing.sm,
+      paddingBottom: 2,
+      fontFamily: Fonts.bodySemiBold,
+      fontSize: FontSize.xs,
+      color: c.textMuted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    exploreRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.primary,
+      borderStyle: 'dashed',
+      borderRadius: BorderRadius.md,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+      marginBottom: Spacing.sm,
+    },
+    exploreRowText: {
+      flex: 1,
+      fontSize: FontSize.md,
+      fontFamily: Fonts.bodySemiBold,
+      color: c.primary,
+    },
+    exploreChip: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.primary,
+      borderStyle: 'dashed',
+    },
+    exploreChipText: {
+      fontSize: FontSize.sm,
+      fontFamily: Fonts.bodyMedium,
+      color: c.primary,
     },
     searchInput: {
       fontSize: FontSize.md,
@@ -556,6 +724,30 @@ const makeStyles = (c: ThemeColors) =>
       paddingHorizontal: Spacing.md,
       gap: Spacing.sm,
       marginBottom: Spacing.sm,
+    },
+    exploreBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      marginHorizontal: Spacing.md,
+      marginBottom: Spacing.sm,
+      paddingVertical: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      backgroundColor: c.surface,
+      borderRadius: BorderRadius.md,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    exploreText: {
+      flex: 1,
+      fontSize: FontSize.sm,
+      fontFamily: Fonts.bodyMedium,
+      color: c.text,
+    },
+    exploreModal: {
+      flex: 1,
+      margin: 0,
+      backgroundColor: c.background,
     },
     windowNote: {
       paddingHorizontal: Spacing.md,
@@ -624,6 +816,24 @@ const makeStyles = (c: ThemeColors) =>
       fontFamily: Fonts.bodySemiBold,
       color: c.white,
     },
+    metaPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: BorderRadius.full,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      backgroundColor: c.surface,
+    },
+    metaPillActive: {
+      borderColor: c.primary,
+      backgroundColor: c.primaryLight + '22',
+    },
+    metaPillText: { fontSize: FontSize.xs, fontFamily: Fonts.bodyMedium, color: c.textSecondary },
+    metaPillTextActive: { color: c.primary, fontFamily: Fonts.bodySemiBold },
+    dialogScroll: { maxHeight: 380 },
     categoryTag: {
       fontSize: FontSize.xs,
       fontFamily: Fonts.body,

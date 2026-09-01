@@ -117,6 +117,30 @@ service cloud.firestore {
         allow update: if isHouseholdMember(householdId);
         allow delete: if isHouseholdAdmin(householdId);
       }
+
+      // ----------------------------------------
+      // Grocery subcollection (one shared household checklist)
+      // ----------------------------------------
+
+      match /grocery/{itemId} {
+        allow read: if isHouseholdMember(householdId);
+        allow create: if isHouseholdMember(householdId);
+        allow update: if isHouseholdMember(householdId);
+        allow delete: if isHouseholdMember(householdId);
+      }
+    }
+
+    // ========================================
+    // Dish packs (shareable dish definitions, Phase 4)
+    // ========================================
+    // A pack holds only dish DEFINITIONS (names/cuisine/diet/ingredients/recipe),
+    // distinct kids-tiffin dish names, and restaurant names — never meals,
+    // ratings, spend, or history. The short code is the access token: any signed-in
+    // user can read a pack by its code (to import it). Only the creator can write.
+    match /dishPacks/{code} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow update, delete: if isSignedIn() && resource.data.createdBy == request.auth.uid;
     }
 
     // Deny all other access by default

@@ -15,8 +15,13 @@ export type RootStackParamList = {
 
 export type MainTabParamList = {
   Home: NavigatorScreenParams<HomeStackParamList>;
-  Calendar: undefined;
-  Plan: undefined;
+  // `focusDate` (yyyy-MM-dd) scrolls to + highlights a day — used by the daily
+  // reminder to open tomorrow's menu.
+  Calendar: { focusDate?: string } | undefined;
+  // `autoGenerate` makes Plan generate an (unsaved) plan on open — used by the
+  // weekly reminder to show a fresh auto-plan.
+  Plan: { autoGenerate?: boolean } | undefined;
+  Grocery: undefined;
   Insights: { range?: string } | undefined;
   Profile: NavigatorScreenParams<ProfileStackParamList>;
 };

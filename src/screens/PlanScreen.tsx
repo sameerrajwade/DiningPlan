@@ -29,7 +29,10 @@ import { useDishStore } from '../stores/useDishStore';
 import { useMealStore } from '../stores/useMealStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
 import { useAuthStore } from '../stores/useAuthStore';
-import type { MealPlan, Meal } from '../types';
+import { useShoppingStore } from '../stores/useShoppingStore';
+import { ingredientsForDishes } from '../utils/grocery';
+import { matchCatalogDish } from '../utils/starterDishes';
+import type { MealPlan, MealPlanSlot, Meal } from '../types';
 import type { MainTabScreenProps } from '../navigation/types';
 
 
@@ -57,11 +60,13 @@ function savedWeekToPlan(weekMeals: Meal[], weekStart: Date): MealPlan[] {
   return plan;
 }
 
-export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation }) => {
+export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation, route }) => {
   const { dishes, fetchDishes } = useDishStore();
   const { meals, addMeal, fetchAllMeals, deleteMeal, dedupeMeals } = useMealStore();
   const { preferences, household, updatePreferences } = useHouseholdStore();
   const { user } = useAuthStore();
+  const addGroceryItems = useShoppingStore((s) => s.addItems);
+  const [addingGrocery, setAddingGrocery] = useState(false);
   const householdId = user?.householdId ?? '';
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -235,6 +240,16 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
     [allDishes, meals, defaultPrefs, startDate, weekStartDate],
   );
 
+  // Weekly reminder deep-link: open with a fresh auto-plan. Runs once per param
+  // arrival, only when the library has dishes and nothing's already unsaved, then
+  // clears the param so it won't re-fire on the next visit.
+  useEffect(() => {
+    if (route.params?.autoGenerate && dataLoaded && allDishes.length > 0 && !isDirty) {
+      generate('all');
+      navigation.setParams({ autoGenerate: undefined });
+    }
+  }, [route.params?.autoGenerate, dataLoaded, allDishes.length, isDirty, generate, navigation]);
+
   const refreshDay = useCallback(
     (dayIdx: number) => {
       if (allDishes.length === 0) return;
@@ -279,6 +294,54 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
     setEditIndex(null);
     setEditDishName('');
   };
+
+  // "Add this week's ingredients to grocery" — gathers the ingredients of every
+  // HOME dish in the current plan (dine-out slots have none), de-dupes them, and
+  // adds them to the shared grocery list. This is how a planned week turns into a
+  // shopping list; ingredients that aren't on a dish yet simply won't appear
+  // (the user curates them on the dish via the detail sheet).
+  const addWeekIngredients = useCallback(async () => {
+    if (!householdId) return;
+    const homeNames = plan
+      .flatMap((d) => [d.lunch, d.dinner, d.kids] as (MealPlanSlot | undefined)[])
+      .filter((s): s is MealPlanSlot => !!s && s.sourceType === 'home' && !!s.dishName && s.dishName !== 'Dine Out')
+      .map((s) => s.dishName);
+    const uniqueNames = Array.from(new Set(homeNames));
+    const byName = new Map(dishes.map((d) => [d.name.toLowerCase(), d]));
+    // Prefer saved dish ingredients; fall back to the curated catalog so dishes
+    // whose ingredients only live in the catalog still contribute.
+    const ingLists = uniqueNames.map((n) => {
+      const saved = byName.get(n.toLowerCase())?.ingredients;
+      return saved?.length ? saved : matchCatalogDish(n)?.ingredients;
+    });
+    const toAdd = ingredientsForDishes(ingLists);
+    if (toAdd.length === 0) {
+      Alert.alert(
+        'No ingredients yet',
+        "None of this week's dishes have ingredients saved. Open a dish in your Dish Library, add its ingredients, then try again.",
+      );
+      return;
+    }
+    setAddingGrocery(true);
+    try {
+      const added = await addGroceryItems(householdId, toAdd, 'dish');
+      Alert.alert(
+        'Grocery list updated',
+        added > 0
+          ? `Added ${added} ${added === 1 ? 'item' : 'items'} to your grocery list.`
+          : "Those ingredients are already on your grocery list.",
+      );
+    } catch {
+      Alert.alert('Could not add', 'Something went wrong updating the grocery list. Please try again.');
+    } finally {
+      setAddingGrocery(false);
+    }
+  }, [householdId, plan, dishes, addGroceryItems]);
+
+  const planHasHomeDish = useMemo(
+    () => plan.some((d) => d.lunch?.sourceType === 'home' || d.dinner?.sourceType === 'home' || d.kids?.sourceType === 'home'),
+    [plan],
+  );
 
   const acceptPlan = useCallback(async () => {
     if (!householdId || !user) {
@@ -699,6 +762,20 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation })
           )}
         </View>
 
+        {planHasHomeDish && (
+          <Button
+            mode="outlined"
+            icon="cart-plus"
+            onPress={addWeekIngredients}
+            loading={addingGrocery}
+            disabled={addingGrocery}
+            style={styles.groceryButton}
+            textColor={colors.primary}
+          >
+            Add this week's ingredients to grocery
+          </Button>
+        )}
+
         {plan.length === 0 && !isGenerating && !dataLoaded && (
           <View style={styles.emptyState}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -845,6 +922,7 @@ const makeStyles = (c: ThemeColors) =>
     newBadge: { backgroundColor: c.primary, color: c.white, fontSize: FontSize.xs, alignSelf: 'flex-start' },
     actions: { marginTop: Spacing.lg, gap: Spacing.sm },
     actionButton: { borderRadius: BorderRadius.md },
+    groceryButton: { borderRadius: BorderRadius.md, marginTop: Spacing.sm, borderColor: c.primary },
     emptyState: { alignItems: 'center', marginTop: Spacing.xxl, gap: Spacing.md },
     emptyText: {
       fontFamily: Fonts.body,

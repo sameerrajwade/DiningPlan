@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { Text, ActivityIndicator, Switch, Surface } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -31,7 +31,7 @@ const MEAL_LABEL: Record<MealType, string> = {
   snack: 'Snack',
 };
 
-export const CalendarScreen: React.FC<Props> = ({ navigation }) => {
+export const CalendarScreen: React.FC<Props> = ({ navigation, route }) => {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -41,6 +41,32 @@ export const CalendarScreen: React.FC<Props> = ({ navigation }) => {
   const { preferences, updatePreferences } = useHouseholdStore();
 
   const [currentDate, setCurrentDate] = useState(new Date());
+  // Day to highlight + scroll to (from the daily reminder → tomorrow's menu).
+  const [focusedDate, setFocusedDate] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const focusYRef = useRef<number | null>(null);
+
+  // A focusDate param jumps to that day's week, highlights it, then clears itself.
+  useEffect(() => {
+    const fd = route.params?.focusDate;
+    if (fd) {
+      setCurrentDate(new Date(fd + 'T00:00:00'));
+      setFocusedDate(fd);
+      navigation.setParams({ focusDate: undefined });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route.params?.focusDate]);
+
+  // Scroll the highlighted day into view once the week has laid out.
+  useEffect(() => {
+    if (!focusedDate) return;
+    const t = setTimeout(() => {
+      if (focusYRef.current != null) {
+        scrollRef.current?.scrollTo({ y: Math.max(0, focusYRef.current - 12), animated: true });
+      }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [focusedDate, meals]);
 
   const kidsOn = !!preferences?.planKidsTiffin;
   const toggleKids = useCallback(async () => {
@@ -157,16 +183,20 @@ export const CalendarScreen: React.FC<Props> = ({ navigation }) => {
       {isLoading && meals.length === 0 ? (
         <ActivityIndicator style={styles.loader} color={colors.primary} />
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
           {days.map((day, idx) => {
             const dateStr = format(day, 'yyyy-MM-dd');
             const today = isToday(day);
+            const isFocused = focusedDate === dateStr;
             const dow = day.getDay(); // 0=Sun, 6=Sat
             const isWeekend = dow === 0 || dow === 6;
             const types = mealTypesForDay(dateStr);
             return (
               <FadeSlideIn key={dateStr} delay={idx * 30}>
-                <View style={[styles.dayCard, today && styles.dayCardToday]}>
+                <View
+                  style={[styles.dayCard, today && styles.dayCardToday, isFocused && styles.dayCardFocused]}
+                  onLayout={isFocused ? (e) => { focusYRef.current = e.nativeEvent.layout.y; } : undefined}
+                >
                   <View style={styles.dayHeader}>
                     <View style={styles.dayNameRow}>
                       <Text style={[styles.dayName, today && styles.todayText]}>
@@ -262,6 +292,7 @@ const makeStyles = (c: ThemeColors) =>
       marginBottom: Spacing.sm,
     },
     dayCardToday: { borderColor: c.primary, borderWidth: 1 },
+    dayCardFocused: { borderColor: c.primary, borderWidth: 2 },
     dayHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',

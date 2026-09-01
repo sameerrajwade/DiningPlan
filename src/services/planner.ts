@@ -1,12 +1,19 @@
 import { addDays, differenceInDays, format, getDay, parseISO } from 'date-fns';
 import { Dish, Meal, MealPlan, UserPreferences } from '../types';
 
+// A never-cooked dish is scored as if it were this many days "stale" — enough to
+// be introduced into rotation, but not so high it permanently buries dishes the
+// household actually cooks. MAX_STALENESS_SCORE is a safety ceiling.
+const NEW_DISH_NOVELTY = 21;
+const MAX_STALENESS_SCORE = 45;
+
 export function generateMealPlan(
   dishes: Dish[],
   recentMeals: Meal[],
   preferences: UserPreferences,
   startDate: string,
   days: number,
+  rng: () => number = Math.random,
 ): MealPlan[] {
   const start = parseISO(startDate);
   const today = new Date();
@@ -49,11 +56,21 @@ export function generateMealPlan(
 
   // Step 2: Score remaining dishes
   const scored = fallback.map((dish) => {
-    const daysSinceLast = dish.lastCookedDate
+    const cooked = !!dish.lastCookedDate;
+    const daysSinceLast = cooked
       ? differenceInDays(today, parseISO(dish.lastCookedDate))
       : 999;
     const favoriteBonus = dish.isFavorite ? 20 : 0;
-    const score = daysSinceLast + favoriteBonus;
+    // Never-cooked dishes get a BOUNDED novelty score (not 999). Otherwise every
+    // untried dish would permanently outrank everything you actually cook — after
+    // seeding ~50 starter dishes the planner would flood the long tail of dishes
+    // you've never made and never surface your real rotation. Capping novelty at
+    // ~3 weeks means new dishes are still attractive enough to get introduced, but
+    // a dish you genuinely haven't cooked in a while wins once history exists.
+    const stalenessScore = cooked
+      ? daysSinceLast
+      : Math.min(NEW_DISH_NOVELTY, MAX_STALENESS_SCORE);
+    const score = stalenessScore + favoriteBonus;
     return { dish, score, daysSinceLast };
   });
 
@@ -72,11 +89,11 @@ export function generateMealPlan(
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
     // Only assign dine-out on weekends and within the user's maxDineOutsPerWeek limit
-    const dineOutDinner = isWeekend && dineOutCount < preferences.maxDineOutsPerWeek && Math.random() < 0.6;
+    const dineOutDinner = isWeekend && dineOutCount < preferences.maxDineOutsPerWeek && rng() < 0.6;
     if (dineOutDinner) dineOutCount++;
 
     // Pick lunch dish
-    const lunchDish = pickDish(scored, usedDishes, usedCuisinesInRow);
+    const lunchDish = pickDish(scored, usedDishes, usedCuisinesInRow, rng);
     usedDishes.push(lunchDish.dish.name);
     usedCuisinesInRow.push(lunchDish.dish.cuisineTag);
     if (usedCuisinesInRow.length > 3) usedCuisinesInRow.shift();
@@ -91,7 +108,7 @@ export function generateMealPlan(
         isNew: false,
       };
     } else {
-      const dinnerDish = pickDish(scored, usedDishes, usedCuisinesInRow);
+      const dinnerDish = pickDish(scored, usedDishes, usedCuisinesInRow, rng);
       usedDishes.push(dinnerDish.dish.name);
       usedCuisinesInRow.push(dinnerDish.dish.cuisineTag);
       if (usedCuisinesInRow.length > 3) usedCuisinesInRow.shift();
@@ -139,23 +156,31 @@ function pickDish(
   scored: ScoredDish[],
   usedDishes: string[],
   recentCuisines: string[],
+  rng: () => number = Math.random,
 ): ScoredDish {
-  // Prefer dishes not yet used and with different cuisine from recent
+  // Prefer dishes not yet used this plan; fall back to the full set only if the
+  // library is smaller than the plan (so every slot still fills).
   const available = scored.filter((s) => !usedDishes.includes(s.dish.name));
   const pool = available.length > 0 ? available : scored;
 
-  // Boost score for cuisine diversity
-  const diversified = pool.map((s) => {
-    const cuisinePenalty = recentCuisines.filter(
-      (c) => c === s.dish.cuisineTag,
-    ).length * 10;
-    return { ...s, adjustedScore: s.score - cuisinePenalty };
+  // WEIGHTED RANDOM over the WHOLE pool (not just the top 3). The old code sorted
+  // by score and picked among the top 3 — with a seeded library where most dishes
+  // tie (never-cooked all score the same), the stable sort produced the SAME top 3
+  // every regenerate, so hitting "regenerate" just reshuffled the same handful.
+  // Weighting by score keeps stale/favorite dishes more likely while giving all
+  // 100+ dishes a real chance, so the plan genuinely varies each time.
+  const weighted = pool.map((s) => {
+    const cuisinePenalty =
+      recentCuisines.filter((c) => c === s.dish.cuisineTag).length * 8;
+    // Floor at 1 so even a heavily-penalized dish can still be drawn.
+    return { s, w: Math.max(1, s.score - cuisinePenalty) };
   });
 
-  diversified.sort((a, b) => b.adjustedScore - a.adjustedScore);
-
-  // Pick from top candidates with slight randomness
-  const topN = Math.min(3, diversified.length);
-  const idx = Math.floor(Math.random() * topN);
-  return diversified[idx];
+  const total = weighted.reduce((sum, x) => sum + x.w, 0);
+  let r = rng() * total;
+  for (const x of weighted) {
+    r -= x.w;
+    if (r <= 0) return x.s;
+  }
+  return weighted[weighted.length - 1].s;
 }

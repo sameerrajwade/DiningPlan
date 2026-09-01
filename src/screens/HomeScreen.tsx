@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo } from 'react';
-import { StyleSheet, View, ScrollView, RefreshControl, TouchableOpacity, Dimensions } from 'react-native';
+import { StyleSheet, View, ScrollView, RefreshControl, TouchableOpacity, Dimensions, Alert } from 'react-native';
 import Svg, { Defs, RadialGradient, Stop, Rect, Circle } from 'react-native-svg';
 import { Text, ActivityIndicator, FAB } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -24,6 +24,9 @@ import { mealTypeIcon } from '../utils/icons';
 import { getFestival } from '../utils/festival';
 import { computeLoggingStreak } from '../utils/streak';
 import { StreakPill } from '../components/StreakPill';
+import { QuickActions } from '../components/QuickActions';
+import { cookAgainDishes, decideForMe, isLeftovers, LEFTOVERS_NAME, type CookAgainDish, type Suggestion } from '../utils/quickActions';
+import { inferDietFromNames } from '../utils/diet';
 import { useTourStore } from '../stores/useTourStore';
 import type { HomeStackScreenProps } from '../navigation/types';
 import type { MealType } from '../types';
@@ -46,9 +49,12 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const { user } = useAuthStore();
   const householdId = user?.householdId ?? '';
-  const { meals, isLoading: mealsLoading, fetchMeals, dedupeMeals } = useMealStore();
-  const { fetchDishes } = useDishStore();
+  const { meals, isLoading: mealsLoading, fetchMeals, dedupeMeals, addMeal, updateMeal } = useMealStore();
+  const { dishes, fetchDishes } = useDishStore();
   const { preferences } = useHouseholdStore();
+
+  const [suggestion, setSuggestion] = React.useState<Suggestion | null>(null);
+  const [quickBusy, setQuickBusy] = React.useState(false);
 
   const currencySymbol = getCurrencySymbol(preferences?.currency ?? 'USD');
   const currencyIcon = (() => {
@@ -130,7 +136,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       Array.from(
         new Set(
           monthMeals
-            .filter((m) => m.sourceType === 'home' && m.dishName)
+            .filter((m) => m.sourceType === 'home' && m.dishName && !isLeftovers(m.dishName))
             .map((m) => m.dishName),
         ),
       ),
@@ -227,7 +233,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       if (m.sourceType !== 'home' || m.date > today) return;
       const names = m.items?.length ? m.items.map((it) => it.name) : [m.dishName];
       names.forEach((name) => {
-        if (!name) return;
+        if (!name || isLeftovers(name)) return;
         const prev = lastCooked.get(name);
         if (!prev || m.date > prev) lastCooked.set(name, m.date);
       });
@@ -242,6 +248,12 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       .sort((a, b) => b.days - a.days)
       .slice(0, 5);
   }, [meals, today]);
+
+  // "Cook again" — recent home dishes for 1-tap re-log (excludes leftovers/kids).
+  const cookAgain = useMemo(
+    () => cookAgainDishes(meals, dishes, today, 8),
+    [meals, dishes, today],
+  );
 
   // First-run product tour — auto-start once, after onboarding, when Home is
   // ready. `finish` sets `seen`, so it never re-triggers on its own.
@@ -262,6 +274,85 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     [navigation],
   );
 
+  // One-tap home log used by Cook again / Decide for me / Leftovers. Fills the
+  // first empty configured family slot today (else dinner); if that slot is
+  // already taken, confirms a replace — mirroring AddMealScreen's dupe guard so
+  // quick actions can never silently double-log or create a conflicting slot.
+  const quickLog = useCallback(
+    async (name: string, cuisine: string, opts?: { leftovers?: boolean }) => {
+      if (!householdId || quickBusy) return;
+      const defaults = (preferences?.defaultMeals ?? ['lunch', 'dinner']) as MealType[];
+      const filledToday = new Set(
+        meals.filter((m) => m.date === today && m.audience !== 'kids').map((m) => m.mealType),
+      );
+      const target: MealType =
+        MEAL_ORDER.find((t) => defaults.includes(t) && !filledToday.has(t)) ??
+        (defaults.includes('dinner') ? 'dinner' : defaults[defaults.length - 1] ?? 'dinner');
+
+      const mealData = {
+        date: today,
+        mealType: target,
+        sourceType: 'home' as const,
+        dishName: name,
+        cuisineTag: opts?.leftovers ? '' : cuisine || 'Indian',
+        restaurantName: '',
+        cost: 0,
+        notes: '',
+        audience: 'family' as const,
+        diet: inferDietFromNames([name]),
+        items: opts?.leftovers ? [] : [{ name }],
+      };
+
+      const existing = meals.find(
+        (m) => m.date === today && m.mealType === target && (m.audience ?? 'family') === 'family',
+      );
+
+      setQuickBusy(true);
+      try {
+        if (existing) {
+          await new Promise<void>((resolve, reject) => {
+            Alert.alert(
+              `${MEAL_LABEL[target]} already logged`,
+              `Replace "${existing.dishName}" with "${name}"?`,
+              [
+                { text: 'Cancel', style: 'cancel', onPress: () => reject(new Error('cancelled')) },
+                {
+                  text: 'Replace',
+                  onPress: () =>
+                    updateMeal(householdId, existing.id, mealData).then(resolve).catch(reject),
+                },
+              ],
+            );
+          });
+        } else {
+          await addMeal(householdId, { ...mealData, createdBy: user?.id ?? '', householdId });
+        }
+        setSuggestion(null);
+      } catch {
+        // cancelled or failed — leave state untouched
+      } finally {
+        setQuickBusy(false);
+      }
+    },
+    [householdId, quickBusy, preferences, meals, today, addMeal, updateMeal, user],
+  );
+
+  const handleDecide = useCallback(() => {
+    const pick = decideForMe(dishes, meals, {
+      avoidRepeatDays: preferences?.avoidRepeatDays ?? 0,
+    });
+    if (!pick) {
+      Alert.alert('No dishes yet', 'Log a few home-cooked dishes first, then I can suggest one.');
+      return;
+    }
+    setSuggestion(pick);
+  }, [dishes, meals, preferences]);
+
+  const handleCookAgain = useCallback(
+    (d: CookAgainDish) => quickLog(d.name, d.cuisineTag),
+    [quickLog],
+  );
+
   const firstName = (user?.name ?? '').trim().split(/\s+/)[0] || '';
   const festival = getFestival();
   const greeting = festival
@@ -273,7 +364,28 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         return 'Good evening';
       })();
   const headerWidth = Dimensions.get('window').width;
-  const headerHeight = insets.top + 156;
+  const headerHeight = insets.top + 76;
+
+  // "Quick add" placement: when today has nothing logged yet, surface it up top
+  // (right under the dashboard) so deciding/logging is the first thing in reach;
+  // once the day has meals, it drops to the bottom as a secondary shortcut.
+  const todayPlanned =
+    todayTypes.some((t) => !!mealForToday(t)) || kidsForToday.length > 0;
+  const quickActionsEl =
+    meals.length > 0 ? (
+      <QuickActions
+        colors={colors}
+        cookAgain={cookAgain}
+        suggestion={suggestion}
+        busy={quickBusy}
+        onDecide={handleDecide}
+        onShuffle={handleDecide}
+        onAcceptSuggestion={() => suggestion && quickLog(suggestion.name, suggestion.cuisineTag)}
+        onDismissSuggestion={() => setSuggestion(null)}
+        onCookAgain={handleCookAgain}
+        onLeftovers={() => quickLog(LEFTOVERS_NAME, '', { leftovers: true })}
+      />
+    ) : null;
 
   if (!householdId) {
     return (
@@ -289,51 +401,29 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={mealsLoading} onRefresh={() => loadData(true)} tintColor={colors.primary} />}
       >
+        {/* Compact header: greeting on the left, brand + tagline on the right —
+            a soft terracotta wash keeps the brand feel without eating the screen. */}
         <View style={[styles.brandHeaderWrap, { height: headerHeight }]}>
-          {/* Soft radial terracotta wash — anchors the brand the instant Home opens */}
           <Svg width={headerWidth} height={headerHeight} style={styles.brandWash}>
             <Defs>
-              <RadialGradient id="wash" cx="50%" cy="34%" rx="62%" ry="62%">
-                <Stop offset="0" stopColor={colors.primary} stopOpacity={isDark ? 0.28 : 0.16} />
-                <Stop offset="1" stopColor={colors.primary} stopOpacity={0} />
+              <RadialGradient id="wash" cx="80%" cy="0%" rx="90%" ry="150%">
+                <Stop offset="0" stopColor={festival ? colors.takeout : colors.primary} stopOpacity={isDark ? 0.24 : 0.14} />
+                <Stop offset="1" stopColor={festival ? colors.takeout : colors.primary} stopOpacity={0} />
               </RadialGradient>
             </Defs>
             <Rect x="0" y="0" width={headerWidth} height={headerHeight} fill="url(#wash)" />
-            {/* faint thali motif: a plate ring with three small bowls; turns
-                golden on festival days */}
-            {(() => {
-              const motif = festival ? colors.takeout : colors.primary;
-              const cx = headerWidth / 2;
-              return (
-                <>
-                  <Circle cx={cx} cy={insets.top + 60} r="52" stroke={motif} strokeWidth="1.5" opacity={0.09} fill="none" />
-                  <Circle cx={cx - 26} cy={insets.top + 46} r="11" stroke={motif} strokeWidth="1.5" opacity={0.09} fill="none" />
-                  <Circle cx={cx + 26} cy={insets.top + 46} r="11" stroke={motif} strokeWidth="1.5" opacity={0.09} fill="none" />
-                  <Circle cx={cx} cy={insets.top + 78} r="13" stroke={motif} strokeWidth="1.5" opacity={0.09} fill="none" />
-                  {festival && (
-                    <>
-                      <Circle cx={cx - 92} cy={insets.top + 40} r="4" fill={colors.takeout} opacity={0.5} />
-                      <Circle cx={cx + 92} cy={insets.top + 40} r="4" fill={colors.takeout} opacity={0.5} />
-                      <Circle cx={cx - 70} cy={insets.top + 24} r="3" fill={colors.takeout} opacity={0.4} />
-                      <Circle cx={cx + 70} cy={insets.top + 24} r="3" fill={colors.takeout} opacity={0.4} />
-                    </>
-                  )}
-                </>
-              );
-            })()}
           </Svg>
-          <View style={[styles.brandHeader, { paddingTop: insets.top + Spacing.md }]}>
-            {firstName ? (
-              <Text style={styles.greeting}>{greeting}, {firstName}</Text>
-            ) : (
-              <Text style={styles.greeting}>{greeting}</Text>
-            )}
-            <View style={styles.brandRow}>
-              <MaterialCommunityIcons name="silverware-fork-knife" size={20} color={colors.primary} />
-              <Text style={styles.brandName}>Sofra</Text>
-              <MaterialCommunityIcons name="silverware-fork-knife" size={20} color={colors.primary} />
+          <View style={[styles.brandHeaderRow, { paddingTop: insets.top + Spacing.sm }]}>
+            <View style={styles.greetCol}>
+              <Text style={styles.greetingCompact} numberOfLines={1}>
+                {greeting}{firstName ? `, ${firstName}` : ''}
+              </Text>
+              <Text style={styles.brandTaglineCompact} numberOfLines={1}>Your family's meal memory</Text>
             </View>
-            <Text style={styles.brandTagline}>Your family's meal memory</Text>
+            <View style={styles.brandMark}>
+              <MaterialCommunityIcons name="silverware-fork-knife" size={16} color={colors.primary} />
+              <Text style={styles.brandNameCompact}>Sofra</Text>
+            </View>
           </View>
         </View>
 
@@ -425,6 +515,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         )}
 
+        {!todayPlanned && quickActionsEl}
+
         <Text style={styles.sectionTitle}>Today's meals</Text>
         {mealsLoading && meals.length === 0 ? (
           <View style={styles.todayMeals}>
@@ -467,6 +559,8 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             ))}
           </>
         )}
+
+        {todayPlanned && quickActionsEl}
 
         {forgottenDishes.length > 0 && (
           <>
@@ -525,31 +619,42 @@ const makeStyles = (c: ThemeColors) =>
       justifyContent: 'flex-end',
     },
     brandWash: { position: 'absolute', top: 0, left: 0 },
-    brandHeader: {
-      alignItems: 'center',
-      paddingBottom: Spacing.md,
-    },
-    greeting: {
-      fontFamily: Fonts.body,
-      fontSize: FontSize.sm,
-      color: c.textSecondary,
-      marginBottom: 2,
-    },
-    brandRow: {
+    brandHeaderRow: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
-      gap: Spacing.sm,
+      justifyContent: 'space-between',
+      paddingBottom: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      gap: Spacing.md,
     },
-    brandName: {
+    greetCol: { flex: 1, minWidth: 0 },
+    greetingCompact: {
       fontFamily: Fonts.display,
-      fontSize: 30,
+      fontSize: FontSize.xl,
       color: c.text,
     },
-    brandTagline: {
-      fontFamily: Fonts.displayMedium,
-      fontSize: FontSize.sm,
+    brandTaglineCompact: {
+      fontFamily: Fonts.body,
+      fontSize: FontSize.xs,
       color: c.textSecondary,
-      marginTop: 2,
+      marginTop: 1,
+    },
+    brandMark: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      paddingHorizontal: Spacing.sm,
+      paddingVertical: 5,
+      borderRadius: BorderRadius.full,
+      backgroundColor: c.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+    },
+    brandNameCompact: {
+      fontFamily: Fonts.display,
+      fontSize: FontSize.lg,
+      color: c.text,
     },
     footer: {
       flexDirection: 'row',

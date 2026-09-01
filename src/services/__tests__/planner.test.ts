@@ -75,11 +75,69 @@ describe('generateMealPlan', () => {
     expect(byDate['2026-07-10'].kids?.dishName).toBe('Veg Sandwich'); // Friday
   });
 
+  it('does not let never-cooked dishes permanently bury a real rotation dish', () => {
+    // Seeded starter catalogs create many never-cooked dishes. With the old
+    // score (999 for never-cooked) they would always outrank a dish you actually
+    // cook, so your real rotation never surfaces. Cap makes a genuinely-stale
+    // cooked dish competitive again.
+    const spy = jest.spyOn(Math, 'random').mockReturnValue(0); // always pick top-scored
+    try {
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+      const oldFav = dish('MyStapleCurry', {
+        lastCookedDate: ninetyDaysAgo.toISOString().slice(0, 10),
+        timesCooked: 12,
+      });
+      // Five never-cooked seeded dishes — more than the 4 slots in a 2-day plan,
+      // so under the old behavior the staple would be crowded out entirely.
+      const seeded = ['Seed1', 'Seed2', 'Seed3', 'Seed4', 'Seed5'].map((n) =>
+        dish(n, { lastCookedDate: '', timesCooked: 0 }),
+      );
+      const today = new Date().toISOString().slice(0, 10);
+      const plan = generateMealPlan([oldFav, ...seeded], [], prefs(), today, 2);
+      const names = plan.flatMap((d) => [d.lunch.dishName, d.dinner.dishName]);
+      expect(names).toContain('MyStapleCurry');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('avoids dishes cooked within avoidRepeatDays', () => {
     const today = new Date().toISOString().slice(0, 10);
     const recent = [meal('Chole', today)];
     const plan = generateMealPlan(dishes, recent, prefs({ avoidRepeatDays: 30 }), today, 2);
     const names = plan.flatMap((d) => [d.lunch.dishName, d.dinner.dishName]);
     expect(names).not.toContain('Chole');
+  });
+
+  // A small deterministic PRNG so variety asserts don't depend on Math.random.
+  const seeded = (seed: number) => () => {
+    seed = (seed * 1664525 + 1013904223) % 4294967296;
+    return seed / 4294967296;
+  };
+
+  const bigLibrary = Array.from({ length: 40 }, (_, i) =>
+    dish(`Dish${i}`, {
+      cuisineTag: ['Indian', 'Chinese', 'Italian', 'Thai'][i % 4],
+      lastCookedDate: '',
+      timesCooked: 0,
+    }),
+  );
+
+  it('draws on many distinct dishes across a week from a large library', () => {
+    // 7 days × 2 slots = 14 picks; with 40 dishes we expect near-14 distinct,
+    // not the same handful. (Old top-3 logic capped effective variety.)
+    const plan = generateMealPlan(bigLibrary, [], prefs(), '2026-07-06', 7, seeded(1));
+    const names = plan.flatMap((d) => [d.lunch.dishName, d.dinner.dishName]);
+    const distinct = new Set(names);
+    expect(distinct.size).toBeGreaterThanOrEqual(12);
+  });
+
+  it('produces different plans on regenerate (different rng state)', () => {
+    const a = generateMealPlan(bigLibrary, [], prefs(), '2026-07-06', 3, seeded(1));
+    const b = generateMealPlan(bigLibrary, [], prefs(), '2026-07-06', 3, seeded(999));
+    const namesA = a.flatMap((d) => [d.lunch.dishName, d.dinner.dishName]).join(',');
+    const namesB = b.flatMap((d) => [d.lunch.dishName, d.dinner.dishName]).join(',');
+    expect(namesA).not.toEqual(namesB);
   });
 });

@@ -122,12 +122,31 @@ export default function App() {
     useTourStore.getState().hydrate().catch(() => {});
 
     // Route to the right screen when the user taps a reminder notification.
+    // Daily → tomorrow's menu (Calendar focused on tomorrow); weekly → a fresh
+    // auto-plan (Plan); monthly → last month's wins (Insights).
     const notifSub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = response.notification.request.content.data as { screen?: string; range?: string };
+      const data = response.notification.request.content.data as {
+        screen?: string; range?: string; focus?: string; autoGenerate?: boolean;
+      };
       if (data?.screen === 'Insights') {
         navigate('Main', { screen: 'Insights', params: { range: data.range } });
       } else if (data?.screen === 'Plan') {
-        navigate('Main', { screen: 'Plan' });
+        navigate('Main', { screen: 'Plan', params: { autoGenerate: !!data.autoGenerate } });
+      } else if (data?.screen === 'Calendar') {
+        // Resolve "tomorrow" at tap time (a repeating notification can't bake in
+        // a date). Falls back to any explicit focus date.
+        let focusDate: string | undefined;
+        if (data.focus === 'tomorrow') {
+          const t = new Date();
+          t.setDate(t.getDate() + 1);
+          const y = t.getFullYear();
+          const mo = String(t.getMonth() + 1).padStart(2, '0');
+          const d = String(t.getDate()).padStart(2, '0');
+          focusDate = `${y}-${mo}-${d}`;
+        } else if (data.focus) {
+          focusDate = data.focus;
+        }
+        navigate('Main', { screen: 'Calendar', params: { focusDate } });
       }
     });
     const appearanceSub = Appearance.addChangeListener(({ colorScheme }) => {

@@ -10,7 +10,7 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
-import { Text, TextInput, Button } from 'react-native-paper';
+import { Text, TextInput, Button, Chip } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { format, eachDayOfInterval, startOfMonth, endOfMonth, getDay } from 'date-fns';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
@@ -29,9 +29,11 @@ import { useHouseholdStore } from '../stores/useHouseholdStore';
 import { getCurrencySymbol } from '../utils/currency';
 import { setRestaurantDishRating } from '../services/firestore';
 import type { RootStackScreenProps } from '../navigation/types';
-import type { Meal, MealType, SourceType, CuisineTag, MealItem, MealAudience, Diet } from '../types';
+import type { Meal, MealType, SourceType, CuisineTag, MealItem, MealAudience, Diet, Dish } from '../types';
 import { toTitleCase } from '../utils/text';
 import { inferDietFromNames } from '../utils/diet';
+import { matchCatalogDish } from '../utils/starterDishes';
+import { parseRecipeInput } from '../utils/recipe';
 import { VegMark } from '../components/VegMark';
 
 type Props = RootStackScreenProps<'AddMeal'>;
@@ -62,7 +64,7 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
   const householdId = user?.householdId ?? '';
   const { addMeal, updateMeal, deleteMeal } = useMealStore();
   const [isSaving, setIsSaving] = useState(false);
-  const { dishes, fetchDishes } = useDishStore();
+  const { dishes, fetchDishes, addDish, updateDish } = useDishStore();
   const { preferences } = useHouseholdStore();
 
   const currencySymbol = getCurrencySymbol(preferences?.currency ?? 'USD');
@@ -103,6 +105,17 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
     existingMeal?.cost !== undefined ? String(existingMeal.cost) : '',
   );
   const [notes, setNotes] = useState(existingMeal?.notes ?? '');
+  // Optional ingredients for the MAIN dish (kept on the dish, not the meal, so
+  // logging stays fast). Collapsed by default; prefilled from an existing dish or
+  // the global catalog if we recognize the name. Never blocks saving.
+  const [ingredients, setIngredients] = useState<string[]>([]);
+  const [ingExpanded, setIngExpanded] = useState(false);
+  const [ingDraft, setIngDraft] = useState('');
+  const [ingTouched, setIngTouched] = useState(false);
+  // Optional recipe (link or typed steps) for the main dish — lives in the same
+  // collapsible section as ingredients. Prefilled from a recognized dish.
+  const [recipeDraft, setRecipeDraft] = useState('');
+  const [recipeTouched, setRecipeTouched] = useState(false);
   // Veg / Non-veg mark. Auto-inferred from the dish names as the user types, but
   // once they tap the toggle their choice sticks (dietTouched) and we stop
   // auto-following. Editing an old meal that has no stored diet stays auto.
@@ -119,6 +132,13 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
   useEffect(() => {
     if (householdId) fetchDishes(householdId);
   }, [householdId, fetchDishes]);
+
+  // The modal already shows a header — set its title (edit vs add) and drop the
+  // old in-content hero heading so "Add meal" isn't duplicated (and ~20% of the
+  // screen isn't wasted on a second title).
+  useEffect(() => {
+    navigation.setOptions({ headerTitle: isEditing ? 'Edit meal' : 'Add meal' });
+  }, [navigation, isEditing]);
 
   const allKnownDishes = useMemo(() => {
     const dishMap = new Map<string, typeof dishes[0]>();
@@ -146,6 +166,47 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
     () => allKnownDishes.map((d) => d.name),
     [allKnownDishes],
   );
+
+  // Prefill the optional ingredient list from an existing dish, else the global
+  // catalog, whenever the main dish name changes — UNLESS the user has already
+  // edited the list themselves (ingTouched). "If ingredients exist, just show
+  // them; if not, let them add." Never runs for outside meals.
+  useEffect(() => {
+    if (ingTouched) return;
+    const name = dishName.trim();
+    if (!name) {
+      setIngredients([]);
+      return;
+    }
+    const existing = dishes.find((d) => d.name.toLowerCase() === name.toLowerCase());
+    if (existing?.ingredients?.length) {
+      setIngredients(existing.ingredients);
+      return;
+    }
+    const match = matchCatalogDish(name);
+    setIngredients(match?.ingredients ?? []);
+  }, [dishName, dishes, ingTouched]);
+
+  // Prefill the recipe from a recognized dish (catalog dishes ship no recipe).
+  useEffect(() => {
+    if (recipeTouched) return;
+    const name = dishName.trim();
+    if (!name) { setRecipeDraft(''); return; }
+    const existing = dishes.find((d) => d.name.toLowerCase() === name.toLowerCase());
+    setRecipeDraft(existing?.recipe?.value ?? '');
+  }, [dishName, dishes, recipeTouched]);
+
+  const addIngredient = () => {
+    const text = ingDraft.trim().toLowerCase();
+    if (!text) return;
+    setIngredients((prev) => (prev.includes(text) ? prev : [...prev, text]));
+    setIngTouched(true);
+    setIngDraft('');
+  };
+  const removeIngredient = (name: string) => {
+    setIngredients((prev) => prev.filter((i) => i !== name));
+    setIngTouched(true);
+  };
 
   // Auto-set the veg/non-veg mark from whatever dishes are currently entered
   // (home: main + sides; outside: dishes ordered) until the user overrides it.
@@ -179,7 +240,15 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
     (name: string) => {
       setDishName(name);
       const dish = allKnownDishes.find((d) => d.name === name);
-      if (dish) setCuisineTag(dish.cuisineTag);
+      if (dish) {
+        setCuisineTag(dish.cuisineTag);
+        return;
+      }
+      // Not one of the household's own dishes yet — fall back to the global
+      // catalog so a correctly-typed dish still pre-fills its cuisine. Purely a
+      // convenience default; the user can override, and logging is never gated.
+      const match = matchCatalogDish(name);
+      if (match) setCuisineTag(match.cuisineTag);
     },
     [allKnownDishes],
   );
@@ -344,6 +413,44 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
           });
         }
       }
+
+      // Optionally persist the main dish's ingredients + recipe (kept on the DISH,
+      // not the meal). Only for home meals; never blocks the meal save.
+      if (!isOutside) {
+        const existing = dishes.find(
+          (d) => d.name.toLowerCase() === resolvedDishName.toLowerCase(),
+        );
+        const parsedRecipe = parseRecipeInput(recipeDraft);
+        // ingredients: save when the user edited them, or to persist a
+        // catalog-prefilled list onto a bare dish. recipe: only when the user
+        // touched the field (parse null = they cleared it → remove).
+        const ingChanged =
+          ingredients.length > 0 && (ingTouched || !existing?.ingredients?.length);
+        const patch: Partial<Dish> = {};
+        if (ingChanged) patch.ingredients = ingredients;
+        if (recipeTouched) patch.recipe = parsedRecipe ?? (null as any);
+        if (Object.keys(patch).length > 0) {
+          try {
+            if (existing) {
+              await updateDish(householdId, existing.id, patch);
+            } else {
+              await addDish(householdId, {
+                name: resolvedDishName,
+                cuisineTag,
+                categoryTags: [],
+                isFavorite: false,
+                timesCooked: 0,
+                lastCookedDate: '',
+                householdId,
+                ...(patch.ingredients ? { ingredients: patch.ingredients } : {}),
+                ...(patch.recipe ? { recipe: patch.recipe } : {}),
+              });
+            }
+          } catch {
+            // Non-critical — the meal already saved.
+          }
+        }
+      }
       navigation.goBack();
     } catch (e: any) {
       if (e.message !== 'cancelled') {
@@ -356,6 +463,9 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
     dishName, householdId, isEditing, existingMeal, date, mealType,
     sourceType, cuisineTag, restaurantName, cost, notes, user,
     items, sides, audience, diet, addMeal, updateMeal, navigation,
+    // Without these the callback captured a STALE closure — ingredients/recipe
+    // typed after mount were never persisted (the "didn't save" bug).
+    ingredients, ingTouched, recipeDraft, recipeTouched, dishes, addDish, updateDish,
   ]);
 
   const handleDelete = useCallback(() => {
@@ -392,10 +502,6 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.heading}>
-          {isEditing ? 'Edit Meal' : 'Add Meal'}
-        </Text>
-
         {/* Date */}
         <Text style={styles.label}>Date</Text>
         <TouchableOpacity
@@ -505,6 +611,7 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
               recentDishes={recentDishNames}
               onSelectDish={handleSelectDish}
             />
+
             {/* Additional dishes in the same meal — a full thali (curry + bread +
                 rice + dal). Labeled + icon'd so they read as dishes, not notes. */}
             {sides.length > 0 && (
@@ -535,6 +642,86 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
               <MaterialCommunityIcons name="plus-circle-outline" size={18} color={colors.primary} />
               <Text style={styles.addDishText}>Add another dish</Text>
             </TouchableOpacity>
+
+            {/* Ingredients + recipe — placed AFTER all the dishes (adding dishes is
+                the priority), just before Cuisine. Collapsible + optional; applies
+                to the MAIN dish. Never gates the 10-second log. */}
+            {dishName.trim().length > 0 && (
+              <View style={styles.ingSection}>
+                <TouchableOpacity
+                  style={styles.ingHeader}
+                  onPress={() => setIngExpanded((v) => !v)}
+                  accessibilityLabel="Toggle ingredients and recipe"
+                >
+                  <MaterialCommunityIcons name="basket-outline" size={18} color={colors.textSecondary} />
+                  <Text style={styles.ingHeaderText}>
+                    Ingredients & recipe{' '}
+                    <Text style={styles.ingHeaderHint}>
+                      (optional{ingredients.length ? ` · ${ingredients.length}` : ''})
+                    </Text>
+                  </Text>
+                  <MaterialCommunityIcons
+                    name={ingExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={colors.textMuted}
+                  />
+                </TouchableOpacity>
+                {ingExpanded && (
+                  <View style={styles.ingBody}>
+                    {ingredients.length > 0 && (
+                      <View style={styles.ingChips}>
+                        {ingredients.map((ing) => (
+                          <Chip
+                            key={ing}
+                            onClose={() => removeIngredient(ing)}
+                            style={styles.ingChip}
+                            textStyle={styles.ingChipText}
+                          >
+                            {toTitleCase(ing)}
+                          </Chip>
+                        ))}
+                      </View>
+                    )}
+                    <View style={styles.ingAddRow}>
+                      <TextInput
+                        value={ingDraft}
+                        onChangeText={setIngDraft}
+                        placeholder="Add an ingredient"
+                        mode="outlined"
+                        dense
+                        style={styles.ingInput}
+                        outlineColor={colors.border}
+                        activeOutlineColor={colors.primary}
+                        onSubmitEditing={addIngredient}
+                        returnKeyType="done"
+                      />
+                      <TouchableOpacity onPress={addIngredient} disabled={!ingDraft.trim()}>
+                        <MaterialCommunityIcons
+                          name="plus-circle"
+                          size={28}
+                          color={ingDraft.trim() ? colors.primary : colors.textMuted}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    <Text style={styles.ingRecipeLabel}>Recipe (link or steps)</Text>
+                    <TextInput
+                      value={recipeDraft}
+                      onChangeText={(t) => { setRecipeDraft(t); setRecipeTouched(true); }}
+                      placeholder="Paste a YouTube / recipe link, or type how you make it"
+                      mode="outlined"
+                      multiline
+                      style={styles.ingRecipeInput}
+                      outlineColor={colors.border}
+                      activeOutlineColor={colors.primary}
+                    />
+                    <Text style={styles.ingNote}>
+                      Saved to this dish. Use the Grocery tab or the dish’s “Add to grocery”
+                      to shop.
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
           </>
         )}
 
@@ -724,6 +911,32 @@ const makeStyles = (c: ThemeColors) =>
       marginBottom: Spacing.sm,
     },
     addDishText: { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.sm, color: c.primary },
+    ingSection: {
+      marginTop: Spacing.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: BorderRadius.md,
+      backgroundColor: c.surface,
+      overflow: 'hidden',
+    },
+    ingHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.sm,
+      paddingHorizontal: Spacing.md,
+      paddingVertical: Spacing.sm,
+    },
+    ingHeaderText: { flex: 1, fontFamily: Fonts.bodySemiBold, fontSize: FontSize.sm, color: c.text },
+    ingHeaderHint: { fontFamily: Fonts.body, fontSize: FontSize.xs, color: c.textMuted },
+    ingBody: { paddingHorizontal: Spacing.md, paddingBottom: Spacing.md },
+    ingChips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginBottom: Spacing.sm },
+    ingChip: { backgroundColor: c.surfaceVariant },
+    ingChipText: { fontSize: FontSize.sm, fontFamily: Fonts.body, color: c.text },
+    ingAddRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+    ingInput: { flex: 1, backgroundColor: c.background },
+    ingRecipeLabel: { fontFamily: Fonts.bodyMedium, fontSize: FontSize.sm, color: c.textSecondary, marginTop: Spacing.md, marginBottom: Spacing.xs },
+    ingRecipeInput: { backgroundColor: c.background, maxHeight: 140 },
+    ingNote: { fontFamily: Fonts.body, fontSize: FontSize.xs, color: c.textMuted, marginTop: Spacing.xs },
     // Matches MealTypeToggle / SourceTypeToggle so all the selectors are the
     // same height and shape.
     dietRow: { flexDirection: 'row', gap: Spacing.xs, marginBottom: Spacing.xs },

@@ -94,6 +94,12 @@ const makeStyles = (c: ThemeColors) =>
       marginVertical: Spacing.xs,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: c.border,
+      // Soft depth for a more premium, layered feel (kept subtle).
+      shadowColor: c.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 1,
     },
     header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.sm },
     iconBadge: {
