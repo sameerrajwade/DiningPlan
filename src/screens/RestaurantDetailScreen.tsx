@@ -3,7 +3,7 @@ import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
 import { Text, ActivityIndicator } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { format, parseISO, subMonths, startOfMonth } from 'date-fns';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { FadeSlideIn } from '../components/motion';
 import { useAuthStore } from '../stores/useAuthStore';
@@ -61,8 +61,9 @@ export const RestaurantDetailScreen: React.FC<Props> = ({ route }) => {
   const { name } = route.params;
   // Open on the same window the user had selected on the Restaurants list.
   const initialRange: RestaurantRange = route.params.range ?? 'month';
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
 
   const { user } = useAuthStore();
   const householdId = user?.householdId ?? '';
@@ -187,7 +188,7 @@ export const RestaurantDetailScreen: React.FC<Props> = ({ route }) => {
       ) : dishes.length === 0 ? (
         <Text style={styles.empty}>No dishes logged here yet. Add a meal with this restaurant to track what you order.</Text>
       ) : (
-        <View style={styles.card}>
+        <View style={[styles.card, elevation.e1]}>
           {dishes.map((d, i) => (
             <View key={d.dishName} style={[styles.dishRow, i > 0 && styles.dishRowBorder]}>
               <View style={styles.dishInfo}>

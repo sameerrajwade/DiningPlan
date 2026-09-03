@@ -2,7 +2,8 @@ import React from 'react';
 import { StyleSheet, View, ScrollView, TouchableOpacity } from 'react-native';
 import { Text } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
+import { useTheme } from '../hooks/useTheme';
 import { PressableScale } from './motion';
 import type { CookAgainDish, Suggestion } from '../utils/quickActions';
 
@@ -34,12 +35,14 @@ export const QuickActions: React.FC<Props> = ({
   onCookAgain,
   onLeftovers,
 }) => {
+  const { isDark } = useTheme();
   const styles = React.useMemo(() => makeStyles(colors), [colors]);
+  const elevation = React.useMemo(() => makeElevation(isDark), [isDark]);
 
   return (
     <View>
       <Text style={styles.sectionTitle}>Quick add</Text>
-      <View style={styles.card}>
+      <View style={[styles.card, elevation.e1]}>
         {suggestion ? (
           // "Decide for me" result — takes over the card until dismissed/logged.
           <View>
@@ -125,12 +128,7 @@ const makeStyles = (c: ThemeColors) =>
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: c.border,
       padding: Spacing.md,
-      // soft depth (premium feel without heavy shadows)
-      shadowColor: c.black,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 8,
-      elevation: 1,
+      // Depth comes from the shared elevation system (spread at the call site).
     },
     rowLabel: {
       fontFamily: Fonts.bodySemiBold,

@@ -97,6 +97,40 @@ export const BorderRadius = {
   full: 9999,
 };
 
+// ── Elevation ──────────────────────────────────────────────────────
+// ONE cohesive depth system (replaces the ad-hoc per-card shadows). The shadow
+// is a warm brown in light mode — softer and more premium against the terracotta
+// paper ground than pure black. In dark mode a black shadow reads weakly, so
+// depth leans on the slightly-lifted surface + hairline border and the shadow
+// only deepens the separation. Levels: e1 = resting cards, e2 = raised /
+// interactive, e3 = modals & sheets. Spread as `...elevation.e1` onto a card.
+export const makeElevation = (isDark: boolean) => {
+  const shadowColor = isDark ? '#000000' : '#3A2A1E'; // warm brown, not pure black
+  return {
+    e1: {
+      shadowColor,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: isDark ? 0.4 : 0.07,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    e2: {
+      shadowColor,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: isDark ? 0.5 : 0.1,
+      shadowRadius: 16,
+      elevation: 6,
+    },
+    e3: {
+      shadowColor,
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: isDark ? 0.6 : 0.16,
+      shadowRadius: 28,
+      elevation: 14,
+    },
+  } as const;
+};
+
 // ── Typography ─────────────────────────────────────────────────────
 // Fraunces (warm serif) for display/headers + dish names only.
 // Inter (sans) for body/UI — legibility for all ages. Family strings

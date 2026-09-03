@@ -5,7 +5,7 @@ import Svg, { Circle } from 'react-native-svg';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { format } from 'date-fns';
 import { useFocusEffect } from '@react-navigation/native';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { AvatarPicker, PickedImage } from '../components/AvatarPicker';
 import { PreferencesSection } from '../components/PreferencesSection';
@@ -28,8 +28,9 @@ const getInitials = (name: string): string => {
 const STACK_COLORS = ['#C0532E', '#5E8B6A', '#E0A63C', '#4E7CB0'];
 
 export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
 
   const { user } = useAuthStore();
   const { household, members, fetchHousehold, fetchMembers } = useHouseholdStore();
@@ -164,7 +165,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       {household && (
         <FadeSlideIn delay={80}>
           <Text style={styles.sectionLabel}>Household</Text>
-          <View style={styles.card}>
+          <View style={[styles.card, elevation.e1]}>
             <Text style={styles.householdName}>{household.name}</Text>
             <View style={styles.codeRow}>
               <MaterialCommunityIcons name="key-variant" size={15} color={colors.textMuted} />
@@ -206,7 +207,7 @@ export const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       {/* Settings */}
       <FadeSlideIn delay={160}>
         <Text style={styles.sectionLabel}>General</Text>
-        <View style={styles.card}>
+        <View style={[styles.card, elevation.e1]}>
           <PressableScale style={styles.navRow} onPress={() => navigation.navigate('Settings')}>
             <MaterialCommunityIcons name="cog-outline" size={20} color={colors.primary} />
             <Text style={styles.navText}>Settings</Text>

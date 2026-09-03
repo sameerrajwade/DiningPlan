@@ -10,7 +10,7 @@ import {
   eachDayOfInterval,
   isToday,
 } from 'date-fns';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { WeekNavigator } from '../components/WeekNavigator';
 import { MealCard } from '../components/MealCard';
@@ -32,8 +32,10 @@ const MEAL_LABEL: Record<MealType, string> = {
 };
 
 export const CalendarScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
 
   const { user } = useAuthStore();
   const householdId = user?.householdId ?? '';
@@ -187,6 +189,7 @@ export const CalendarScreen: React.FC<Props> = ({ navigation, route }) => {
           {days.map((day, idx) => {
             const dateStr = format(day, 'yyyy-MM-dd');
             const today = isToday(day);
+            const isPast = dateStr < todayStr;
             const isFocused = focusedDate === dateStr;
             const dow = day.getDay(); // 0=Sun, 6=Sat
             const isWeekend = dow === 0 || dow === 6;
@@ -194,7 +197,7 @@ export const CalendarScreen: React.FC<Props> = ({ navigation, route }) => {
             return (
               <FadeSlideIn key={dateStr} delay={idx * 30}>
                 <View
-                  style={[styles.dayCard, today && styles.dayCardToday, isFocused && styles.dayCardFocused]}
+                  style={[styles.dayCard, elevation.e1, isPast && styles.dayCardPast, today && styles.dayCardToday, isFocused && styles.dayCardFocused]}
                   onLayout={isFocused ? (e) => { focusYRef.current = e.nativeEvent.layout.y; } : undefined}
                 >
                   <View style={styles.dayHeader}>
@@ -205,6 +208,11 @@ export const CalendarScreen: React.FC<Props> = ({ navigation, route }) => {
                       {today && (
                         <View style={styles.todayPill}>
                           <Text style={styles.todayPillText}>Today</Text>
+                        </View>
+                      )}
+                      {isPast && (
+                        <View style={styles.pastPill}>
+                          <Text style={styles.pastPillText}>Past</Text>
                         </View>
                       )}
                     </View>
@@ -293,6 +301,10 @@ const makeStyles = (c: ThemeColors) =>
     },
     dayCardToday: { borderColor: c.primary, borderWidth: 1 },
     dayCardFocused: { borderColor: c.primary, borderWidth: 2 },
+    // Past days read as done: muted surface, no lift (mirrors the Plan screen).
+    dayCardPast: { backgroundColor: c.surfaceVariant, opacity: 0.7, elevation: 0, shadowOpacity: 0 },
+    pastPill: { backgroundColor: c.surfaceVariant, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border, borderRadius: BorderRadius.full, paddingHorizontal: 9, paddingVertical: 2 },
+    pastPillText: { fontFamily: Fonts.bodySemiBold, fontSize: 10, color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
     dayHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',

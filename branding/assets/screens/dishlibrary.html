@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--terra:#C0532E;--terraL:#F8E9E2;--sage:#5E8B6A;--sageL:#E7F0E9;--amber:#E0A63C;
+    --bg:#FBF7F2;--card:#FFFFFF;--sv:#F3EEE7;--tx:#241E1B;--tx2:#6E645C;--tx3:#A79C93;--bd:#EAE2D8}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1280px;height:2706px}
+  .phone{width:1280px;height:2706px;background:var(--bg);position:relative;overflow:hidden;
+    font-family:'Inter',sans-serif;color:var(--tx);padding:80px 48px 0}
+  .frns{font-family:'Fraunces',serif}
+  .h1{font-size:66px;font-weight:600}
+  .search{margin-top:40px;background:var(--card);border:1px solid var(--bd);border-radius:26px;padding:32px 38px;font-size:34px;color:var(--tx3);display:flex;align-items:center;gap:22px}
+  .aud{display:flex;background:var(--sv);border-radius:40px;padding:8px;margin-top:28px}
+  .aud div{flex:1;text-align:center;padding:22px;font-size:34px;font-weight:600;color:var(--tx2);border-radius:34px}
+  .aud .on{background:var(--terra);color:#fff}
+  .pills{display:flex;gap:18px;margin-top:26px;overflow:hidden}
+  .pill{background:var(--sv);color:var(--tx2);font-size:31px;font-weight:500;padding:20px 34px;border-radius:40px;white-space:nowrap}
+  .pill.on{background:var(--terra);color:#fff;display:flex;align-items:center;gap:12px}
+  .actions{display:flex;gap:18px;margin-top:26px}
+  .act{flex:1;background:var(--card);border:1px solid var(--bd);border-radius:24px;padding:28px;display:flex;align-items:center;justify-content:center;gap:14px;font-size:32px;font-weight:600;color:var(--terra)}
+  .act.imp{color:var(--sage)}
+  .row{background:var(--card);border:1px solid var(--bd);border-radius:28px;padding:32px 34px;display:flex;align-items:center;gap:24px;margin-top:22px}
+  .star{font-size:44px;color:var(--tx3);flex:none}
+  .star.on{color:var(--amber)}
+  .info{flex:1}
+  .dn{font-size:44px;font-weight:600}
+  .meta{display:flex;gap:14px;margin-top:14px;flex-wrap:wrap}
+  .cz{background:var(--terra);color:#fff;font-size:27px;font-weight:600;padding:8px 22px;border-radius:30px}
+  .mp{border:1px solid var(--bd);color:var(--tx2);font-size:27px;padding:8px 20px;border-radius:30px}
+  .mp.on{border-color:var(--terra);color:var(--terra);background:var(--terraL)}
+  .stat{text-align:right;flex:none}
+  .stat .t{font-size:31px;color:var(--tx2);font-weight:500}
+  .stat .c{font-size:28px;color:var(--tx3);margin-top:6px}
+  .count{text-align:center;color:var(--tx3);font-size:32px;margin-top:30px}
+  .nav{position:absolute;left:0;right:0;bottom:0;height:190px;background:var(--bg);border-top:1px solid var(--bd);display:flex;padding:26px 30px 40px}
+  .nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;font-size:27px;color:var(--tx3);font-weight:500}
+  svg{display:block}
+</style></head>
+<body>
+<div class="phone">
+  <div class="h1 frns">Dish Library</div>
+  <div class="search">🔍&nbsp;&nbsp;Search dishes…</div>
+
+  <div class="aud"><div class="on">Family</div><div>Kids tiffins</div></div>
+
+  <div class="pills">
+    <div class="pill on">✓ This month</div>
+    <div class="pill">Show all</div>
+    <div class="pill">Favorites</div>
+    <div class="pill">Not made 30+</div>
+  </div>
+
+  <div class="actions">
+    <div class="act">🌐 Explore</div>
+    <div class="act">🎁 Share</div>
+    <div class="act imp">⇥ Import</div>
+  </div>
+
+  <div class="row"><div class="star on">★</div><div class="info"><div class="dn">Veggie Stir-Fry</div>
+    <div class="meta"><span class="cz">Asian</span><span class="mp on">Ingredients · 5</span><span class="mp on">▶ Recipe</span></div></div>
+    <div class="stat"><div class="t">Today</div><div class="c">8×</div></div></div>
+
+  <div class="row"><div class="star on">★</div><div class="info"><div class="dn">Grilled Salmon</div>
+    <div class="meta"><span class="cz">American</span><span class="mp on">Ingredients · 4</span><span class="mp">Recipe</span></div></div>
+    <div class="stat"><div class="t">2 days</div><div class="c">6×</div></div></div>
+
+  <div class="row"><div class="star">☆</div><div class="info"><div class="dn">Spaghetti Bolognese</div>
+    <div class="meta"><span class="cz">Italian</span><span class="mp on">Ingredients · 6</span><span class="mp on">▶ Recipe</span></div></div>
+    <div class="stat"><div class="t">5 days</div><div class="c">4×</div></div></div>
+
+  <div class="row"><div class="star">☆</div><div class="info"><div class="dn">Beef Tacos</div>
+    <div class="meta"><span class="cz">Mexican</span><span class="mp">Ingredients</span><span class="mp">Recipe</span></div></div>
+    <div class="stat"><div class="t">6 days</div><div class="c">3×</div></div></div>
+
+  <div class="row"><div class="star on">★</div><div class="info"><div class="dn">Lemon Rice</div>
+    <div class="meta"><span class="cz">Asian</span><span class="mp on">Ingredients · 4</span><span class="mp">Recipe</span></div></div>
+    <div class="stat"><div class="t">Today</div><div class="c">7×</div></div></div>
+
+  <div class="count">1,492 dishes in the catalog</div>
+
+  <div class="nav">
+    <a><svg width="46" height="46" viewBox="0 0 24 24"><path fill="#A79C93" d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3z"/></svg>Home</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="none" stroke="#A79C93" stroke-width="2" d="M4 5h16v16H4z M4 9h16 M8 3v4 M16 3v4"/></svg>Calendar</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="none" stroke="#A79C93" stroke-width="2" stroke-linecap="round" d="M5 19 15 9l-1-1L4 18z M15 9l2-2 M16 4l1 1 M20 8l-1-1"/></svg>Plan</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><path fill="#A79C93" d="M4 13h3v7H4z M10 8h3v12h-3z M16 4h3v16h-3z"/></svg>Insights</a>
+    <a><svg width="44" height="44" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="#A79C93"/><path fill="#A79C93" d="M4 21c0-4 4-6 8-6s8 2 8 6z"/></svg>Profile</a>
+  </div>
+</div>
+</body></html>

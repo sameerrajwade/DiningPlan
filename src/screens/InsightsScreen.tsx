@@ -68,9 +68,8 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
       navigation.navigate('Home', {
         screen: 'DishLibrary',
         params: {
-          monthDishes: [name],
+          focusNames: [name],
           title: name,
-          initialFilter: undefined,
           // Scope the Dish Library count to the same range shown here, so the
           // number matches (tapping a "this month" dish shows its month count,
           // not the all-time total). "All" spans all history = all-time count.
@@ -204,6 +203,35 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
       veg: cur.length - nonveg,
       nonveg,
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `today` keys the date rollover
+  }, [meals, timeRange, today]);
+
+  // Dine-out budget vs actual. The budget is MONTHLY, so it's only an honest
+  // comparison for a monthly window — shown for This month / Last month only.
+  const budget = preferences?.monthlyDineOutBudget ?? 0;
+  const outsideSpend = insights?.outsideSpending ?? 0;
+  const showBudget = budget > 0 && (timeRange === '30d' || timeRange === 'lastMonth') && currentFamilyCount > 0;
+  const budgetPct = budget > 0 ? Math.round((outsideSpend / budget) * 100) : 0;
+  const budgetLeft = budget - outsideSpend;
+  const overBudget = outsideSpend > budget;
+
+  // Dining-out cuisine mix (dine-out + takeout only), distinct from the overall
+  // Cuisine Variety card which includes home cooking.
+  const outsideCuisine = useMemo(() => {
+    const { start, end } = getRange(timeRange);
+    const cur = meals.filter(
+      (m) => m.date >= start && m.date <= end && m.audience !== 'kids' && m.sourceType !== 'home',
+    );
+    const total = cur.length;
+    if (total === 0) return [] as { cuisine: string; percent: number }[];
+    const map = new Map<string, number>();
+    cur.forEach((m) => {
+      const t = m.cuisineTag || 'Other';
+      map.set(t, (map.get(t) ?? 0) + 1);
+    });
+    return Array.from(map.entries())
+      .map(([cuisine, count]) => ({ cuisine, percent: Math.round((count / total) * 100) }))
+      .sort((a, b) => b.percent - a.percent);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `today` keys the date rollover
   }, [meals, timeRange, today]);
 
@@ -411,6 +439,34 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
               )}
             </Surface>
 
+            {/* Dine-out budget vs actual (monthly windows only) */}
+            {showBudget && (
+              <Surface style={styles.section} elevation={1}>
+                <View style={styles.sectionHead}>
+                  <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Dine-out budget</Text>
+                  <Text style={[styles.budgetHeadValue, { color: overBudget ? colors.error : colors.home }]}>
+                    {currencySymbol}{Math.round(outsideSpend)} / {currencySymbol}{Math.round(budget)}
+                  </Text>
+                </View>
+                <View style={styles.barTrack}>
+                  <View
+                    style={[
+                      styles.barFill,
+                      {
+                        width: `${Math.min(100, budgetPct)}%`,
+                        backgroundColor: overBudget ? colors.error : colors.home,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.comparisonText, overBudget && { color: colors.error }]}>
+                  {overBudget
+                    ? `${currencySymbol}${Math.round(Math.abs(budgetLeft))} over budget (${budgetPct}%)`
+                    : `${currencySymbol}${Math.round(budgetLeft)} left this month (${budgetPct}% used)`}
+                </Text>
+              </Surface>
+            )}
+
             {/* Veg vs Non-veg split */}
             {dietSplit && (
               <Surface style={styles.section} elevation={1}>
@@ -552,6 +608,26 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
               </Surface>
             )}
 
+            {/* Dining out by cuisine — outside meals only */}
+            {outsideCuisine.length > 0 && (
+              <Surface style={styles.section} elevation={1}>
+                <Text style={styles.sectionTitle}>Dining out by cuisine</Text>
+                {outsideCuisine.map((c) => (
+                  <View key={c.cuisine} style={styles.barRow}>
+                    <Text style={styles.barLabel} numberOfLines={1}>
+                      {c.cuisine}
+                    </Text>
+                    <View style={styles.barTrack}>
+                      <View
+                        style={[styles.barFill, { width: `${c.percent}%`, backgroundColor: colors.dineout }]}
+                      />
+                    </View>
+                    <Text style={styles.barValue}>{c.percent}%</Text>
+                  </View>
+                ))}
+              </Surface>
+            )}
+
             {/* Spending trend */}
             {chartData && chartData.datasets[0].data.length > 1 && (
               <Surface style={styles.section} elevation={1}>
@@ -683,6 +759,7 @@ const makeStyles = (c: ThemeColors) =>
     legendChip: { backgroundColor: c.surfaceVariant },
     legendChipText: { fontSize: FontSize.xs, color: c.text },
     comparisonText: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: c.textMuted, marginTop: Spacing.xs },
+    budgetHeadValue: { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.md, fontVariant: ['tabular-nums'] },
     kidsRow: { flexDirection: 'row', gap: Spacing.xl, marginBottom: Spacing.sm },
     kidsStat: { alignItems: 'flex-start' },
     kidsValue: { fontFamily: Fonts.display, fontSize: FontSize.xxxl },

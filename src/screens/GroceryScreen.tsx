@@ -8,11 +8,12 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Share,
 } from 'react-native';
 import { Text, TextInput, IconButton, Checkbox, Menu } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { format, startOfWeek, endOfWeek, addWeeks, getDay } from 'date-fns';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useShoppingStore } from '../stores/useShoppingStore';
@@ -24,8 +25,9 @@ import { ingredientsForDishes } from '../utils/grocery';
 import { matchCatalogDish } from '../utils/starterDishes';
 
 export const GroceryScreen: React.FC = () => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
 
   const { user } = useAuthStore();
   const householdId = user?.householdId ?? '';
@@ -68,8 +70,13 @@ export const GroceryScreen: React.FC = () => {
 
   const addFromPlan = useCallback(async () => {
     if (!householdId || pulling) return;
+    // Shop for what's still AHEAD: today onward. Never pull ingredients for meals
+    // already cooked earlier this week (yesterday's dishes shouldn't reappear on
+    // today's list). For the "next week" window, today < start so start wins.
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const from = targetWeek.start > todayStr ? targetWeek.start : todayStr;
     const weekMeals = meals.filter(
-      (m) => m.sourceType === 'home' && m.date >= targetWeek.start && m.date <= targetWeek.end,
+      (m) => m.sourceType === 'home' && m.date >= from && m.date <= targetWeek.end,
     );
     const names = new Set<string>();
     weekMeals.forEach((m) => {
@@ -150,6 +157,23 @@ export const GroceryScreen: React.FC = () => {
   const remaining = items.filter((i) => !i.checked).length;
   const checkedCount = items.length - remaining;
 
+  // Share the still-to-buy items as a plain text checklist — for the partner who's
+  // out shopping. Unchecked items only; falls back to the whole list if none left.
+  const shareList = useCallback(async () => {
+    setMenuVisible(false);
+    const toBuy = items.filter((i) => !i.checked);
+    const list = (toBuy.length ? toBuy : items).map((i) => `• ${toTitleCase(i.text)}`);
+    if (list.length === 0) {
+      Alert.alert('List is empty', 'Add some items first, then share the list.');
+      return;
+    }
+    try {
+      await Share.share({ message: `Grocery list (Sofra)\n\n${list.join('\n')}` });
+    } catch {
+      // dismissed — no-op
+    }
+  }, [items]);
+
   const confirmClear = (mode: 'checked' | 'all') => {
     setMenuVisible(false);
     const title = mode === 'checked' ? 'Clear checked items?' : 'Clear the whole list?';
@@ -170,7 +194,7 @@ export const GroceryScreen: React.FC = () => {
   const renderItem = useCallback(
     ({ item }: { item: GroceryItem }) => (
       <TouchableOpacity
-        style={styles.row}
+        style={[styles.row, elevation.e1]}
         onPress={() => toggleChecked(householdId, item.id)}
         accessibilityLabel={`${item.text}${item.checked ? ', checked' : ''}`}
       >
@@ -198,7 +222,7 @@ export const GroceryScreen: React.FC = () => {
         />
       </TouchableOpacity>
     ),
-    [householdId, toggleChecked, removeItem, colors, styles],
+    [householdId, toggleChecked, removeItem, colors, styles, elevation],
   );
 
   return (
@@ -259,6 +283,7 @@ export const GroceryScreen: React.FC = () => {
               </TouchableOpacity>
             }
           >
+            <Menu.Item title="Share list" leadingIcon="share-variant" onPress={shareList} />
             <Menu.Item
               title="Clear checked"
               leadingIcon="check-all"
@@ -336,6 +361,8 @@ const makeStyles = (c: ThemeColors) =>
       alignItems: 'center',
       backgroundColor: c.surface,
       borderRadius: BorderRadius.md,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
       marginBottom: Spacing.xs,
       paddingLeft: Spacing.xs,
       paddingRight: 0,

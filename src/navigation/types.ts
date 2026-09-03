@@ -21,7 +21,6 @@ export type MainTabParamList = {
   // `autoGenerate` makes Plan generate an (unsaved) plan on open — used by the
   // weekly reminder to show a fresh auto-plan.
   Plan: { autoGenerate?: boolean } | undefined;
-  Grocery: undefined;
   Insights: { range?: string } | undefined;
   Profile: NavigatorScreenParams<ProfileStackParamList>;
 };
@@ -30,16 +29,25 @@ export type HomeStackParamList = {
   HomeMain: undefined;
   DishLibrary:
     | {
-        monthDishes?: string[];
+        // Independent scoping dimensions (fixes the old overloaded params):
+        //  - audience: which track's dishes ('family' default, or 'kids' tiffins)
+        //  - view: the pill preset — This month / Show all / Favorites / stale
+        // Each pill is self-sufficient and operates WITHIN the current audience,
+        // so "Show all" in the kids context shows all KIDS dishes, not the whole
+        // family library.
+        audience?: 'family' | 'kids';
+        view?: 'month' | 'all' | 'favorites' | 'stale';
         title?: string;
-        initialFilter?: 'all' | 'favorites' | 'stale';
-        // When set, timesCooked / last-made are counted only within [start, end]
-        // (inclusive, yyyy-MM-dd) so a scoped view ("this month", a range from
-        // Insights) shows window counts, not the all-time total.
+        // Insights drill-down: focus on a specific dish (or few) by name, with an
+        // optional window so the count matches the period Insights was showing.
+        focusNames?: string[];
         window?: { start: string; end: string; label?: string };
       }
     | undefined;
   Restaurants: undefined;
+  // Grocery moved OFF the bottom bar (Option B IA) into the Home stack — reached
+  // from a quick-entry card on Home rather than a permanent tab.
+  Grocery: undefined;
   // `range` carries the time window selected on the Restaurants list so the
   // detail opens on the SAME period the user was looking at (This month → This
   // month, etc.) instead of jumping to all-time.

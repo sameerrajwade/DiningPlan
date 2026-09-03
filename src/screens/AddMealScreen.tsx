@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -34,6 +34,7 @@ import { toTitleCase } from '../utils/text';
 import { inferDietFromNames } from '../utils/diet';
 import { matchCatalogDish } from '../utils/starterDishes';
 import { parseRecipeInput } from '../utils/recipe';
+import { isLeftovers } from '../utils/quickActions';
 import { VegMark } from '../components/VegMark';
 
 type Props = RootStackScreenProps<'AddMeal'>;
@@ -105,6 +106,9 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
     existingMeal?.cost !== undefined ? String(existingMeal.cost) : '',
   );
   const [notes, setNotes] = useState(existingMeal?.notes ?? '');
+  // Scroll the form so a focused bottom field (Notes) sits above the keyboard —
+  // edge-to-edge Android doesn't auto-scroll it into view on its own.
+  const scrollRef = useRef<any>(null);
   // Optional ingredients for the MAIN dish (kept on the dish, not the meal, so
   // logging stays fast). Collapsed by default; prefilled from an existing dish or
   // the global catalog if we recognize the name. Never blocks saving.
@@ -415,8 +419,9 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
       }
 
       // Optionally persist the main dish's ingredients + recipe (kept on the DISH,
-      // not the meal). Only for home meals; never blocks the meal save.
-      if (!isOutside) {
+      // not the meal). Only for home meals; never blocks the meal save. Never for
+      // a Leftovers entry — it must never spawn a "Leftovers" dish doc.
+      if (!isOutside && !isLeftovers(resolvedDishName)) {
         const existing = dishes.find(
           (d) => d.name.toLowerCase() === resolvedDishName.toLowerCase(),
         );
@@ -496,11 +501,13 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
     >
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
         {/* Date */}
         <Text style={styles.label}>Date</Text>
@@ -645,8 +652,10 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
 
             {/* Ingredients + recipe — placed AFTER all the dishes (adding dishes is
                 the priority), just before Cuisine. Collapsible + optional; applies
-                to the MAIN dish. Never gates the 10-second log. */}
-            {dishName.trim().length > 0 && (
+                to the MAIN dish. Never gates the 10-second log. Suppressed for a
+                Leftovers entry — it's a "we ate leftovers" marker, not a dish, so
+                ingredients / recipe / grocery make no sense for it. */}
+            {dishName.trim().length > 0 && !isLeftovers(dishName) && (
               <View style={styles.ingSection}>
                 <TouchableOpacity
                   style={styles.ingHeader}
@@ -704,8 +713,12 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
                       </TouchableOpacity>
                     </View>
                     <Text style={styles.ingRecipeLabel}>Recipe (link or steps)</Text>
+                    {/* key+defaultValue (not value): remounts with the prefilled
+                        recipe when the dish changes, but stays uncontrolled while
+                        typing so Android multiline doesn't reverse characters. */}
                     <TextInput
-                      value={recipeDraft}
+                      key={`recipe-${dishName}`}
+                      defaultValue={recipeDraft}
                       onChangeText={(t) => { setRecipeDraft(t); setRecipeTouched(true); }}
                       placeholder="Paste a YouTube / recipe link, or type how you make it"
                       mode="outlined"
@@ -801,18 +814,21 @@ export const AddMealScreen: React.FC<Props> = ({ route, navigation }) => {
           </>
         )}
 
-        {/* Notes */}
+        {/* Notes — UNCONTROLLED (defaultValue, not value). A controlled multiline
+            TextInput on Android reverses characters while typing when the parent
+            re-renders each keystroke; letting the native field own the text fixes
+            it. State still mirrors via onChangeText for saving. */}
         <Text style={styles.label}>Notes</Text>
         <TextInput
-          value={notes}
+          defaultValue={existingMeal?.notes ?? ''}
           onChangeText={setNotes}
+          onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 200)}
           mode="outlined"
           style={[styles.input, styles.notesInput]}
           outlineColor={colors.border}
           activeOutlineColor={colors.primary}
           placeholder="Optional notes..."
           multiline
-          numberOfLines={3}
           accessibilityLabel="Notes"
         />
 

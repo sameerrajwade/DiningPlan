@@ -1,4 +1,5 @@
 import { Meal, InsightData } from '../types';
+import { isLeftovers } from '../utils/quickActions';
 
 export function computeInsights(
   meals: Meal[],
@@ -23,8 +24,18 @@ export function computeInsights(
     (m) => m.sourceType === 'dineout',
   ).length;
 
-  // Unique dishes
-  const uniqueDishes = new Set(meals.map((m) => m.dishName)).size;
+  // Unique dishes — distinct dishes actually COOKED at home (incl. thali sides in
+  // `items`), excluding the leftovers marker. Matches the Home "Unique Dishes"
+  // metric so the two never disagree.
+  const uniqueNames = new Set<string>();
+  for (const m of meals) {
+    if (m.sourceType !== 'home') continue;
+    const names = m.items?.length ? m.items.map((it) => it.name) : [m.dishName];
+    for (const n of names) {
+      if (n && !isLeftovers(n)) uniqueNames.add(n.toLowerCase());
+    }
+  }
+  const uniqueDishes = uniqueNames.size;
 
   // Outside spending (dineout + takeout)
   const outsideMeals = meals.filter((m) => m.sourceType !== 'home');
@@ -56,16 +67,20 @@ export function computeInsights(
     .sort((a, b) => b.visits - a.visits)
     .slice(0, 5);
 
-  // Cuisine breakdown
+  // Cuisine breakdown — over real meals only. Leftovers carry no cuisine (they'd
+  // pollute the mix as a phantom "Other"), so they're excluded from both the
+  // counts and the denominator.
+  const cuisineMeals = meals.filter((m) => !isLeftovers(m.dishName));
+  const cuisineTotal = cuisineMeals.length;
   const cuisineMap = new Map<string, number>();
-  for (const m of meals) {
+  for (const m of cuisineMeals) {
     const tag = m.cuisineTag || 'Other';
     cuisineMap.set(tag, (cuisineMap.get(tag) || 0) + 1);
   }
   const cuisineBreakdown = Array.from(cuisineMap.entries())
     .map(([cuisine, count]) => ({
       cuisine,
-      percent: total > 0 ? Math.round((count / total) * 100) : 0,
+      percent: cuisineTotal > 0 ? Math.round((count / cuisineTotal) * 100) : 0,
     }))
     .sort((a, b) => b.percent - a.percent);
 
@@ -76,7 +91,7 @@ export function computeInsights(
   for (const m of meals.filter((m) => m.sourceType === 'home')) {
     const names = m.items && m.items.length ? m.items.map((it) => it.name) : [m.dishName];
     for (const name of names) {
-      if (!name) continue;
+      if (!name || isLeftovers(name)) continue; // leftovers is a marker, not a cooked dish
       dishMap.set(name, (dishMap.get(name) || 0) + 1);
     }
   }

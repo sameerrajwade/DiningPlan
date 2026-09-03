@@ -73,7 +73,7 @@ describe('buildDishPack', () => {
     householdName: 'Rajwade Family',
   };
 
-  it('includes dish definitions but never meals/ratings/spend', () => {
+  it('includes cooked-dish definitions but never meals/ratings/spend', () => {
     const pack = buildDishPack({
       ...base,
       dishes: [dish('Paneer', { ingredients: ['paneer', 'onion'], recipe: { type: 'youtube', value: 'https://youtu.be/x' } })],
@@ -96,14 +96,53 @@ describe('buildDishPack', () => {
     expect(serialized).not.toContain('lastCookedDate');
   });
 
-  it('dedupes family dishes case-insensitively', () => {
+  it('shares only what was COOKED — a saved-but-uncooked dish is excluded, a cooked-but-unsaved dish is included', () => {
     const pack = buildDishPack({
       ...base,
-      dishes: [dish('Dal'), dish('dal'), dish('Rice')],
-      meals: [],
+      // Library has Paneer (never cooked) + Dal; meals cooked Dal + Poha (Poha not saved).
+      dishes: [dish('Paneer'), dish('Dal', { ingredients: ['dal', 'onion'] })],
+      meals: [meal({ dishName: 'Dal' }), meal({ dishName: 'Poha', cuisineTag: 'Indian' })],
+      restaurants: [],
+    });
+    const names = pack.dishes.map((d) => d.name).sort();
+    expect(names).toEqual(['Dal', 'Poha']); // Paneer (uncooked) excluded, Poha (unsaved) included
+    expect(pack.dishes.find((d) => d.name === 'Dal')?.ingredients).toEqual(['dal', 'onion']); // enriched from library
+  });
+
+  it('reads thali sides in items[] and excludes the leftovers marker', () => {
+    const pack = buildDishPack({
+      ...base,
+      dishes: [],
+      meals: [
+        meal({ dishName: 'Thali', items: [{ name: 'Dal' }, { name: 'Rice' }, { name: 'Sabzi' }] }),
+        meal({ dishName: 'Leftovers', items: [] }),
+      ],
+      restaurants: [],
+    });
+    expect(pack.dishes.map((d) => d.name).sort()).toEqual(['Dal', 'Rice', 'Sabzi']);
+  });
+
+  it('dedupes cooked family dishes case-insensitively', () => {
+    const pack = buildDishPack({
+      ...base,
+      dishes: [],
+      meals: [meal({ dishName: 'Dal' }), meal({ dishName: 'dal' }), meal({ dishName: 'Rice' })],
       restaurants: [],
     });
     expect(pack.dishes.map((d) => d.name)).toEqual(['Dal', 'Rice']);
+  });
+
+  it('excludes outside meals from family dishes', () => {
+    const pack = buildDishPack({
+      ...base,
+      dishes: [],
+      meals: [
+        meal({ dishName: 'Home Dal' }),
+        meal({ dishName: 'Ordered Biryani', sourceType: 'takeout', restaurantName: 'Biryani House' }),
+      ],
+      restaurants: [],
+    });
+    expect(pack.dishes.map((d) => d.name)).toEqual(['Home Dal']); // takeout dish not "cooked"
   });
 
   it('extracts distinct kids-tiffin dishes only from kids meals', () => {
@@ -123,12 +162,20 @@ describe('buildDishPack', () => {
     expect(sandwich?.cuisineTag).toBe('American'); // enriched from library
   });
 
-  it('shares restaurant NAME + cuisine only', () => {
+  it('shares restaurants actually EATEN AT (meal-derived), NAME + cuisine only', () => {
     const pack = buildDishPack({
       ...base,
       dishes: [],
-      meals: [],
-      restaurants: [restaurant('Curry House', { totalSpend: 9999, totalVisits: 12 })],
+      meals: [
+        meal({ sourceType: 'dineout', dishName: 'Dosa', restaurantName: 'Curry House', cuisineTag: 'Indian' }),
+        meal({ sourceType: 'takeout', dishName: 'Dosa', restaurantName: 'curry house', cuisineTag: 'Indian' }), // dupe name
+      ],
+      // A restaurant DOC that was never actually eaten at (e.g. rated / imported)
+      // must NOT appear — membership is meal-derived, not doc-derived.
+      restaurants: [
+        restaurant('Curry House', { totalSpend: 9999, totalVisits: 12 }),
+        restaurant('Ghost Diner', { totalVisits: 0 }),
+      ],
     });
     expect(pack.restaurants).toEqual([{ name: 'Curry House', cuisineType: 'Indian' }]);
   });

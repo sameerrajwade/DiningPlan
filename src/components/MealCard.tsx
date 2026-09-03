@@ -4,7 +4,7 @@ import { Card, Text, Portal, Modal } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { Meal } from '../types';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { sourceIcon, cuisineIcon } from '../utils/icons';
 import { mealDiet } from '../utils/diet';
@@ -60,8 +60,9 @@ const getDaysAgo = (dateStr: string): number | null => {
 };
 
 export const MealCard: React.FC<MealCardProps> = ({ meal, onPress, placeholder }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
 
   // Surface a home dish's recipe right on the card (link/video → tap opens it),
   // without changing the card's height — it sits on the existing meta line.
@@ -90,7 +91,7 @@ export const MealCard: React.FC<MealCardProps> = ({ meal, onPress, placeholder }
 
   if (!meal) {
     return (
-      <Card style={styles.card} onPress={onPress} accessibilityLabel={placeholder ?? 'No meal planned'}>
+      <Card style={[styles.card, elevation.e1]} onPress={onPress} accessibilityLabel={placeholder ?? 'No meal planned'}>
         <Card.Content style={styles.placeholderContent}>
           <View style={[styles.thumb, styles.thumbEmpty]}>
             <MaterialCommunityIcons name="plus" size={20} color={colors.textMuted} />
@@ -125,7 +126,7 @@ export const MealCard: React.FC<MealCardProps> = ({ meal, onPress, placeholder }
 
   return (
     <>
-    <Card style={styles.card} onPress={onPress} accessibilityLabel={`${meal.dishName}, ${chipLabel}`}>
+    <Card style={[styles.card, elevation.e1]} onPress={onPress} accessibilityLabel={`${meal.dishName}, ${chipLabel}`}>
       <Card.Content style={styles.content}>
         {/* Cuisine-tinted food thumbnail — food is the product */}
         <View style={[styles.thumb, { backgroundColor: withAlpha(chipColor, 0.14) }]}>
@@ -208,11 +209,7 @@ const makeStyles = (c: ThemeColors) =>
       marginVertical: Spacing.xs,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: c.border,
-      shadowColor: c.black,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 8,
-      elevation: 1,
+      // Depth comes from the shared elevation system (spread at the call site).
     },
     content: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
     textCol: { flex: 1 },

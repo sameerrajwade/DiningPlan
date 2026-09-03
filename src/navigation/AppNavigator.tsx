@@ -85,7 +85,6 @@ const TAB_ICONS: Record<keyof MainTabParamList, string> = {
   Home: 'home',
   Calendar: 'calendar-week',
   Plan: 'auto-fix',
-  Grocery: 'cart',
   Insights: 'chart-bar',
   Profile: 'account',
 };
@@ -103,6 +102,11 @@ function HomeStackNavigator() {
         name="DishLibrary"
         component={DishLibraryScreen}
         options={({ route }) => ({ title: route.params?.title ?? 'Dish Library' })}
+      />
+      <HomeStack.Screen
+        name="Grocery"
+        component={GroceryScreen}
+        options={{ title: 'Grocery' }}
       />
       <HomeStack.Screen
         name="Restaurants"
@@ -183,11 +187,6 @@ function MainTabs() {
         name="Plan"
         component={PlanScreen}
         options={{ headerShown: false }}
-      />
-      <Tab.Screen
-        name="Grocery"
-        component={GroceryScreen}
-        options={tabHeader('Grocery')}
       />
       <Tab.Screen
         name="Insights"

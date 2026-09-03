@@ -5,6 +5,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { UserPreferences, MealType } from '../types';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
+import { makeElevation } from '../config/theme';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
 import { getCurrencySymbol } from '../utils/currency';
@@ -34,8 +35,9 @@ const DEFAULT_PREFS: UserPreferences = {
 
 // Meal preferences + auto-plan rules. Self-loads/saves; used on the Profile screen.
 export const PreferencesSection: React.FC = () => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
   const { user } = useAuthStore();
 
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFS);
@@ -134,7 +136,7 @@ export const PreferencesSection: React.FC = () => {
       {loading ? (
         <ActivityIndicator style={styles.loader} color={colors.primary} />
       ) : (
-        <View style={styles.card}>
+        <View style={[styles.card, elevation.e1]}>
           <Text style={styles.rowLabel}>Default meals</Text>
           {MEAL_TYPES.map(({ value, label }) => (
             <View key={value} style={styles.switchRow}>
@@ -186,7 +188,7 @@ export const PreferencesSection: React.FC = () => {
       )}
 
       <Text style={styles.sectionLabel}>Auto-plan rules</Text>
-      <View style={styles.card}>
+      <View style={[styles.card, elevation.e1]}>
         <Text style={styles.rowLabel}>Max dine-outs per week</Text>
         <Dropdown
           visible={maxDineOutMenu}

@@ -16,6 +16,7 @@ import { FadeSlideIn, PressableScale } from '../components/motion';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useMealStore } from '../stores/useMealStore';
 import { useDishStore } from '../stores/useDishStore';
+import { useShoppingStore } from '../stores/useShoppingStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
 import { useNotificationStore } from '../stores/useNotificationStore';
 import { scheduleDaily } from '../services/notifications';
@@ -51,12 +52,15 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const householdId = user?.householdId ?? '';
   const { meals, isLoading: mealsLoading, fetchMeals, dedupeMeals, addMeal, updateMeal } = useMealStore();
   const { dishes, fetchDishes } = useDishStore();
+  const groceryItems = useShoppingStore((s) => s.items);
+  const fetchGrocery = useShoppingStore((s) => s.fetchItems);
   const { preferences } = useHouseholdStore();
 
   const [suggestion, setSuggestion] = React.useState<Suggestion | null>(null);
   const [quickBusy, setQuickBusy] = React.useState(false);
 
   const currencySymbol = getCurrencySymbol(preferences?.currency ?? 'USD');
+  const dineOutBudget = preferences?.monthlyDineOutBudget ?? 0;
   const currencyIcon = (() => {
     switch (preferences?.currency) {
       case 'INR': return 'currency-inr';
@@ -76,10 +80,14 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const loadData = useCallback(async (force = false) => {
     if (!householdId) return;
-    await Promise.all([fetchMeals(householdId, prevMonthStart, today, force), fetchDishes(householdId, force)]);
+    await Promise.all([
+      fetchMeals(householdId, prevMonthStart, today, force),
+      fetchDishes(householdId, force),
+      fetchGrocery(householdId, force).catch(() => {}),
+    ]);
     // Heal any duplicate meal docs so Home matches Calendar/Plan (which dedupe too).
     await dedupeMeals(householdId).catch(() => {});
-  }, [householdId, prevMonthStart, today, fetchMeals, fetchDishes, dedupeMeals]);
+  }, [householdId, prevMonthStart, today, fetchMeals, fetchDishes, fetchGrocery, dedupeMeals]);
 
   useFocusEffect(useCallback(() => {
     setToday(format(new Date(), 'yyyy-MM-dd'));
@@ -131,17 +139,20 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   // Unique dishes you COOKED — home meals only. Outside meals (dine-out/takeout)
   // carry a dishName too (the ordered dish or restaurant name), so counting them
   // here inflated "Unique Dishes" (e.g. 1 home dish + 1 dine-out showed 2).
-  const uniqueDishNames = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          monthMeals
-            .filter((m) => m.sourceType === 'home' && m.dishName && !isLeftovers(m.dishName))
-            .map((m) => m.dishName),
-        ),
-      ),
-    [monthMeals],
-  );
+  // Distinct dishes actually cooked at home this month — counts thali sides in
+  // `items` too (dedup case-insensitively), so it matches the Dish Library's
+  // "This month" list you tap into. Excludes the leftovers marker.
+  const uniqueDishNames = useMemo(() => {
+    const names = new Set<string>();
+    monthMeals.forEach((m) => {
+      if (m.sourceType !== 'home') return;
+      const list = m.items?.length ? m.items.map((it) => it.name) : [m.dishName];
+      list.forEach((n) => {
+        if (n && !isLeftovers(n)) names.add(n.toLowerCase());
+      });
+    });
+    return Array.from(names);
+  }, [monthMeals]);
   const outsideSpending = useMemo(
     () => monthMeals.filter((m) => m.sourceType !== 'home').reduce((s, m) => s + (m.cost ?? 0), 0),
     [monthMeals],
@@ -152,6 +163,9 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     return Math.round(((outsideSpending - prevSpend) / prevSpend) * 100);
   }, [prevMonthMeals, outsideSpending]);
   const hasMonthData = monthMeals.length > 0;
+  // Grocery quick-entry (Grocery left the bottom bar — Option B IA). Count of
+  // items still to buy; the card is the Home entry point into the Grocery list.
+  const groceryToBuy = useMemo(() => groceryItems.filter((i) => !i.checked).length, [groceryItems]);
 
   // Today's meals for every configured meal type (∪ anything logged today).
   const todayTypes = useMemo(() => {
@@ -387,6 +401,21 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
       />
     ) : null;
 
+  // Grocery entry card — reused in the metrics grid (fills the blank next to
+  // Kids Tiffins) and in the empty state, so Grocery is always reachable now
+  // that it's no longer a tab.
+  const groceryCardEl = (
+    <PressableScale onPress={() => navigation.navigate('Grocery')}>
+      <MetricCard
+        title="Grocery"
+        value={groceryToBuy}
+        subtitle={groceryToBuy > 0 ? 'items to shop ›' : 'list is clear ›'}
+        icon="cart-outline"
+        color={colors.success}
+      />
+    </PressableScale>
+  );
+
   if (!householdId) {
     return (
       <View style={styles.centered}>
@@ -455,7 +484,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 </PressableScale>
               </View>
               <View style={styles.metricCol}>
-                <PressableScale onPress={() => navigation.navigate('DishLibrary', { window: { start: thisMonthStart, end: today, label: 'this month' }, title: 'Dishes this month', monthDishes: undefined, initialFilter: undefined })}>
+                <PressableScale onPress={() => navigation.navigate('DishLibrary', { audience: 'family', view: 'month' })}>
                   <MetricCard
                     title="Unique Dishes"
                     value={uniqueDishNames.length}
@@ -474,19 +503,23 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               </View>
               <View style={styles.metricCol}>
                 <PressableScale onPress={() => navigation.getParent()?.navigate('Insights')}>
-                  <MetricCard title="Outside Spend" value={`${currencySymbol}${outsideSpending.toFixed(0)}`} trend={outsideSpendingTrend} icon={currencyIcon} color={colors.takeout} />
+                  <MetricCard
+                    title="Outside Spend"
+                    value={`${currencySymbol}${outsideSpending.toFixed(0)}`}
+                    trend={outsideSpendingTrend}
+                    icon={currencyIcon}
+                    color={colors.takeout}
+                    subtitle={dineOutBudget > 0 ? `of ${currencySymbol}${dineOutBudget} budget` : undefined}
+                    progress={dineOutBudget > 0 ? outsideSpending / dineOutBudget : undefined}
+                    progressColor={outsideSpending > dineOutBudget ? colors.error : colors.home}
+                  />
                 </PressableScale>
               </View>
               {kidsMonthCount > 0 && (
                 <View style={styles.metricCol}>
                   <PressableScale
                     onPress={() =>
-                      navigation.navigate('DishLibrary', {
-                        monthDishes: uniqueKidsDishNames,
-                        window: { start: thisMonthStart, end: today, label: 'this month' },
-                        title: 'Kids tiffins this month',
-                        initialFilter: undefined,
-                      })
+                      navigation.navigate('DishLibrary', { audience: 'kids', view: 'month' })
                     }
                   >
                     <MetricCard
@@ -499,6 +532,11 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   </PressableScale>
                 </View>
               )}
+              {/* Grocery entry — fills the blank half-cell next to Kids Tiffins;
+                  spans full width when there's no kids card to pair with. */}
+              <View style={[styles.metricCol, kidsMonthCount > 0 ? null : styles.metricColFull]}>
+                {groceryCardEl}
+              </View>
             </View>
           </FadeSlideIn>
         ) : (
@@ -512,6 +550,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.emptyText}>
               Tap the + button to log your first meal. Your dashboard fills in as you go.
             </Text>
+            <View style={styles.emptyGrocery}>{groceryCardEl}</View>
           </View>
         )}
 
@@ -564,7 +603,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
         {forgottenDishes.length > 0 && (
           <>
-            <TouchableOpacity onPress={() => navigation.navigate('DishLibrary', { initialFilter: 'stale', title: 'Not made in a while', window: undefined, monthDishes: undefined })}>
+            <TouchableOpacity onPress={() => navigation.navigate('DishLibrary', { view: 'stale' })}>
               <Text style={styles.sectionTitle}>Dishes you haven't made in a while {'›'}</Text>
             </TouchableOpacity>
             {forgottenDishes.map((item) => (
@@ -574,7 +613,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             ))}
             <TouchableOpacity
-              onPress={() => navigation.navigate('DishLibrary', { initialFilter: 'stale', title: 'Not made in a while', window: undefined, monthDishes: undefined })}
+              onPress={() => navigation.navigate('DishLibrary', { view: 'stale' })}
               style={styles.seeAllRow}
             >
               <Text style={styles.seeAllText}>See all dishes not made in 30+ days {'›'}</Text>
@@ -672,6 +711,8 @@ const makeStyles = (c: ThemeColors) =>
     },
     metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -Spacing.xs },
     metricCol: { width: '50%', paddingHorizontal: Spacing.xs },
+    metricColFull: { width: '100%', paddingHorizontal: Spacing.xs },
+    emptyGrocery: { alignSelf: 'stretch', marginTop: Spacing.lg },
     todayMeals: { marginBottom: Spacing.sm },
     mealLabelRow: {
       flexDirection: 'row',

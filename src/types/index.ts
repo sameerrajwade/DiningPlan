@@ -85,6 +85,8 @@ export interface Dish {
   // Optional recipe (Phase 3): a link or typed steps, editable in the dish
   // detail sheet. Schemaless/optional — no migration.
   recipe?: Recipe;
+  // Optional free-text note ("how I make it", tweaks). Schemaless/optional.
+  notes?: string;
 }
 
 // ── Dish-pack sharing (Phase 4) ─────────────────────────────────────────────

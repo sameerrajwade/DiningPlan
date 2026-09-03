@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { StyleSheet, View, ScrollView, Alert } from 'react-native';
 import { Portal, Modal, Text, TextInput, Button, Checkbox, IconButton } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { DishPack, DishPackDish, DishPackRestaurant } from '../types';
 import { getDishPack, createRestaurantIfMissing } from '../services/firestore';
@@ -27,8 +27,9 @@ export const DishPackImport: React.FC<Props> = ({
   onClose,
   onImported,
 }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
   const addDishesBatch = useDishStore((s) => s.addDishesBatch);
 
   const [code, setCode] = useState('');
@@ -166,7 +167,7 @@ export const DishPackImport: React.FC<Props> = ({
 
   return (
     <Portal>
-      <Modal visible={visible} onDismiss={close} contentContainerStyle={styles.modal}>
+      <Modal visible={visible} onDismiss={close} contentContainerStyle={[styles.modal, elevation.e3]}>
         <View style={styles.header}>
           <Text style={styles.title}>{pack ? `From ${pack.householdName}` : 'Import dishes'}</Text>
           <IconButton icon="close" size={22} onPress={close} iconColor={colors.textSecondary} />

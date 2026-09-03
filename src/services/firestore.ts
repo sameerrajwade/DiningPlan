@@ -193,6 +193,10 @@ export async function updateDish(
   await updateDoc(doc(db, `households/${householdId}/dishes`, dishId), stripUndefined(data));
 }
 
+export async function deleteDish(householdId: string, dishId: string): Promise<void> {
+  await deleteDoc(doc(db, `households/${householdId}/dishes`, dishId));
+}
+
 export async function getDishes(householdId: string): Promise<Dish[]> {
   const snap = await getDocs(dishesCol(householdId));
   return snap.docs.map((d) => ({ ...d.data(), id: d.id } as Dish));

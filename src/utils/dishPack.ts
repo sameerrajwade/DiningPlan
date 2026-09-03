@@ -1,9 +1,19 @@
 import { Dish, DishPack, DishPackDish, DishPackRestaurant, Meal, Restaurant } from '../types';
+import { isLeftovers } from './quickActions';
 
 // ── Dish-pack sharing (Phase 4), pure logic ─────────────────────────────────
 // Building the shareable pack and merging an imported one. Kept pure + tested so
 // the privacy contract (definitions only, never meals/ratings/spend/history) is
 // verifiable and the code generation is deterministic under test.
+//
+// FOOTPRINT RULE (Sameer, locked): the pack shares what the family has actually
+// COOKED / EATEN — derived from MEALS, not from the library or the restaurants
+// doc collection. A dish saved to the library but never cooked is NOT shared; a
+// dish cooked but never explicitly saved IS. Restaurants come from real outside
+// meals (matching the Restaurants tab), NOT the `restaurants/{id}` docs, which
+// silt up with rated-but-unvisited places and 0-visit import placeholders. The
+// library + restaurant docs are used ONLY to ENRICH cooked items (ingredients /
+// recipe / cuisine), never to decide membership.
 
 // Unambiguous alphabet for share codes — no 0/O/1/I/L so codes are easy to read
 // aloud and type. Matches the friendly-code style used for invite codes.
@@ -35,11 +45,16 @@ function dishToPackDish(d: Pick<Dish, 'name' | 'cuisineTag' | 'categoryTags' | '
 }
 
 /**
- * Build the shareable pack from a household's data. Family dishes come from the
- * dish library; kids-tiffin dishes are the DISTINCT dish names ever logged with
- * audience 'kids' (enriched from the library when known, else name+cuisine only);
- * restaurants are NAME + cuisine only. Meals, ratings, spend, visits, and budgets
- * are never included.
+ * Build the shareable pack from a household's data — MEAL-DERIVED (see the
+ * FOOTPRINT RULE above). Family dishes are the distinct dishes actually cooked at
+ * home (incl. thali sides in `items[]`, excl. the leftovers marker); kids-tiffin
+ * dishes are the distinct dishes cooked on the kids track; restaurants are the
+ * distinct places actually eaten at (dine-out / takeout). Each is enriched from
+ * the library / restaurant docs where a match exists (ingredients, recipe,
+ * cuisine) but membership comes only from meals. Meals, ratings, spend, visits,
+ * and budgets are never included.
+ *
+ * `dishes` and `restaurants` are enrichment sources ONLY — they never add members.
  */
 export function buildDishPack(input: {
   code: string;
@@ -51,42 +66,46 @@ export function buildDishPack(input: {
 }): Omit<DishPack, 'createdAt'> {
   const { code, userId, householdName, dishes, meals, restaurants } = input;
 
-  // Family dishes — dedupe by lowercased name.
-  const seenDish = new Set<string>();
-  const packDishes: DishPackDish[] = [];
-  for (const d of dishes) {
-    const key = d.name.trim().toLowerCase();
-    if (!key || seenDish.has(key)) continue;
-    seenDish.add(key);
-    packDishes.push(dishToPackDish(d));
-  }
+  const libByName = new Map(dishes.map((d) => [d.name.trim().toLowerCase(), d]));
+  const restByName = new Map(restaurants.map((r) => [r.name.trim().toLowerCase(), r]));
 
-  // Kids-tiffin dishes — distinct names from kids meals, enriched from the
-  // library where we know the dish; otherwise carry name + cuisine only.
-  const byName = new Map(dishes.map((d) => [d.name.toLowerCase(), d]));
-  const seenKid = new Set<string>();
-  const kidsDishes: DishPackDish[] = [];
-  for (const m of meals) {
-    if (m.audience !== 'kids' || !m.dishName) continue;
-    const key = m.dishName.trim().toLowerCase();
-    if (!key || seenKid.has(key)) continue;
-    seenKid.add(key);
-    const known = byName.get(key);
-    kidsDishes.push(
-      known
-        ? dishToPackDish(known)
-        : { name: m.dishName, cuisineTag: m.cuisineTag || 'Other' },
-    );
-  }
+  // Distinct dishes actually cooked in the meals matching `predicate`, in first-
+  // cooked order. Reads thali sides in `items[]`; skips the leftovers marker and
+  // empties; enriches from the library when the dish is saved there.
+  const collectCookedDishes = (predicate: (m: Meal) => boolean): DishPackDish[] => {
+    const seen = new Set<string>();
+    const out: DishPackDish[] = [];
+    for (const m of meals) {
+      if (!predicate(m)) continue;
+      const names = m.items?.length ? m.items.map((it) => it.name) : [m.dishName];
+      for (const raw of names) {
+        const name = (raw ?? '').trim();
+        if (!name || isLeftovers(name) || seen.has(name.toLowerCase())) continue;
+        seen.add(name.toLowerCase());
+        const known = libByName.get(name.toLowerCase());
+        out.push(known ? dishToPackDish(known) : { name, cuisineTag: m.cuisineTag || 'Other' });
+      }
+    }
+    return out;
+  };
 
-  // Restaurants — NAME + cuisine only (no visits/spend/ratings).
+  // Family dishes — cooked at home, excluding the kids track.
+  const packDishes = collectCookedDishes((m) => m.sourceType === 'home' && m.audience !== 'kids');
+  // Kids-tiffin dishes — cooked on the kids track.
+  const kidsDishes = collectCookedDishes((m) => m.audience === 'kids');
+
+  // Restaurants — distinct places actually eaten at (dine-out / takeout), the
+  // same meal-derived list the Restaurants tab shows. Enrich cuisine from the
+  // restaurant doc when present, else the meal's cuisine.
   const seenRest = new Set<string>();
   const packRestaurants: DishPackRestaurant[] = [];
-  for (const r of restaurants) {
-    const key = r.name.trim().toLowerCase();
-    if (!key || seenRest.has(key)) continue;
-    seenRest.add(key);
-    packRestaurants.push({ name: r.name, cuisineType: r.cuisineType || '' });
+  for (const m of meals) {
+    if (m.sourceType !== 'dineout' && m.sourceType !== 'takeout') continue;
+    const name = (m.restaurantName ?? '').trim();
+    if (!name || seenRest.has(name.toLowerCase())) continue;
+    seenRest.add(name.toLowerCase());
+    const known = restByName.get(name.toLowerCase());
+    packRestaurants.push({ name, cuisineType: known?.cuisineType || m.cuisineTag || '' });
   }
 
   return {

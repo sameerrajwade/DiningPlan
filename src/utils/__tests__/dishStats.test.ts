@@ -92,6 +92,16 @@ describe('aggregateDishes', () => {
     expect(staleWindowed).toHaveLength(0);
   });
 
+  it('never treats the Leftovers marker as a dish', () => {
+    const withLeftovers: Meal[] = [
+      meal('2026-07-20', 'Khichadi'),
+      { ...meal('2026-07-21', 'Leftovers'), items: [] },
+    ];
+    const all = aggregateDishes([], withLeftovers, { today: TODAY });
+    expect(find(all, 'Leftovers')).toBeUndefined();
+    expect(find(all, 'Khichadi')?.timesCooked).toBe(1);
+  });
+
   it('seeds saved dishes at 0 and derives their real counts from meals', () => {
     const saved: Dish[] = [
       { id: 's1', name: 'Khichadi', cuisineTag: 'Indian', categoryTags: [], isFavorite: true, timesCooked: 99, lastCookedDate: '2020-01-01', householdId: 'h1' },

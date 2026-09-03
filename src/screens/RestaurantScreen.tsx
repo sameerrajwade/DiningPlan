@@ -10,7 +10,7 @@ import { Text, ActivityIndicator, Card, Banner } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { format } from 'date-fns';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { MetricCard } from '../components/MetricCard';
 import { useAuthStore } from '../stores/useAuthStore';
@@ -71,8 +71,9 @@ export const RestaurantScreen: React.FC = () => {
   const { preferences } = useHouseholdStore();
   const householdId = user?.householdId ?? '';
 
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
   const navigation = useNavigation<any>();
 
   const currencySymbol = getCurrencySymbol(preferences?.currency ?? 'USD');
@@ -129,6 +130,9 @@ export const RestaurantScreen: React.FC = () => {
   }, [meals, timeRange]);
 
   const totalSpend = useMemo(() => restaurants.reduce((s, r) => s + r.totalSpend, 0), [restaurants]);
+  // Monthly dine-out budget context — only meaningful on the "This month" window.
+  const dineOutBudget = preferences?.monthlyDineOutBudget ?? 0;
+  const showBudget = dineOutBudget > 0 && timeRange === 'month';
   const totalVisits = useMemo(() => restaurants.reduce((s, r) => s + r.totalVisits, 0), [restaurants]);
   const uniquePlaces = restaurants.length;
 
@@ -143,7 +147,7 @@ export const RestaurantScreen: React.FC = () => {
   const renderRestaurantCompact = useCallback(
     ({ item }: { item: RestaurantSummary }) => (
       <Card
-        style={styles.compactCard}
+        style={[styles.compactCard, elevation.e1]}
         onPress={() => navigation.navigate('RestaurantDetail', { name: item.name, range: timeRange })}
       >
         <Card.Content style={styles.compactContent}>
@@ -159,7 +163,7 @@ export const RestaurantScreen: React.FC = () => {
         </Card.Content>
       </Card>
     ),
-    [styles, colors, navigation, timeRange],
+    [styles, colors, navigation, timeRange, elevation],
   );
 
   const renderRestaurant = useCallback(
@@ -167,7 +171,7 @@ export const RestaurantScreen: React.FC = () => {
       const isFrequent = item.totalVisits > 4;
       return (
         <Card
-          style={styles.restaurantCard}
+          style={[styles.restaurantCard, elevation.e1]}
           onPress={() => navigation.navigate('RestaurantDetail', { name: item.name, range: timeRange })}
         >
           <Card.Content>
@@ -205,7 +209,7 @@ export const RestaurantScreen: React.FC = () => {
         </Card>
       );
     },
-    [currencySymbol, styles, colors, navigation, timeRange],
+    [currencySymbol, styles, colors, navigation, timeRange, elevation],
   );
 
   if (isLoading && meals.length === 0) {
@@ -259,6 +263,9 @@ export const RestaurantScreen: React.FC = () => {
                   value={`${currencySymbol}${totalSpend.toFixed(0)}`}
                   icon="currency-usd"
                   color={colors.dineout}
+                  subtitle={showBudget ? `of ${currencySymbol}${dineOutBudget} budget` : undefined}
+                  progress={showBudget ? totalSpend / dineOutBudget : undefined}
+                  progressColor={totalSpend > dineOutBudget ? colors.error : colors.home}
                 />
               </View>
               <View style={styles.metricWrapper}>

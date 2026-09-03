@@ -25,11 +25,11 @@ import {
   Divider,
 } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useRoute, useNavigation, useFocusEffect, RouteProp } from '@react-navigation/native';
+import { useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { Dish, CuisineTag } from '../types';
 import { toTitleCase } from '../utils/text';
 import { parseRecipeInput } from '../utils/recipe';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import type { HomeStackParamList } from '../navigation/types';
 import { CuisineChips } from '../components/CuisineChips';
@@ -41,11 +41,15 @@ import { cuisineIcon } from '../utils/icons';
 import { useDishStore } from '../stores/useDishStore';
 import { useMealStore } from '../stores/useMealStore';
 import { useAuthStore } from '../stores/useAuthStore';
+import { useHouseholdStore } from '../stores/useHouseholdStore';
 import { aggregateDishes } from '../utils/dishStats';
 import { formatDaysAgo } from '../utils/relativeDate';
+import { DishShareModal } from '../components/DishShareModal';
+import { DishPackImport } from '../components/DishPackImport';
 
 type SortMode = 'lastMade' | 'mostMade' | 'az' | 'favorites';
-type QuickFilter = 'all' | 'favorites' | 'stale';
+type LibraryView = 'month' | 'all' | 'favorites' | 'stale';
+type Audience = 'family' | 'kids';
 
 const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: 'lastMade', label: 'Last made' },
@@ -63,25 +67,29 @@ const getDaysSince = (dateStr: string): number => {
 };
 
 export const DishLibraryScreen: React.FC = () => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
 
   const { dishes, isLoading, error, fetchDishes, addDish, addDishesBatch, updateDish, toggleFavorite: storeFavorite } = useDishStore();
   const [exploreVisible, setExploreVisible] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [detailDish, setDetailDish] = useState<Dish | null>(null);
+  const [shareVisible, setShareVisible] = useState(false);
+  const [importVisible, setImportVisible] = useState(false);
   const { user } = useAuthStore();
+  const household = useHouseholdStore((s) => s.household);
   const householdId = user?.householdId ?? '';
 
   const { meals, fetchAllMeals } = useMealStore();
   const route = useRoute<RouteProp<HomeStackParamList, 'DishLibrary'>>();
-  const navigation = useNavigation<any>();
-  const monthDishes = route.params?.monthDishes;
-  const initialFilter = route.params?.initialFilter;
+  const focusNames = route.params?.focusNames;
   const dateWindow = route.params?.window;
-  const monthDishSet = useMemo(
-    () => (monthDishes ? new Set(monthDishes.map((n) => n.toLowerCase())) : null),
-    [monthDishes],
+  const paramAudience: Audience = route.params?.audience ?? 'family';
+  const paramView: LibraryView = route.params?.view ?? 'month';
+  const focusSet = useMemo(
+    () => (focusNames ? new Set(focusNames.map((n) => n.toLowerCase())) : null),
+    [focusNames],
   );
 
   useEffect(() => {
@@ -91,36 +99,20 @@ export const DishLibraryScreen: React.FC = () => {
     }
   }, [householdId, fetchDishes]);
 
-  // Reset the view state from the CURRENT params on every entry. Dish Library is
-  // opened for different intents (all dishes, "this month" window, a single dish
-  // from Insights, the stale list) and can be revisited without unmounting, so a
-  // prior visit's quick-filter/sort must never linger. This runs on focus, which
-  // covers both a fresh mount and re-navigation to an already-mounted instance.
-  useFocusEffect(
-    useCallback(() => {
-      setQuickFilter(initialFilter ?? 'all');
-      setSortMode(initialFilter === 'stale' ? 'lastMade' : 'mostMade');
-      // Also clear search + cuisine filter, else they bleed across the different
-      // intents this (never-unmounted) screen is opened for (e.g. a leftover
-      // "dal"/Indian filter silently emptying the stale-dish deep link).
-      setSearch('');
-      setCuisineFilter(null);
-    }, [initialFilter]),
-  );
-
-  const allDishes = useMemo(() => {
-    // Local 'yyyy-MM-dd' for today; meal.date is stored as a local date string.
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    return aggregateDishes(dishes, meals, { today, window: dateWindow });
-  }, [dishes, meals, dateWindow]);
+  // Local yyyy-MM-dd today + this-month start (meal.date is a local date string).
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const thisMonthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
 
   const [search, setSearch] = useState('');
-  // Browsing the library (all dishes / "this month") defaults to Most made so
-  // your go-to dishes surface first. The "haven't made in a while" deep-link
-  // (initialFilter='stale') keeps Last made — that view is about rotation.
-  const [sortMode, setSortMode] = useState<SortMode>(initialFilter === 'stale' ? 'lastMade' : 'mostMade');
-  const [quickFilter, setQuickFilter] = useState<QuickFilter>(initialFilter ?? 'all');
+  const [audience, setAudience] = useState<Audience>(paramAudience);
+  // The pill preset. Each preset is self-sufficient: it recomputes the list from
+  // the right aggregate, so tapping "Not made 30+" always returns real results
+  // (the old bug was a hidden scope silently emptying it).
+  const [view, setView] = useState<LibraryView>(paramView);
+  // Stale view sorts by last-made (it's about rotation); the rest by most-made
+  // so go-to dishes surface first. The tune menu can override within a view.
+  const [sortMode, setSortMode] = useState<SortMode>(paramView === 'stale' ? 'lastMade' : 'mostMade');
   const [cuisineFilter, setCuisineFilter] = useState<CuisineTag | null>(null);
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -135,18 +127,74 @@ export const DishLibraryScreen: React.FC = () => {
   const [newFavorite, setNewFavorite] = useState(false);
   const [addingDish, setAddingDish] = useState(false);
 
+  // Reset the whole view from the CURRENT params on every entry. Dish Library is
+  // opened for different intents (browse, "this month", a single dish from
+  // Insights, the stale list, kids tiffins) and can be revisited without
+  // unmounting, so a prior visit's audience/view/sort must never linger.
+  useFocusEffect(
+    useCallback(() => {
+      setAudience(paramAudience);
+      setView(paramView);
+      setSortMode(paramView === 'stale' ? 'lastMade' : 'mostMade');
+      setSearch('');
+      setCuisineFilter(null);
+    }, [paramAudience, paramView]),
+  );
+
+  // Whether the household has ANY kids-tiffin history — gates the Family|Kids
+  // audience toggle (a family that never logs kids meals never sees it).
+  const hasKids = useMemo(() => meals.some((m) => m.audience === 'kids'), [meals]);
+
+  // Meals for the active audience. Kids dishes derive purely from kids meals (no
+  // library seed); family dishes seed from the saved library ∪ family home meals.
+  const audienceMeals = useMemo(
+    () => meals.filter((m) => (audience === 'kids' ? m.audience === 'kids' : m.audience !== 'kids')),
+    [meals, audience],
+  );
+  // Kids dishes derive purely from kids meals (no library seed); memoized so the
+  // empty array keeps a stable identity and the aggregates don't recompute each render.
+  const seed = useMemo(() => (audience === 'kids' ? [] : dishes), [audience, dishes]);
+
+  // All-time dishes for this audience (Show all / Favorites / Not made 30+).
+  const baseDishes = useMemo(
+    () => aggregateDishes(seed, audienceMeals, { today }),
+    [seed, audienceMeals, today],
+  );
+  // Month-scoped counts (the This month view).
+  const monthDishes = useMemo(
+    () => aggregateDishes(seed, audienceMeals, { today, window: { start: thisMonthStart, end: today } }),
+    [seed, audienceMeals, today, thisMonthStart],
+  );
+  // Window-scoped counts for the Insights single-dish focus (else = all-time).
+  const focusDishes = useMemo(
+    () => (dateWindow ? aggregateDishes(seed, audienceMeals, { today, window: dateWindow }) : baseDishes),
+    [seed, audienceMeals, today, dateWindow, baseDishes],
+  );
+
   const filteredDishes = useMemo(() => {
-    let result = [...allDishes];
+    let result: Dish[];
 
-    // Contextual subset (e.g. tapped "Unique Dishes" on Home → this month's dishes)
-    if (monthDishSet) {
-      result = result.filter((d) => monthDishSet.has(d.name.toLowerCase()));
-    }
-
-    // Scoped-window view: only dishes actually cooked in the window (their count
-    // is already windowed), so we don't list saved dishes at 0× for the period.
-    if (dateWindow) {
-      result = result.filter((d) => d.timesCooked > 0);
+    if (focusSet) {
+      // Insights single-dish (or few) focus, optionally window-scoped.
+      result = focusDishes.filter((d) => focusSet.has(d.name.toLowerCase()));
+      if (dateWindow) result = result.filter((d) => d.timesCooked > 0);
+    } else {
+      switch (view) {
+        case 'month':
+          // Only dishes actually cooked this month (counts are month-scoped).
+          result = monthDishes.filter((d) => d.timesCooked > 0);
+          break;
+        case 'favorites':
+          result = baseDishes.filter((d) => d.isFavorite);
+          break;
+        case 'stale':
+          result = baseDishes.filter((d) => getDaysSince(d.lastCookedDate) >= 30);
+          break;
+        case 'all':
+        default:
+          result = [...baseDishes];
+          break;
+      }
     }
 
     // Search
@@ -161,16 +209,7 @@ export const DishLibraryScreen: React.FC = () => {
     }
 
     // Cuisine filter
-    if (cuisineFilter) {
-      result = result.filter((d) => d.cuisineTag === cuisineFilter);
-    }
-
-    // Quick filter
-    if (quickFilter === 'favorites') {
-      result = result.filter((d) => d.isFavorite);
-    } else if (quickFilter === 'stale') {
-      result = result.filter((d) => getDaysSince(d.lastCookedDate) >= 30);
-    }
+    if (cuisineFilter) result = result.filter((d) => d.cuisineTag === cuisineFilter);
 
     // Sort
     switch (sortMode) {
@@ -189,7 +228,7 @@ export const DishLibraryScreen: React.FC = () => {
     }
 
     return result;
-  }, [allDishes, search, sortMode, quickFilter, cuisineFilter, monthDishSet, dateWindow]);
+  }, [focusSet, focusDishes, dateWindow, view, monthDishes, baseDishes, search, cuisineFilter, sortMode]);
 
   const onRefresh = useCallback(async () => {
     if (!householdId) return;
@@ -301,7 +340,7 @@ export const DishLibraryScreen: React.FC = () => {
 
       return (
         <TouchableOpacity
-          style={styles.dishRow}
+          style={[styles.dishRow, elevation.e1]}
           onPress={() => setDetailDish(item)}
           accessibilityLabel={`${item.name}, ${item.cuisineTag}, made ${item.timesCooked} times. Opens ingredients.`}
         >
@@ -362,7 +401,7 @@ export const DishLibraryScreen: React.FC = () => {
         </TouchableOpacity>
       );
     },
-    [toggleFavorite, colors, styles],
+    [toggleFavorite, colors, styles, elevation],
   );
 
   if (isLoading && dishes.length === 0) {
@@ -438,50 +477,90 @@ export const DishLibraryScreen: React.FC = () => {
         </Menu>
       </View>
 
-      {/* Quick filters — a wrapping row (NOT a horizontal ScrollView, which
-          stretched vertically and overlapped the Explore row below). */}
-      <View style={styles.quickFilterRow}>
-        {(
-          [
-            { key: 'all', label: 'All' },
-            { key: 'favorites', label: 'Favorites' },
-            { key: 'stale', label: 'Not made 30+ days' },
-          ] as const
-        ).map(({ key, label }) => {
-          const isAll = key === 'all';
-          const scoped = !!(monthDishes || dateWindow);
-          const displayLabel = isAll && scoped ? 'Show all' : label;
-          const selected = isAll ? quickFilter === 'all' && !scoped : quickFilter === key;
-          return (
-            <Chip
-              key={key}
-              selected={selected}
-              onPress={() => {
-                if (isAll && scoped) {
-                  navigation.setParams({ monthDishes: undefined, title: undefined, window: undefined });
-                }
-                setQuickFilter(key);
-              }}
-              style={[styles.quickChip, selected && styles.quickChipSelected]}
-              textStyle={[styles.quickChipText, selected && styles.quickChipTextSelected]}
-            >
-              {displayLabel}
-            </Chip>
-          );
-        })}
-      </View>
+      {/* Audience toggle (only when the family has kids-tiffin history) + the
+          four self-sufficient view pills. Hidden in the Insights focus view. */}
+      {!focusSet && (
+        <>
+          {hasKids && (
+            <View style={styles.audienceRow}>
+              {(['family', 'kids'] as const).map((a) => {
+                const selected = audience === a;
+                return (
+                  <TouchableOpacity
+                    key={a}
+                    onPress={() => setAudience(a)}
+                    style={[styles.audienceTab, selected && styles.audienceTabSelected]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={a === 'family' ? 'Family dishes' : 'Kids tiffin dishes'}
+                  >
+                    <Text style={[styles.audienceTabText, selected && styles.audienceTabTextSelected]}>
+                      {a === 'family' ? 'Family' : 'Kids tiffins'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+          <View style={styles.quickFilterRow}>
+            {(
+              [
+                { key: 'month', label: 'This month' },
+                { key: 'all', label: 'Show all' },
+                { key: 'favorites', label: 'Favorites' },
+                { key: 'stale', label: 'Not made 30+' },
+              ] as const
+            ).map(({ key, label }) => {
+              const selected = view === key;
+              return (
+                <Chip
+                  key={key}
+                  selected={selected}
+                  onPress={() => {
+                    setView(key);
+                    setSortMode(key === 'stale' ? 'lastMade' : 'mostMade');
+                  }}
+                  style={[styles.quickChip, selected && styles.quickChipSelected]}
+                  textStyle={[styles.quickChipText, selected && styles.quickChipTextSelected]}
+                >
+                  {label}
+                </Chip>
+              );
+            })}
+          </View>
+        </>
+      )}
 
-      {/* Explore = add more dishes from the global catalog. Its own full-width
-          row so the label never clips inside the horizontal filter scroll. */}
-      <TouchableOpacity
-        onPress={() => setExploreVisible(true)}
-        style={styles.exploreRow}
-        accessibilityLabel="Explore dishes to add"
-      >
-        <MaterialCommunityIcons name="earth" size={18} color={colors.primary} />
-        <Text style={styles.exploreRowText}>Explore more dishes</Text>
-        <MaterialCommunityIcons name="chevron-right" size={18} color={colors.primary} />
-      </TouchableOpacity>
+      {/* Explore the global catalog, share your dishes, or import a code — the
+          three dish-collection actions on one compact row. */}
+      {!focusSet && (
+        <View style={styles.packRow}>
+          <TouchableOpacity
+            onPress={() => setExploreVisible(true)}
+            style={styles.packBtn}
+            accessibilityLabel="Explore more dishes to add"
+          >
+            <MaterialCommunityIcons name="earth" size={17} color={colors.primary} />
+            <Text style={styles.packBtnText}>Explore</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setShareVisible(true)}
+            style={styles.packBtn}
+            accessibilityLabel="Share your dishes"
+          >
+            <MaterialCommunityIcons name="gift-outline" size={17} color={colors.primary} />
+            <Text style={styles.packBtnText}>Share</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setImportVisible(true)}
+            style={styles.packBtn}
+            accessibilityLabel="Import dishes from a code"
+          >
+            <MaterialCommunityIcons name="import" size={17} color={colors.home} />
+            <Text style={[styles.packBtnText, { color: colors.home }]}>Import</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {dateWindow && (
         <Text style={styles.windowNote}>
@@ -571,7 +650,8 @@ export const DishLibraryScreen: React.FC = () => {
             />
             <TextInput
               label="Recipe (link or steps)"
-              value={newRecipe}
+              key={dialogVisible ? 'newrecipe-open' : 'newrecipe-closed'}
+              defaultValue={newRecipe}
               onChangeText={setNewRecipe}
               mode="outlined"
               multiline
@@ -622,6 +702,22 @@ export const DishLibraryScreen: React.FC = () => {
         dish={detailDish}
         householdId={householdId}
         onDismiss={() => setDetailDish(null)}
+      />
+
+      <DishShareModal
+        visible={shareVisible}
+        householdId={householdId}
+        userId={user?.id ?? ''}
+        householdName={household?.name ?? 'a Sofra family'}
+        onClose={() => setShareVisible(false)}
+      />
+
+      <DishPackImport
+        visible={importVisible}
+        householdId={householdId}
+        existingDishNames={existingNames}
+        onClose={() => setImportVisible(false)}
+        onImported={() => { if (householdId) fetchDishes(householdId, true); }}
       />
     </View>
   );
@@ -686,6 +782,29 @@ const makeStyles = (c: ThemeColors) =>
       fontFamily: Fonts.bodySemiBold,
       color: c.primary,
     },
+    packRow: {
+      flexDirection: 'row',
+      gap: Spacing.sm,
+      marginHorizontal: Spacing.md,
+      marginBottom: Spacing.sm,
+    },
+    packBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: Spacing.xs,
+      backgroundColor: c.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+      borderRadius: BorderRadius.md,
+      paddingVertical: Spacing.sm,
+    },
+    packBtnText: {
+      fontSize: FontSize.sm,
+      fontFamily: Fonts.bodySemiBold,
+      color: c.primary,
+    },
     exploreChip: {
       backgroundColor: c.surface,
       borderWidth: 1,
@@ -718,13 +837,34 @@ const makeStyles = (c: ThemeColors) =>
       fontFamily: Fonts.bodyMedium,
       color: c.text,
     },
+    // Wrapping pill row (This month / Show all / Favorites / Not made 30+) — wraps
+    // to a second line rather than scrolling, so a pill is never half-cut-off.
     quickFilterRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
+      alignItems: 'center',
       paddingHorizontal: Spacing.md,
       gap: Spacing.sm,
       marginBottom: Spacing.sm,
     },
+    audienceRow: {
+      flexDirection: 'row',
+      marginHorizontal: Spacing.md,
+      marginBottom: Spacing.sm,
+      backgroundColor: c.surfaceVariant,
+      borderRadius: BorderRadius.full,
+      padding: 3,
+    },
+    audienceTab: {
+      flex: 1,
+      paddingVertical: 7,
+      borderRadius: BorderRadius.full,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    audienceTabSelected: { backgroundColor: c.primary },
+    audienceTabText: { fontFamily: Fonts.bodyMedium, fontSize: FontSize.sm, color: c.textSecondary },
+    audienceTabTextSelected: { color: c.white, fontFamily: Fonts.bodySemiBold },
     exploreBanner: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -781,7 +921,8 @@ const makeStyles = (c: ThemeColors) =>
       marginHorizontal: Spacing.md,
       marginBottom: Spacing.xs,
       borderRadius: BorderRadius.md,
-      elevation: 1,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
     },
     starIcon: {
       marginRight: Spacing.sm,

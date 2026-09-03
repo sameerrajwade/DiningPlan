@@ -55,6 +55,31 @@ describe('computeInsights — most cooked dishes', () => {
     const { mostCookedDishes } = computeInsights(meals, []);
     expect(mostCookedDishes.map((d) => d.name)).toEqual(['Poha']);
   });
+
+  it('never lists Leftovers as a cooked dish', () => {
+    const meals: Meal[] = [
+      meal({ dishName: 'Poha' }),
+      meal({ dishName: 'Leftovers', items: [] }),
+      meal({ dishName: 'Leftovers', items: [] }),
+    ];
+    const { mostCookedDishes } = computeInsights(meals, []);
+    expect(mostCookedDishes.map((d) => d.name)).toEqual(['Poha']);
+  });
+});
+
+describe('computeInsights — leftovers are never counted', () => {
+  it('excludes leftovers from unique dishes and cuisine variety', () => {
+    const meals: Meal[] = [
+      meal({ dishName: 'Poha', cuisineTag: 'Indian' }),
+      meal({ dishName: 'Pasta', cuisineTag: 'Italian' }),
+      meal({ dishName: 'Leftovers', items: [], cuisineTag: '' as any }), // would show as "Other"
+    ];
+    const { uniqueDishes, cuisineBreakdown } = computeInsights(meals, []);
+    expect(uniqueDishes).toBe(2); // Poha + Pasta, not Leftovers
+    expect(cuisineBreakdown.map((c) => c.cuisine).sort()).toEqual(['Indian', 'Italian']); // no "Other"
+    // Percentages use the non-leftover denominator (2), so each real cuisine is 50%.
+    expect(cuisineBreakdown.every((c) => c.percent === 50)).toBe(true);
+  });
 });
 
 describe('computeInsights — home-cooked trend', () => {

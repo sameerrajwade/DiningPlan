@@ -19,6 +19,7 @@ import {
   Switch,
 } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { format, addDays, parseISO, startOfWeek, endOfWeek, addWeeks, isToday } from 'date-fns';
 import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
@@ -70,6 +71,7 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation, r
   const householdId = user?.householdId ?? '';
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
 
   const [plan, setPlan] = useState<MealPlan[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -496,7 +498,7 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation, r
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + Spacing.sm }]}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerRow}>

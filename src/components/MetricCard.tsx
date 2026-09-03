@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { Card, Text } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 
 interface MetricCardProps {
@@ -13,6 +13,9 @@ interface MetricCardProps {
   color?: string;
   icon?: string;
   onShare?: () => void;
+  // Optional progress bar (0..1) under the subtitle — e.g. spend vs budget.
+  progress?: number;
+  progressColor?: string;
 }
 
 // Translucent tint of an accent hex, for the soft icon badge.
@@ -33,6 +36,8 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   color,
   icon,
   onShare,
+  progress,
+  progressColor,
 }) => {
   const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -40,8 +45,10 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   const trendColor = trend !== undefined && trend >= 0 ? colors.success : colors.error;
   const trendIcon = trend !== undefined && trend >= 0 ? 'arrow-up' : 'arrow-down';
 
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
+
   return (
-    <Card style={styles.card} accessibilityLabel={`${title}: ${value}`}>
+    <Card style={[styles.card, elevation.e1]} accessibilityLabel={`${title}: ${value}`}>
       <Card.Content>
         {onShare && (
           <TouchableOpacity
@@ -81,6 +88,20 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         <View style={styles.subtitleArea}>
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         </View>
+        {/* Reserve the bar slot on every card so a card WITH a progress bar
+            (e.g. spend vs budget) stays the same height as the others in the grid. */}
+        <View style={styles.progressArea}>
+          {progress !== undefined && (
+            <View style={styles.progressTrack} accessibilityLabel={`${Math.round(Math.min(1, progress) * 100)} percent`}>
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${Math.max(0, Math.min(1, progress)) * 100}%`, backgroundColor: progressColor ?? accent },
+                ]}
+              />
+            </View>
+          )}
+        </View>
       </Card.Content>
     </Card>
   );
@@ -94,12 +115,7 @@ const makeStyles = (c: ThemeColors) =>
       marginVertical: Spacing.xs,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: c.border,
-      // Soft depth for a more premium, layered feel (kept subtle).
-      shadowColor: c.black,
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.05,
-      shadowRadius: 8,
-      elevation: 1,
+      // Depth comes from the shared elevation system (spread at the call site).
     },
     header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginBottom: Spacing.sm },
     iconBadge: {
@@ -123,6 +139,9 @@ const makeStyles = (c: ThemeColors) =>
     trendText: { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.sm, marginLeft: 2 },
     subtitleArea: { minHeight: 18, marginTop: Spacing.xs, justifyContent: 'center' },
     subtitle: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: c.textMuted },
+    progressArea: { height: 11, justifyContent: 'flex-end', marginTop: 6 },
+    progressTrack: { height: 5, borderRadius: 3, backgroundColor: c.surfaceVariant, overflow: 'hidden' },
+    progressFill: { height: '100%', borderRadius: 3 },
   });
 
 export default MetricCard;

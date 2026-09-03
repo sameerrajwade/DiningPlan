@@ -4,7 +4,7 @@ import { Text } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { PressableScale } from './motion';
 import { useTourStore } from '../stores/useTourStore';
@@ -14,6 +14,9 @@ type TabName = 'Home' | 'Calendar' | 'Plan' | 'Insights' | 'Profile';
 interface Step {
   tab: TabName;
   profileScreen?: 'ProfileMain' | 'Settings';
+  // A screen inside the Home stack to push (Restaurants, Grocery, …) so the tour
+  // actually SHOWS that screen instead of just landing on Home.
+  homeScreen?: 'Restaurants' | 'Grocery' | 'DishLibrary';
   icon: string;
   title: string;
   body: string;
@@ -23,7 +26,9 @@ interface Step {
 // Friendly name of the screen behind the card — so every step is clearly
 // labelled (Home & Plan hide their nav header, so the card must say where we are).
 const screenLabel = (s: Step): string =>
-  s.tab === 'Profile' ? (s.profileScreen === 'Settings' ? 'Settings' : 'Profile') : s.tab;
+  s.tab === 'Profile'
+    ? (s.profileScreen === 'Settings' ? 'Settings' : 'Profile')
+    : s.homeScreen ?? s.tab;
 
 // The guided walkthrough. Each step navigates the REAL screen behind the card so
 // the user sees genuine transitions; the coach card explains what they're
@@ -34,12 +39,13 @@ const STEPS: Step[] = [
   { tab: 'Calendar', icon: 'calendar-week', title: 'Your meal calendar', body: 'Every meal on a calendar. Tap any day to see or plan what you’re eating.' },
   { tab: 'Plan', icon: 'auto-fix', title: 'Auto-plan the week', body: 'Generate a week of dinners from dishes your family already loves — balanced across cuisines and avoiding recent repeats. Kids’ tiffins get their own plan with repeat alerts.' },
   { tab: 'Insights', icon: 'chart-bar', title: 'See your insights', body: 'Your home-vs-outside balance, spending, cuisine variety, and dishes you haven’t made in a while.' },
-  { tab: 'Home', icon: 'silverware-fork-knife', title: 'Restaurant memory', body: 'Tap “Outside Meals” on Home to see each restaurant’s visits and spending over time, and remember what to order (or skip).' },
+  { tab: 'Home', homeScreen: 'Restaurants', icon: 'silverware-fork-knife', title: 'Restaurant memory', body: 'Every place you eat out, remembered — each restaurant’s visits and spending over time, so you know what to order (or skip).' },
   { tab: 'Profile', profileScreen: 'Settings', icon: 'cog', title: 'Make it yours', body: 'In Settings set your budget, currency and dining-out options. Manage or switch your family from the Family tab.' },
 ];
 
 export const TourOverlay: React.FC = () => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
@@ -84,7 +90,7 @@ export const TourOverlay: React.FC = () => {
       if (current.tab === 'Profile') {
         navigation.navigate('Main', { screen: 'Profile', params: { screen: current.profileScreen ?? 'ProfileMain' } });
       } else if (current.tab === 'Home') {
-        navigation.navigate('Main', { screen: 'Home', params: { screen: 'HomeMain' } });
+        navigation.navigate('Main', { screen: 'Home', params: { screen: current.homeScreen ?? 'HomeMain' } });
       } else {
         navigation.navigate('Main', { screen: current.tab });
       }
@@ -126,7 +132,7 @@ export const TourOverlay: React.FC = () => {
       )}
 
       <View style={[styles.cardWrap, { paddingBottom: current.highlightFab ? insets.bottom + 172 : insets.bottom + Spacing.lg }]}>
-        <View style={styles.card}>
+        <View style={[styles.card, elevation.e3]}>
           <View style={styles.iconBadge}>
             <MaterialCommunityIcons name={current.icon as any} size={24} color={colors.white} />
           </View>

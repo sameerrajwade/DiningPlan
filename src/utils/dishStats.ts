@@ -1,4 +1,5 @@
 import { Dish, Meal } from '../types';
+import { isLeftovers } from './quickActions';
 
 export interface DishWindow {
   start: string; // yyyy-MM-dd, inclusive
@@ -45,7 +46,7 @@ export function aggregateDishes(
 
     const names = m.items?.length ? m.items.map((it) => it.name) : m.dishName ? [m.dishName] : [];
     names.forEach((rawName) => {
-      if (!rawName) return;
+      if (!rawName || isLeftovers(rawName)) return; // the leftovers marker is not a dish
       const key = rawName.toLowerCase();
       const existing = dishMap.get(key);
       if (existing) {

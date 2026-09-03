@@ -1,19 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, View, ScrollView, Alert, Modal, Share } from 'react-native';
+import { StyleSheet, View, ScrollView, Alert, Modal } from 'react-native';
 import { Text, Avatar, TextInput, Button } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useFocusEffect } from '@react-navigation/native';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { PressableScale, FadeSlideIn } from '../components/motion';
 import { ShareAppCard } from '../components/ShareAppCard';
-import { DishPackImport } from '../components/DishPackImport';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
-import { useDishStore } from '../stores/useDishStore';
-import { useMealStore } from '../stores/useMealStore';
-import { getRestaurants, createDishPack } from '../services/firestore';
-import { buildDishPack, generatePackCode } from '../utils/dishPack';
 
 const getInitials = (name: string): string => {
   const parts = name.trim().split(/\s+/);
@@ -23,8 +18,9 @@ const getInitials = (name: string): string => {
 };
 
 export const FamilyScreen: React.FC = () => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
   const { user } = useAuthStore();
   const { household, members, fetchMembers, switchHousehold } = useHouseholdStore();
   const householdId = user?.householdId ?? '';
@@ -33,61 +29,6 @@ export const FamilyScreen: React.FC = () => {
   const [showSwitch, setShowSwitch] = useState(false);
   const [switchCode, setSwitchCode] = useState('');
   const [switching, setSwitching] = useState(false);
-  const [showImport, setShowImport] = useState(false);
-  const [sharingDishes, setSharingDishes] = useState(false);
-
-  // Select the STABLE dishes array, then derive names with useMemo. Mapping
-  // inside the selector returns a new array every render, which makes Zustand's
-  // useSyncExternalStore see a changed snapshot each time → infinite re-render.
-  const dishes = useDishStore((s) => s.dishes);
-  const dishNames = useMemo(() => dishes.map((d) => d.name), [dishes]);
-
-  // Build a shareable dish pack (definitions only — no meals/ratings/spend) and
-  // hand the code to the OS share sheet. Loads dishes/meals/restaurants fresh so
-  // the pack reflects the full library even if this tab hasn't loaded them yet.
-  const handleShareDishes = useCallback(async () => {
-    if (!householdId || !user || sharingDishes) return;
-    setSharingDishes(true);
-    try {
-      await Promise.all([
-        useDishStore.getState().fetchDishes(householdId),
-        useMealStore.getState().fetchAllMeals(householdId),
-      ]);
-      const dishes = useDishStore.getState().dishes;
-      const meals = useMealStore.getState().meals;
-      if (dishes.length === 0) {
-        Alert.alert('No dishes yet', 'Add some dishes to your library first, then share them.');
-        return;
-      }
-      const restaurants = await getRestaurants(householdId).catch(() => []);
-      const code = generatePackCode();
-      const pack = buildDishPack({
-        code,
-        userId: user.id,
-        householdName: household?.name ?? 'a Sofra family',
-        dishes,
-        meals,
-        restaurants,
-      });
-      await createDishPack(pack);
-      const counts = [
-        `${pack.dishes.length} ${pack.dishes.length === 1 ? 'dish' : 'dishes'}`,
-        pack.kidsDishes.length ? `${pack.kidsDishes.length} kids tiffins` : '',
-        pack.restaurants.length ? `${pack.restaurants.length} restaurants` : '',
-      ].filter(Boolean).join(', ');
-      await Share.share({
-        message:
-          `I'm sharing my Sofra dish collection with you! (${counts})\n\n` +
-          `In Sofra, go to Family → “Import dishes from a code” and enter:\n\n${code}\n\n` +
-          `Sofra — your family's meal memory.`,
-      });
-    } catch (e: any) {
-      Alert.alert('Could not share', e?.message ?? 'Something went wrong creating your dish pack.');
-    } finally {
-      setSharingDishes(false);
-    }
-  }, [householdId, user, household, sharingDishes]);
-
   useEffect(() => {
     if (householdId) fetchMembers(householdId).catch(() => {});
   }, [householdId, fetchMembers]);
@@ -120,7 +61,7 @@ export const FamilyScreen: React.FC = () => {
         <Text style={styles.sectionLabel}>
           {members.length} {members.length === 1 ? 'member' : 'members'}
         </Text>
-        <View style={styles.card}>
+        <View style={[styles.card, elevation.e1]}>
           {members.map((m, i) => (
             <View key={m.id} style={[styles.memberRow, i > 0 && styles.memberRowBorder]}>
               {m.avatarUrl ? (
@@ -151,7 +92,7 @@ export const FamilyScreen: React.FC = () => {
 
       {/* Your family — name, invite code, and a branded share card. */}
       <Text style={styles.sectionLabel}>Your family</Text>
-      <View style={styles.card}>
+      <View style={[styles.card, elevation.e1]}>
         {household?.name ? <Text style={styles.familyName}>{household.name}</Text> : null}
         {household?.inviteCode ? (
           <View style={styles.codeRow}>
@@ -168,31 +109,9 @@ export const FamilyScreen: React.FC = () => {
         </PressableScale>
       </View>
 
-      {/* Share your dish collection with another household, or import theirs. */}
-      <Text style={styles.sectionLabel}>Share & import dishes</Text>
-      <View style={styles.card}>
-        <PressableScale style={styles.navRow} onPress={handleShareDishes} disabled={sharingDishes}>
-          <MaterialCommunityIcons name="gift-outline" size={22} color={colors.primary} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.navText}>{sharingDishes ? 'Preparing your pack…' : 'Share your dishes'}</Text>
-            <Text style={styles.navSub}>Send your dish collection to another family via a code</Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textMuted} />
-        </PressableScale>
-        <View style={styles.rowDivider} />
-        <PressableScale style={styles.navRow} onPress={() => setShowImport(true)}>
-          <MaterialCommunityIcons name="import" size={22} color={colors.home} />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.navText}>Import dishes from a code</Text>
-            <Text style={styles.navSub}>Bring another family's dishes into your library</Text>
-          </View>
-          <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textMuted} />
-        </PressableScale>
-      </View>
-
       {/* Switch which home is active (a family can have more than one home code). */}
       <Text style={styles.sectionLabel}>Other homes</Text>
-      <View style={styles.card}>
+      <View style={[styles.card, elevation.e1]}>
         <PressableScale style={styles.navRow} onPress={() => setShowSwitch(true)}>
           <MaterialCommunityIcons name="home-switch-outline" size={22} color={colors.textSecondary} />
           <View style={{ flex: 1 }}>
@@ -209,14 +128,6 @@ export const FamilyScreen: React.FC = () => {
         visible={showShare}
         code={household?.inviteCode ?? null}
         onClose={() => setShowShare(false)}
-      />
-
-      <DishPackImport
-        visible={showImport}
-        householdId={householdId}
-        existingDishNames={dishNames}
-        onClose={() => setShowImport(false)}
-        onImported={() => { if (householdId) useDishStore.getState().fetchDishes(householdId, true); }}
       />
 
       {/* Switch / join by code */}

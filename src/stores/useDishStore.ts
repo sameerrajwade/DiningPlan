@@ -5,6 +5,7 @@ import {
   addDish as addDishApi,
   addDishesBatch as addDishesBatchApi,
   updateDish as updateDishApi,
+  deleteDish as deleteDishApi,
 } from '../services/firestore';
 
 interface DishState {
@@ -16,6 +17,7 @@ interface DishState {
   addDish: (householdId: string, dish: Omit<Dish, 'id'>) => Promise<string>;
   addDishesBatch: (householdId: string, dishes: Omit<Dish, 'id'>[]) => Promise<string[]>;
   updateDish: (householdId: string, dishId: string, data: Partial<Dish>) => Promise<void>;
+  deleteDish: (householdId: string, dishId: string) => Promise<void>;
   toggleFavorite: (householdId: string, dishId: string) => Promise<void>;
   searchDishes: (query: string) => Dish[];
   clear: () => void;
@@ -105,6 +107,18 @@ export const useDishStore = create<DishState>((set, get) => ({
       }));
     } catch (e: any) {
       set({ error: e.message, isLoading: false });
+      throw e;
+    }
+  },
+
+  deleteDish: async (householdId, dishId) => {
+    const prev = get().dishes;
+    // Optimistic: drop it locally, restore on failure.
+    set({ dishes: prev.filter((d) => d.id !== dishId) });
+    try {
+      await deleteDishApi(householdId, dishId);
+    } catch (e: any) {
+      set({ dishes: prev, error: e.message });
       throw e;
     }
   },

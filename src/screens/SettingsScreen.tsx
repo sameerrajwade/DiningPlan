@@ -3,7 +3,7 @@ import { StyleSheet, View, ScrollView, Alert } from 'react-native';
 import { Text, Switch } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { useThemeStore, ThemeMode } from '../stores/useThemeStore';
 import { useAuthStore } from '../stores/useAuthStore';
@@ -11,6 +11,10 @@ import { deleteUserData } from '../services/firestore';
 import { deleteCurrentUser } from '../services/auth';
 import { useNotificationStore } from '../stores/useNotificationStore';
 import { useTourStore } from '../stores/useTourStore';
+import { useHouseholdStore } from '../stores/useHouseholdStore';
+import { useDishStore } from '../stores/useDishStore';
+import { DishShareModal } from '../components/DishShareModal';
+import { DishPackImport } from '../components/DishPackImport';
 import { PressableScale, FadeSlideIn } from '../components/motion';
 
 const REMINDER_HOURS = [17, 18, 19, 20, 21];
@@ -23,14 +27,20 @@ const THEME_MODES: { value: ThemeMode; label: string; icon: string }[] = [
 ];
 
 export const SettingsScreen: React.FC = () => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
   const navigation = useNavigation<any>();
   const mode = useThemeStore((s) => s.mode);
   const setMode = useThemeStore((s) => s.setMode);
 
   const { user, signOut } = useAuthStore();
   const householdId = user?.householdId ?? null;
+  const household = useHouseholdStore((s) => s.household);
+  const dishes = useDishStore((s) => s.dishes);
+  const dishNames = useMemo(() => dishes.map((d) => d.name), [dishes]);
+  const [showShareDishes, setShowShareDishes] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   const handleDeleteAccount = useCallback(() => {
@@ -95,7 +105,7 @@ export const SettingsScreen: React.FC = () => {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <FadeSlideIn>
         <Text style={styles.sectionLabel}>Appearance</Text>
-        <View style={styles.card}>
+        <View style={[styles.card, elevation.e1]}>
           <View style={styles.segment}>
             {THEME_MODES.map((m) => {
               const active = mode === m.value;
@@ -123,7 +133,7 @@ export const SettingsScreen: React.FC = () => {
       </FadeSlideIn>
 
       <Text style={styles.sectionLabel}>Reminders</Text>
-      <View style={styles.card}>
+      <View style={[styles.card, elevation.e1]}>
         <View style={styles.reminderRow}>
           <View style={styles.reminderInfo}>
             <Text style={styles.reminderTitle}>Daily meal reminder</Text>
@@ -166,8 +176,25 @@ export const SettingsScreen: React.FC = () => {
         </View>
       </View>
 
+      {/* Dishes — a secondary path to the dish-pack share/import (the primary
+          lives in the Dish Library). Its own section, not buried under Family. */}
+      <Text style={styles.sectionLabel}>Dishes</Text>
+      <View style={[styles.card, elevation.e1]}>
+        <PressableScale style={styles.navRow} onPress={() => setShowShareDishes(true)}>
+          <MaterialCommunityIcons name="gift-outline" size={20} color={colors.primary} />
+          <Text style={styles.navText}>Share your dishes</Text>
+          <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textMuted} />
+        </PressableScale>
+        <View style={styles.divider} />
+        <PressableScale style={styles.navRow} onPress={() => setShowImport(true)}>
+          <MaterialCommunityIcons name="import" size={20} color={colors.home} />
+          <Text style={styles.navText}>Import dishes from a code</Text>
+          <MaterialCommunityIcons name="chevron-right" size={18} color={colors.textMuted} />
+        </PressableScale>
+      </View>
+
       <Text style={styles.sectionLabel}>Guide</Text>
-      <View style={styles.card}>
+      <View style={[styles.card, elevation.e1]}>
         <PressableScale style={styles.navRow} onPress={() => useTourStore.getState().start()}>
           <MaterialCommunityIcons name="gesture-tap" size={20} color={colors.textSecondary} />
           <Text style={styles.navText}>See product tour</Text>
@@ -176,7 +203,7 @@ export const SettingsScreen: React.FC = () => {
       </View>
 
       <Text style={styles.sectionLabel}>Account</Text>
-      <View style={styles.card}>
+      <View style={[styles.card, elevation.e1]}>
         <PressableScale style={styles.navRow} onPress={() => navigation.navigate('Legal', { doc: 'privacy' })}>
           <MaterialCommunityIcons name="shield-lock-outline" size={20} color={colors.textSecondary} />
           <Text style={styles.navText}>Privacy policy</Text>
@@ -204,6 +231,21 @@ export const SettingsScreen: React.FC = () => {
 
       <Text style={styles.footer}>Your family's meal memory</Text>
       <View style={{ height: Spacing.xxl }} />
+
+      <DishShareModal
+        visible={showShareDishes}
+        householdId={householdId ?? ''}
+        userId={user?.id ?? ''}
+        householdName={household?.name ?? 'a Sofra family'}
+        onClose={() => setShowShareDishes(false)}
+      />
+      <DishPackImport
+        visible={showImport}
+        householdId={householdId ?? ''}
+        existingDishNames={dishNames}
+        onClose={() => setShowImport(false)}
+        onImported={() => { if (householdId) useDishStore.getState().fetchDishes(householdId, true); }}
+      />
     </ScrollView>
   );
 };

@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View, ScrollView, Alert, Linking } from 'react-native';
 import { Portal, Modal, Text, TextInput, Button, IconButton, Checkbox } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/theme';
+import { format, parseISO } from 'date-fns';
+import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors, makeElevation } from '../config/theme';
 import { useTheme } from '../hooks/useTheme';
 import { Dish, Recipe } from '../types';
 import { useDishStore } from '../stores/useDishStore';
@@ -22,12 +23,14 @@ interface Props {
 // sheet is where a household curates them over time. (Recipe view/edit — Phase 3
 // — will slot in below the ingredients.)
 export const DishDetailSheet: React.FC<Props> = ({ dish, householdId, onDismiss }) => {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const elevation = useMemo(() => makeElevation(isDark), [isDark]);
 
   const dishes = useDishStore((s) => s.dishes);
   const addDish = useDishStore((s) => s.addDish);
   const updateDish = useDishStore((s) => s.updateDish);
+  const deleteDish = useDishStore((s) => s.deleteDish);
   const addItems = useShoppingStore((s) => s.addItems);
 
   const [ingredients, setIngredients] = useState<string[]>([]);
@@ -47,6 +50,12 @@ export const DishDetailSheet: React.FC<Props> = ({ dish, householdId, onDismiss 
   const [editingRecipe, setEditingRecipe] = useState(false);
   const [savingRecipe, setSavingRecipe] = useState(false);
 
+  // Free-text note ("how I make it", tweaks) kept on the dish.
+  const [notes, setNotes] = useState('');
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     const initial = dish?.ingredients ?? [];
     setIngredients(initial);
@@ -55,6 +64,8 @@ export const DishDetailSheet: React.FC<Props> = ({ dish, householdId, onDismiss 
     setRecipe(dish?.recipe ?? null);
     setRecipeDraft(dish?.recipe?.value ?? '');
     setEditingRecipe(false);
+    setNotes(dish?.notes ?? '');
+    setEditingNotes(false);
     const real = dish ? dishes.some((d) => d.id === dish.id) : false;
     setRealId(real ? dish!.id : null);
     // dishes intentionally omitted: we only want to (re)resolve on dish change.
@@ -186,14 +197,70 @@ export const DishDetailSheet: React.FC<Props> = ({ dish, householdId, onDismiss 
     }
   };
 
+  const saveNotes = async () => {
+    if (!dish) return;
+    const value = notes.trim();
+    const prev = dish.notes ?? '';
+    setEditingNotes(false);
+    setSavingNotes(true);
+    try {
+      if (!realId) {
+        const id = await ensureRealDish(ingredients);
+        await updateDish(householdId, id, { notes: value || (null as any) });
+      } else {
+        await updateDish(householdId, realId, { notes: value || (null as any) });
+      }
+    } catch {
+      setNotes(prev);
+      Alert.alert('Could not save', 'Something went wrong saving your note. Please try again.');
+    } finally {
+      setSavingNotes(false);
+    }
+  };
+
+  const handleDelete = () => {
+    if (!dish || !realId) return;
+    Alert.alert(
+      'Delete dish?',
+      `Remove "${toTitleCase(dish.name)}" from your library? Your logged meals stay — only the saved dish is removed.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await deleteDish(householdId, realId);
+              onDismiss();
+            } catch {
+              Alert.alert('Could not delete', 'Something went wrong. Please try again.');
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const actionLabel = recipeActionLabel(recipe);
+  const lastMade = dish?.lastCookedDate
+    ? (() => {
+        try {
+          return format(parseISO(dish.lastCookedDate + 'T00:00:00'), 'MMM d, yyyy');
+        } catch {
+          return null;
+        }
+      })()
+    : null;
 
   return (
     <Portal>
       <Modal
         visible={!!dish}
         onDismiss={onDismiss}
-        contentContainerStyle={styles.modal}
+        contentContainerStyle={[styles.modal, elevation.e3]}
       >
         {dish && (
           <View style={styles.sheet}>
@@ -216,6 +283,21 @@ export const DishDetailSheet: React.FC<Props> = ({ dish, householdId, onDismiss 
               </View>
               <IconButton icon="close" size={22} onPress={onDismiss} iconColor={colors.textSecondary} />
             </View>
+
+            {(dish.timesCooked > 0 || lastMade) && (
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <MaterialCommunityIcons name="silverware-fork-knife" size={13} color={colors.textSecondary} />
+                  <Text style={styles.statText}>Cooked {dish.timesCooked}×</Text>
+                </View>
+                {lastMade && (
+                  <View style={styles.statItem}>
+                    <MaterialCommunityIcons name="calendar-check-outline" size={13} color={colors.textSecondary} />
+                    <Text style={styles.statText}>Last made {lastMade}</Text>
+                  </View>
+                )}
+              </View>
+            )}
 
             <Text style={styles.sectionLabel}>Ingredients</Text>
             {ingredients.length > 0 && (
@@ -301,7 +383,7 @@ export const DishDetailSheet: React.FC<Props> = ({ dish, householdId, onDismiss 
             {editingRecipe ? (
               <View>
                 <TextInput
-                  value={recipeDraft}
+                  defaultValue={recipeDraft}
                   onChangeText={setRecipeDraft}
                   placeholder="Paste a YouTube / recipe link, or type how you make it"
                   mode="outlined"
@@ -358,6 +440,78 @@ export const DishDetailSheet: React.FC<Props> = ({ dish, householdId, onDismiss 
                 Add a recipe or video link
               </Button>
             )}
+
+            {/* Notes — "how I make it", tweaks. Same edit pattern as recipe. */}
+            <View style={styles.recipeHeaderRow}>
+              <Text style={[styles.sectionLabel, styles.recipeLabel]}>Notes</Text>
+              {notes.trim() && !editingNotes && (
+                <IconButton
+                  icon="pencil"
+                  size={16}
+                  iconColor={colors.textMuted}
+                  onPress={() => setEditingNotes(true)}
+                  accessibilityLabel="Edit notes"
+                />
+              )}
+            </View>
+            {editingNotes ? (
+              <View>
+                <TextInput
+                  defaultValue={notes}
+                  onChangeText={setNotes}
+                  placeholder="How you make it, tweaks, family notes…"
+                  mode="outlined"
+                  multiline
+                  style={styles.recipeInput}
+                  outlineColor={colors.border}
+                  activeOutlineColor={colors.primary}
+                />
+                <View style={styles.recipeEditActions}>
+                  <Button
+                    mode="text"
+                    onPress={() => { setEditingNotes(false); setNotes(dish.notes ?? ''); }}
+                    textColor={colors.textSecondary}
+                    disabled={savingNotes}
+                  >
+                    Cancel
+                  </Button>
+                  <Button mode="contained" onPress={saveNotes} loading={savingNotes} disabled={savingNotes} buttonColor={colors.primary}>
+                    {notes.trim() ? 'Save' : dish.notes ? 'Remove' : 'Save'}
+                  </Button>
+                </View>
+              </View>
+            ) : notes.trim() ? (
+              <ScrollView style={styles.recipeTextBox} keyboardShouldPersistTaps="handled">
+                <Text style={styles.recipeText}>{notes}</Text>
+              </ScrollView>
+            ) : (
+              <Button
+                mode="text"
+                icon="plus"
+                onPress={() => setEditingNotes(true)}
+                textColor={colors.primary}
+                style={styles.recipeAddBtn}
+                contentStyle={styles.recipeAddContent}
+              >
+                Add a note
+              </Button>
+            )}
+
+            {/* Delete — only offered for a saved library dish. */}
+            {realId && (
+              <Button
+                mode="text"
+                icon="trash-can-outline"
+                onPress={handleDelete}
+                loading={deleting}
+                disabled={deleting}
+                textColor={colors.error}
+                style={styles.deleteBtn}
+                contentStyle={styles.recipeAddContent}
+              >
+                Delete dish
+              </Button>
+            )}
           </View>
         )}
       </Modal>
@@ -389,6 +543,10 @@ const makeStyles = (c: ThemeColors) =>
     },
     cuisinePillText: { fontSize: FontSize.xs, fontFamily: Fonts.bodyMedium, color: c.white },
     categoryTag: { fontSize: FontSize.xs, fontFamily: Fonts.body, color: c.textSecondary },
+    statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.md, marginTop: Spacing.sm },
+    statItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    statText: { fontSize: FontSize.sm, fontFamily: Fonts.bodyMedium, color: c.textSecondary },
+    deleteBtn: { alignSelf: 'flex-start', marginTop: Spacing.md },
     sectionLabel: {
       fontSize: FontSize.sm,
       fontFamily: Fonts.bodyMedium,
