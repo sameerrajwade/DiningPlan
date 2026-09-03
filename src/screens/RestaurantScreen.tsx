@@ -278,7 +278,7 @@ export const RestaurantScreen: React.FC = () => {
               </View>
               <View style={styles.metricWrapper}>
                 <MetricCard
-                  title="Unique Places"
+                  title="Places"
                   value={uniquePlaces}
                   icon="store"
                   color={colors.home}

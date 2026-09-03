@@ -72,7 +72,14 @@ export const MetricCard: React.FC<MetricCardProps> = ({
         </View>
 
         <View style={styles.valueRow}>
-          <Text style={[styles.value, { color: accent }]}>{value}</Text>
+          <Text
+            style={[styles.value, { color: accent }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.55}
+          >
+            {value}
+          </Text>
           {trend !== undefined && (
             <View
               style={styles.trendContainer}
@@ -134,8 +141,8 @@ const makeStyles = (c: ThemeColors) =>
       letterSpacing: 0.5,
     },
     valueRow: { flexDirection: 'row', alignItems: 'baseline' },
-    value: { fontFamily: Fonts.display, fontSize: FontSize.xxxl },
-    trendContainer: { flexDirection: 'row', alignItems: 'center', marginLeft: Spacing.sm },
+    value: { fontFamily: Fonts.display, fontSize: FontSize.xxxl, flexShrink: 1 },
+    trendContainer: { flexDirection: 'row', alignItems: 'center', marginLeft: Spacing.sm, flexShrink: 0 },
     trendText: { fontFamily: Fonts.bodySemiBold, fontSize: FontSize.sm, marginLeft: 2 },
     subtitleArea: { minHeight: 18, marginTop: Spacing.xs, justifyContent: 'center' },
     subtitle: { fontFamily: Fonts.body, fontSize: FontSize.sm, color: c.textMuted },

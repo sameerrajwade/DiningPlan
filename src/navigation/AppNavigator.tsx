@@ -96,7 +96,7 @@ function HomeStackNavigator() {
       <HomeStack.Screen
         name="HomeMain"
         component={HomeScreen}
-        options={{ headerShown: false }}
+        options={{ headerShown: false, title: 'Home' }}
       />
       <HomeStack.Screen
         name="DishLibrary"

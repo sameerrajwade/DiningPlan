@@ -263,7 +263,13 @@ export const DishDetailSheet: React.FC<Props> = ({ dish, householdId, onDismiss 
         contentContainerStyle={[styles.modal, elevation.e3]}
       >
         {dish && (
-          <View style={styles.sheet}>
+          <ScrollView
+            style={styles.sheetScroll}
+            contentContainerStyle={styles.sheet}
+            keyboardShouldPersistTaps="handled"
+            automaticallyAdjustKeyboardInsets
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.header}>
               <View style={styles.headerText}>
                 <Text style={styles.title}>{toTitleCase(dish.name)}</Text>
@@ -303,7 +309,7 @@ export const DishDetailSheet: React.FC<Props> = ({ dish, householdId, onDismiss 
             {ingredients.length > 0 && (
               <Text style={styles.tickHint}>Tick the ones you need to buy</Text>
             )}
-            <ScrollView style={styles.chipScroll} keyboardShouldPersistTaps="handled">
+            <View>
               {ingredients.length === 0 ? (
                 <Text style={styles.emptyHint}>
                   No ingredients yet. Add the few staples you buy for this dish — they’ll
@@ -329,7 +335,7 @@ export const DishDetailSheet: React.FC<Props> = ({ dish, householdId, onDismiss 
                   </View>
                 ))
               )}
-            </ScrollView>
+            </View>
 
             <View style={styles.addRow}>
               <TextInput
@@ -414,9 +420,9 @@ export const DishDetailSheet: React.FC<Props> = ({ dish, householdId, onDismiss 
               </View>
             ) : recipe ? (
               recipe.type === 'text' ? (
-                <ScrollView style={styles.recipeTextBox} keyboardShouldPersistTaps="handled">
+                <View style={styles.recipeTextBox}>
                   <Text style={styles.recipeText}>{recipe.value}</Text>
-                </ScrollView>
+                </View>
               ) : (
                 <Button
                   mode="outlined"
@@ -481,9 +487,9 @@ export const DishDetailSheet: React.FC<Props> = ({ dish, householdId, onDismiss 
                 </View>
               </View>
             ) : notes.trim() ? (
-              <ScrollView style={styles.recipeTextBox} keyboardShouldPersistTaps="handled">
+              <View style={styles.recipeTextBox}>
                 <Text style={styles.recipeText}>{notes}</Text>
-              </ScrollView>
+              </View>
             ) : (
               <Button
                 mode="text"
@@ -512,7 +518,7 @@ export const DishDetailSheet: React.FC<Props> = ({ dish, householdId, onDismiss 
                 Delete dish
               </Button>
             )}
-          </View>
+          </ScrollView>
         )}
       </Modal>
     </Portal>
@@ -526,7 +532,9 @@ const makeStyles = (c: ThemeColors) =>
       marginHorizontal: Spacing.md,
       borderRadius: BorderRadius.lg,
       overflow: 'hidden',
+      maxHeight: '90%',
     },
+    sheetScroll: { flexGrow: 0 },
     sheet: { padding: Spacing.lg },
     header: { flexDirection: 'row', alignItems: 'flex-start' },
     headerText: { flex: 1 },
@@ -557,7 +565,6 @@ const makeStyles = (c: ThemeColors) =>
       marginBottom: 2,
     },
     tickHint: { fontSize: FontSize.xs, fontFamily: Fonts.body, color: c.textMuted, marginBottom: Spacing.xs },
-    chipScroll: { maxHeight: 220 },
     ingRow: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -574,7 +581,6 @@ const makeStyles = (c: ThemeColors) =>
     recipeInput: { backgroundColor: c.background, maxHeight: 180, marginTop: Spacing.xs },
     recipeEditActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: Spacing.xs, marginTop: Spacing.xs },
     recipeTextBox: {
-      maxHeight: 160,
       backgroundColor: c.background,
       borderRadius: BorderRadius.sm,
       borderWidth: StyleSheet.hairlineWidth,
