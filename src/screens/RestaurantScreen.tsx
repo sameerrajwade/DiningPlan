@@ -259,7 +259,7 @@ export const RestaurantScreen: React.FC = () => {
             <View style={styles.metricsRow}>
               <View style={styles.metricWrapper}>
                 <MetricCard
-                  title="Total Spend"
+                  title="Spend"
                   value={`${currencySymbol}${totalSpend.toFixed(0)}`}
                   icon="currency-usd"
                   color={colors.dineout}
@@ -270,7 +270,7 @@ export const RestaurantScreen: React.FC = () => {
               </View>
               <View style={styles.metricWrapper}>
                 <MetricCard
-                  title="Total Visits"
+                  title="Visits"
                   value={totalVisits}
                   icon="map-marker-check"
                   color={colors.primary}

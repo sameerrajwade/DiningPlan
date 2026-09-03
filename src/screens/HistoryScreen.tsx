@@ -289,6 +289,7 @@ export const HistoryScreen: React.FC<Props> = ({ navigation }) => {
         ).map(({ key, label }) => (
           <Chip
             key={key}
+            compact
             selected={sourceFilter === key}
             onPress={() => setSourceFilter(key)}
             style={[styles.filterChip, sourceFilter === key && styles.filterChipSelected]}

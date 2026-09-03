@@ -543,14 +543,14 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation, r
 
         {/* Preference chips */}
         <View style={styles.chipRow}>
-          <Chip icon="food-off" style={styles.chip} textStyle={styles.chipText}>
+          <Chip compact icon="food-off" style={styles.chip} textStyle={styles.chipText}>
             Max {defaultPrefs.maxDineOutsPerWeek} dine-outs
           </Chip>
-          <Chip icon="palette-swatch" style={styles.chip} textStyle={styles.chipText}>
+          <Chip compact icon="palette-swatch" style={styles.chip} textStyle={styles.chipText}>
             Mix cuisines
           </Chip>
           {defaultPrefs.includeNewDishes && (
-            <Chip icon="new-box" style={styles.chip} textStyle={styles.chipText}>
+            <Chip compact icon="new-box" style={styles.chip} textStyle={styles.chipText}>
               Include new
             </Chip>
           )}

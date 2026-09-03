@@ -515,6 +515,7 @@ export const DishLibraryScreen: React.FC = () => {
               return (
                 <Chip
                   key={key}
+                  compact
                   selected={selected}
                   onPress={() => {
                     setView(key);
@@ -844,7 +845,7 @@ const makeStyles = (c: ThemeColors) =>
       flexWrap: 'wrap',
       alignItems: 'center',
       paddingHorizontal: Spacing.md,
-      gap: Spacing.sm,
+      gap: 6,
       marginBottom: Spacing.sm,
     },
     audienceRow: {
@@ -905,9 +906,10 @@ const makeStyles = (c: ThemeColors) =>
       backgroundColor: c.primary,
     },
     quickChipText: {
-      fontSize: FontSize.sm,
+      fontSize: FontSize.xs,
       fontFamily: Fonts.bodyMedium,
       color: c.text,
+      marginVertical: 4,
     },
     quickChipTextSelected: {
       color: c.white,

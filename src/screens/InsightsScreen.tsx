@@ -405,6 +405,7 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
               </View>
               <View style={styles.legendRow}>
                 <Chip
+                  compact
                   icon={() => (
                     <View style={[styles.legendDot, { backgroundColor: colors.home }]} />
                   )}
@@ -414,6 +415,7 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
                   Home {homePercent}%
                 </Chip>
                 <Chip
+                  compact
                   icon={() => (
                     <View style={[styles.legendDot, { backgroundColor: colors.takeout }]} />
                   )}
@@ -423,6 +425,7 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
                   Takeout {takeoutPercent}%
                 </Chip>
                 <Chip
+                  compact
                   icon={() => (
                     <View style={[styles.legendDot, { backgroundColor: colors.dineout }]} />
                   )}
@@ -522,6 +525,7 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
                 </View>
                 <View style={styles.legendRow}>
                   <Chip
+                    compact
                     icon={() => <VegMark diet="veg" size={12} />}
                     style={styles.legendChip}
                     textStyle={styles.legendChipText}
@@ -529,6 +533,7 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
                     Veg {dietSplit.vegPercent}%
                   </Chip>
                   <Chip
+                    compact
                     icon={() => <VegMark diet="nonveg" size={12} />}
                     style={styles.legendChip}
                     textStyle={styles.legendChipText}

@@ -66,7 +66,7 @@ export const MetricCard: React.FC<MetricCardProps> = ({
               <MaterialCommunityIcons name={icon as any} size={16} color={accent} />
             </View>
           )}
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={styles.title} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
             {title}
           </Text>
         </View>
@@ -134,11 +134,12 @@ const makeStyles = (c: ThemeColors) =>
     },
     shareBtn: { position: 'absolute', top: 8, right: 8, zIndex: 2, padding: 2 },
     title: {
+      flexShrink: 1,
       fontFamily: Fonts.bodySemiBold,
       fontSize: FontSize.xs,
       color: c.textSecondary,
       textTransform: 'uppercase',
-      letterSpacing: 0.5,
+      letterSpacing: 0.3,
     },
     valueRow: { flexDirection: 'row', alignItems: 'baseline' },
     value: { fontFamily: Fonts.display, fontSize: FontSize.xxxl, flexShrink: 1 },
