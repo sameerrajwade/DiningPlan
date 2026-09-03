@@ -9,7 +9,6 @@ import {
   Text,
   Button,
   Surface,
-  Chip,
   IconButton,
   ActivityIndicator,
   Badge,
@@ -26,6 +25,7 @@ import { Spacing, FontSize, BorderRadius, Fonts, ThemeColors } from '../config/t
 import { useTheme } from '../hooks/useTheme';
 import { generateMealPlan } from '../services/planner';
 import { Celebration } from '../components/Celebration';
+import { FilterPill } from '../components/FilterPill';
 import { useDishStore } from '../stores/useDishStore';
 import { useMealStore } from '../stores/useMealStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
@@ -543,16 +543,19 @@ export const PlanScreen: React.FC<MainTabScreenProps<'Plan'>> = ({ navigation, r
 
         {/* Preference chips */}
         <View style={styles.chipRow}>
-          <Chip compact icon="food-off" style={styles.chip} textStyle={styles.chipText}>
-            Max {defaultPrefs.maxDineOutsPerWeek} dine-outs
-          </Chip>
-          <Chip compact icon="palette-swatch" style={styles.chip} textStyle={styles.chipText}>
-            Mix cuisines
-          </Chip>
+          <FilterPill
+            label={`Max ${defaultPrefs.maxDineOutsPerWeek} dine-outs`}
+            leading={<MaterialCommunityIcons name="food-off" size={13} color={colors.textSecondary} />}
+          />
+          <FilterPill
+            label="Mix cuisines"
+            leading={<MaterialCommunityIcons name="palette-swatch" size={13} color={colors.textSecondary} />}
+          />
           {defaultPrefs.includeNewDishes && (
-            <Chip compact icon="new-box" style={styles.chip} textStyle={styles.chipText}>
-              Include new
-            </Chip>
+            <FilterPill
+              label="Include new"
+              leading={<MaterialCommunityIcons name="new-box" size={13} color={colors.textSecondary} />}
+            />
           )}
         </View>
 

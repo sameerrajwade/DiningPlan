@@ -93,7 +93,11 @@ export const MetricCard: React.FC<MetricCardProps> = ({
 
         {/* Always reserve the subtitle line so every card is the same height */}
         <View style={styles.subtitleArea}>
-          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          {subtitle ? (
+            <Text style={styles.subtitle} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+              {subtitle}
+            </Text>
+          ) : null}
         </View>
         {/* Reserve the bar slot on every card so a card WITH a progress bar
             (e.g. spend vs budget) stays the same height as the others in the grid. */}

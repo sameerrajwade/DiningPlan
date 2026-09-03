@@ -7,7 +7,7 @@ import {
   Dimensions,
   Pressable,
 } from 'react-native';
-import { Text, Chip, Surface, ActivityIndicator } from 'react-native-paper';
+import { Text, Surface, ActivityIndicator } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LineChart } from 'react-native-chart-kit';
 import { format } from 'date-fns';
@@ -22,6 +22,7 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { getCurrencySymbol } from '../utils/currency';
 import { mealDiet } from '../utils/diet';
 import { VegMark } from '../components/VegMark';
+import { FilterPill } from '../components/FilterPill';
 import { getRange, TimeRange } from '../utils/insightsRange';
 import type { MainTabScreenProps } from '../navigation/types';
 
@@ -404,36 +405,18 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
                 />
               </View>
               <View style={styles.legendRow}>
-                <Chip
-                  compact
-                  icon={() => (
-                    <View style={[styles.legendDot, { backgroundColor: colors.home }]} />
-                  )}
-                  style={styles.legendChip}
-                  textStyle={styles.legendChipText}
-                >
-                  Home {homePercent}%
-                </Chip>
-                <Chip
-                  compact
-                  icon={() => (
-                    <View style={[styles.legendDot, { backgroundColor: colors.takeout }]} />
-                  )}
-                  style={styles.legendChip}
-                  textStyle={styles.legendChipText}
-                >
-                  Takeout {takeoutPercent}%
-                </Chip>
-                <Chip
-                  compact
-                  icon={() => (
-                    <View style={[styles.legendDot, { backgroundColor: colors.dineout }]} />
-                  )}
-                  style={styles.legendChip}
-                  textStyle={styles.legendChipText}
-                >
-                  Dine out {dineOutPercent}%
-                </Chip>
+                <FilterPill
+                  label={`Home ${homePercent}%`}
+                  leading={<View style={[styles.legendDot, { backgroundColor: colors.home }]} />}
+                />
+                <FilterPill
+                  label={`Takeout ${takeoutPercent}%`}
+                  leading={<View style={[styles.legendDot, { backgroundColor: colors.takeout }]} />}
+                />
+                <FilterPill
+                  label={`Dine out ${dineOutPercent}%`}
+                  leading={<View style={[styles.legendDot, { backgroundColor: colors.dineout }]} />}
+                />
               </View>
               {insights.homeCookedTrend !== 0 && (
                 <Text style={styles.comparisonText}>
@@ -524,22 +507,14 @@ export const InsightsScreen: React.FC<MainTabScreenProps<'Insights'>> = ({ route
                   />
                 </View>
                 <View style={styles.legendRow}>
-                  <Chip
-                    compact
-                    icon={() => <VegMark diet="veg" size={12} />}
-                    style={styles.legendChip}
-                    textStyle={styles.legendChipText}
-                  >
-                    Veg {dietSplit.vegPercent}%
-                  </Chip>
-                  <Chip
-                    compact
-                    icon={() => <VegMark diet="nonveg" size={12} />}
-                    style={styles.legendChip}
-                    textStyle={styles.legendChipText}
-                  >
-                    Non-veg {dietSplit.nonvegPercent}%
-                  </Chip>
+                  <FilterPill
+                    label={`Veg ${dietSplit.vegPercent}%`}
+                    leading={<VegMark diet="veg" size={12} />}
+                  />
+                  <FilterPill
+                    label={`Non-veg ${dietSplit.nonvegPercent}%`}
+                    leading={<VegMark diet="nonveg" size={12} />}
+                  />
                 </View>
                 {dietSplit.vegTrend !== null && dietSplit.vegTrend !== 0 && (
                   <Text style={styles.comparisonText}>

@@ -7,7 +7,7 @@ import {
   Share,
   Alert,
 } from 'react-native';
-import { Searchbar, Text, Chip, ActivityIndicator, Button } from 'react-native-paper';
+import { Searchbar, Text, ActivityIndicator, Button } from 'react-native-paper';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { format } from 'date-fns';
 import { Meal, SourceType } from '../types';
@@ -23,6 +23,7 @@ import { useTheme } from '../hooks/useTheme';
 import { sourceIcon } from '../utils/icons';
 import { mealDiet } from '../utils/diet';
 import { VegMark } from '../components/VegMark';
+import { FilterPill } from '../components/FilterPill';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useMealStore } from '../stores/useMealStore';
 import { useHouseholdStore } from '../stores/useHouseholdStore';
@@ -287,19 +288,12 @@ export const HistoryScreen: React.FC<Props> = ({ navigation }) => {
             { key: 'dineout', label: 'Dine Out' },
           ] as const
         ).map(({ key, label }) => (
-          <Chip
+          <FilterPill
             key={key}
-            compact
+            label={label}
             selected={sourceFilter === key}
             onPress={() => setSourceFilter(key)}
-            style={[styles.filterChip, sourceFilter === key && styles.filterChipSelected]}
-            textStyle={[
-              styles.filterChipText,
-              sourceFilter === key && styles.filterChipTextSelected,
-            ]}
-          >
-            {label}
-          </Chip>
+          />
         ))}
       </View>
 

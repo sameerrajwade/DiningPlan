@@ -12,7 +12,6 @@ import {
   Searchbar,
   Text,
   FAB,
-  Chip,
   Portal,
   Dialog,
   Button,
@@ -35,6 +34,7 @@ import type { HomeStackParamList } from '../navigation/types';
 import { CuisineChips } from '../components/CuisineChips';
 import { StarterDishPicker } from '../components/StarterDishPicker';
 import { DishDetailSheet } from '../components/DishDetailSheet';
+import { FilterPill } from '../components/FilterPill';
 import { CatalogEntry } from '../data/starterCatalog';
 import { catalogEntriesToDishes } from '../utils/starterDishes';
 import { cuisineIcon } from '../utils/icons';
@@ -513,19 +513,15 @@ export const DishLibraryScreen: React.FC = () => {
             ).map(({ key, label }) => {
               const selected = view === key;
               return (
-                <Chip
+                <FilterPill
                   key={key}
-                  compact
+                  label={label}
                   selected={selected}
                   onPress={() => {
                     setView(key);
                     setSortMode(key === 'stale' ? 'lastMade' : 'mostMade');
                   }}
-                  style={[styles.quickChip, selected && styles.quickChipSelected]}
-                  textStyle={[styles.quickChipText, selected && styles.quickChipTextSelected]}
-                >
-                  {label}
-                </Chip>
+                />
               );
             })}
           </View>
