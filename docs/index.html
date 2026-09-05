@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>(function(){try{var t=localStorage.getItem('sofra-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>
 <title>Sofra — Your family's meal memory</title>
 <meta name="description" content="Sofra is a family meal planner that remembers every meal you make — auto-plans your week from your own dishes, tracks home-vs-outside spending, and never forgets a recipe your family loves.">
 <link rel="canonical" href="https://sofra.savvylabs.dev/">
@@ -33,18 +34,43 @@
     <a href="#features">Features</a>
     <a href="guide.html">Guide</a>
     <a href="#faq">FAQ</a>
-    <a href="#get">Get the app</a>
   </nav>
+  <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle light and dark mode" title="Toggle theme">
+    <svg class="ic-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.5M12 19.5V22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M2 12h2.5M19.5 12H22M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+    <svg class="ic-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8Z"/></svg>
+  </button>
+  <div class="nav-badges">
+    <a href="https://apps.apple.com/app/id6797710095" target="_blank" rel="noopener" aria-label="Download on the App Store"><img src="assets/badge-appstore.svg" alt="Download on the App Store" height="34"></a>
+    <a href="https://play.google.com/store/apps/details?id=com.thaliplan.app" target="_blank" rel="noopener" aria-label="Get it on Google Play"><img src="assets/badge-googleplay.svg" alt="Get it on Google Play" height="34"></a>
+  </div>
 </div></header>
 
-<section class="hero plain"><div class="wrap">
-  <div class="eyebrow">Family meal planner</div>
-  <h1>Sofra</h1>
-  <p class="tagline">Your family's meal memory</p>
-  <p class="lede">Sofra remembers every meal your family makes — then plans your week from the dishes you already love. No recipe browsing, no calorie guilt. Just your real food habits, turned into effortless plans and honest insights.</p>
-  <div class="btnrow">
-    <a class="btn btn-primary" href="#get">Get the app</a>
-    <a class="btn btn-ghost" href="guide.html">Explore the guide</a>
+<section class="hero plain"><div class="wrap hero-grid">
+  <div class="hero-copy">
+    <div class="eyebrow">Sofra · Family meal planner</div>
+    <h1>Your family's<br>meal memory</h1>
+    <p class="hero-sub">Log what your family eats — Sofra plans your week from it and shows where your food money really goes.</p>
+    <p class="lede">No recipe browsing, no calorie guilt. Just your real food habits, turned into effortless plans and honest insights — for any family, any cuisine, anywhere.</p>
+    <div class="badges">
+      <a href="https://apps.apple.com/app/id6797710095" target="_blank" rel="noopener" aria-label="Download on the App Store"><img src="assets/badge-appstore.svg" alt="Download on the App Store" height="52"></a>
+      <a href="https://play.google.com/store/apps/details?id=com.thaliplan.app" target="_blank" rel="noopener" aria-label="Get it on Google Play"><img src="assets/badge-googleplay.svg" alt="Get it on Google Play" height="52"></a>
+    </div>
+    <p class="trust"><span>Free</span><span>No ads</span><span>Private to your household</span></p>
+    <p class="hero-guide"><a href="guide.html">Explore the guide →</a></p>
+  </div>
+  <div class="hero-art">
+    <img src="assets/screens/home.png" alt="Sofra home dashboard on a phone" loading="eager">
+  </div>
+</div></section>
+
+<section class="demo"><div class="wrap">
+  <div class="sec-head" style="text-align:center; margin:0 auto 26px; max-width:52ch">
+    <div class="eyebrow" style="display:block">See it in action</div>
+    <h2>Sofra in 30 seconds</h2>
+    <p class="lead">Log a meal, plan the week, see where your food really goes — the whole loop, start to finish.</p>
+  </div>
+  <div class="demo-video">
+    <video src="assets/video/sofra-demo.mp4" poster="assets/screens/home.png" autoplay muted loop playsinline controls preload="metadata"></video>
   </div>
 </div></section>
 
@@ -54,15 +80,32 @@
     <h2>Not another recipe app</h2>
     <p class="lead">Most meal apps give you new recipes to try. Sofra does the opposite — it gives you back the meals your family already makes and forgets. It's a memory tool, not a discovery tool.</p>
   </div>
+  <div class="pillars">
+    <div class="pillar">
+      <div class="ic tint-terra"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--terra)"><path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 12h6M8 16h8"/></svg></div>
+      <div class="pillar-kicker">Remember</div>
+      <h3>A permanent meal memory</h3>
+      <p>Every meal you log is remembered forever — searchable, sortable, always yours. Whiteboards erase; Sofra doesn't. And it surfaces the dishes hiding in your back catalogue: <em>"It's been 87 days since Lasagna."</em></p>
+    </div>
+    <div class="pillar">
+      <div class="ic tint-sage"><svg viewBox="0 0 24 24" fill="currentColor" style="color:var(--sage)"><circle cx="6" cy="6" r="1.5"/><circle cx="12" cy="8" r="1.5"/><circle cx="18" cy="6" r="1.5"/><circle cx="10" cy="14" r="1.5"/><circle cx="14" cy="14" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg></div>
+      <div class="pillar-kicker">Plan</div>
+      <h3>A week from your own dishes</h3>
+      <p>Auto-generate a week from what your family actually cooks — balanced across cuisines, avoiding recent repeats — then pull every ingredient into a shared grocery list in a tap. A little confetti when you accept it.</p>
+    </div>
+    <div class="pillar">
+      <div class="ic tint-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--amber)"><rect x="3" y="4" width="3" height="14" rx=".5"/><rect x="10" y="6" width="3" height="12" rx=".5"/><rect x="17" y="2" width="3" height="16" rx=".5"/></svg></div>
+      <div class="pillar-kicker">Understand</div>
+      <h3>Honest home-vs-outside insights</h3>
+      <p>See your home-cooked ratio and exactly where your food budget goes — the pattern most families never notice. Then turn any insight into a branded card and share it in a tap.</p>
+    </div>
+  </div>
+
+  <h3 class="grid-head">Everything else your kitchen remembers</h3>
   <div class="grid">
-    <div class="card"><div class="ic tint-terra"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--terra)"><path d="M5 8h14l-1 12H6L5 8Z"/><path d="M9 12h6M8 16h8"/></svg></div><h3>Permanent meal memory</h3><p>Every meal you log is remembered forever — searchable, sortable, and always yours. Whiteboards erase; Sofra doesn't.</p></div>
-    <div class="card"><div class="ic tint-sage"><svg viewBox="0 0 24 24" fill="currentColor" style="color:var(--sage)"><circle cx="6" cy="6" r="1.5"/><circle cx="12" cy="8" r="1.5"/><circle cx="18" cy="6" r="1.5"/><circle cx="10" cy="14" r="1.5"/><circle cx="14" cy="14" r="1.5"/><circle cx="12" cy="18" r="1.5"/></svg></div><h3>Plans from your own dishes</h3><p>Auto-generate a week from what your family actually cooks — balanced across cuisines, avoiding recent repeats.</p></div>
-    <div class="card"><div class="ic tint-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--amber)"><rect x="3" y="4" width="3" height="14" rx=".5"/><rect x="10" y="6" width="3" height="12" rx=".5"/><rect x="17" y="2" width="3" height="16" rx=".5"/></svg></div><h3>Home-vs-outside insights</h3><p>See your home-cooked ratio and exactly where your food budget goes. The pattern most families never notice.</p></div>
     <div class="card"><div class="ic tint-sage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--sage)"><rect x="4" y="4" width="16" height="16" rx="2.5"/><circle cx="12" cy="12" r="3.5" fill="currentColor" stroke="none"/></svg></div><h3>Veg &amp; non-veg at a glance</h3><p>Every meal is marked veg or non-veg with the familiar dot — detected automatically as you type — so your household's balance shows up on meals, history, and insights.</p></div>
-    <div class="card"><div class="ic tint-terra"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--terra)"><circle cx="12" cy="12" r="9"/><path d="M9 9c.667-1 1.5-1.5 3-1.5 2 0 3 1 3 2.5-.5 1-1.5 1.5-2.5 2.5m0 3v.5"/></svg></div><h3>Forgotten-dish reminders</h3><p>"It's been 87 days since Batata Bhaji." Sofra surfaces the dishes hiding in your back catalogue.</p></div>
     <div class="card"><div class="ic tint-kids"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--kids)"><path d="M5 9v10c0 1 1 2 2 2h10c1 0 2-1 2-2V9M8 6c0-1.5 1-3 2-3h4c1 0 2 1.5 2 3"/><path d="M10 15h4"/></svg></div><h3>Kids tiffin track</h3><p>Plan a separate kids-tiffin menu alongside family meals, with repeat-alerts to beat tiffin fatigue.</p></div>
     <div class="card"><div class="ic tint-sage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--sage)"><circle cx="8" cy="10" r="2"/><circle cx="16" cy="10" r="2"/><circle cx="12" cy="16" r="2"/><path d="M8 10l2 3M16 10l-2 3M12 16v2"/></svg></div><h3>One shared household</h3><p>Everyone in the family adds and sees meals in real time. A single source of truth for the kitchen.</p></div>
-    <div class="card"><div class="ic tint-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--amber)"><path d="M12 2v10M7 12h10l-1 8H8l-1-8Z"/><path d="M9 5h6v3H9z"/></svg></div><h3>Share the wins</h3><p>Turn any insight into a branded stat card and share it with family or on social — and enjoy a little confetti when you accept a week's plan.</p></div>
     <div class="card"><div class="ic tint-sage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--sage)"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1.3"/><circle cx="18" cy="20" r="1.3"/><path d="M6 6 5 3H3"/></svg></div><h3>Grocery list, built from your week</h3><p>One shared household checklist. Pull in the ingredients for this week's — or next week's — planned dishes in a tap, add anything else by hand, and tick items off as you shop.</p></div>
     <div class="card"><div class="ic tint-terra"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--terra)"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div><h3>Recipes on your dishes</h3><p>Keep the recipe where it belongs — on the dish. Paste a YouTube video, a link, or type your own "how I make it" steps, and open it in a tap right from the meal card.</p></div>
     <div class="card"><div class="ic tint-kids"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--kids)"><path d="M20 12v7a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-7"/><path d="M2 8h20v4H2z"/><path d="M12 8V21M12 8S10 3 7.5 4.5 10 8 12 8ZM12 8s2-5 4.5-3.5S14 8 12 8Z"/></svg></div><h3>Share your dish collection</h3><p>Send another family your dishes with a single code — they pick what to import. Recipes and ingredients come along; your meals, ratings, and spending never do.</p></div>
@@ -70,25 +113,77 @@
   </div>
 </div></section>
 
+<section class="viral"><div class="wrap">
+  <div class="sec-head viral-head">
+    <div class="eyebrow">Made to share</div>
+    <h2>Every insight is a share-ready card</h2>
+    <p class="lead">Every corner of your family's food story is built to travel — your home-cooked ratio, a spending reveal, a forgotten-dish nudge, a streak. Tap once and any of them becomes a beautiful, branded card you can drop in the family group or post anywhere.</p>
+  </div>
+</div>
+<div class="sharewall" role="img" aria-label="Examples of shareable Sofra stat cards">
+  <div class="sharewall-track">
+    <div class="statcard sc-terra"><span class="sc-top">Sofra</span><span class="sc-num">82%</span><span class="sc-label">Home-cooked this month</span><span class="sc-sub">Takeout 6% · Dine out 12%</span><span class="sc-foot">Your family's meal memory</span></div>
+    <div class="statcard sc-sage"><span class="sc-top">Sofra</span><span class="sc-num">$128</span><span class="sc-label">Saved vs last month</span><span class="sc-sub">Four more nights cooked in</span><span class="sc-foot">Your family's meal memory</span></div>
+    <div class="statcard sc-kids"><span class="sc-top">Sofra</span><span class="sc-num">87</span><span class="sc-label">Days since Lasagna</span><span class="sc-sub">Time to bring it back →</span><span class="sc-foot">Your family's meal memory</span></div>
+    <div class="statcard sc-terra"><span class="sc-top">Sofra</span><span class="sc-num">6</span><span class="sc-label">Cuisines this month</span><span class="sc-sub">Italian · Thai · Mexican · more</span><span class="sc-foot">Your family's meal memory</span></div>
+    <div class="statcard sc-sage"><span class="sc-top">Sofra</span><span class="sc-num">21</span><span class="sc-label">Night home streak</span><span class="sc-sub">Your longest yet</span><span class="sc-foot">Your family's meal memory</span></div>
+    <div class="statcard sc-kids"><span class="sc-top">Sofra</span><span class="sc-num">3</span><span class="sc-label">Visits to Nonna's Kitchen</span><span class="sc-sub">$96 this month</span><span class="sc-foot">Your family's meal memory</span></div>
+    <div class="statcard sc-terra" aria-hidden="true"><span class="sc-top">Sofra</span><span class="sc-num">82%</span><span class="sc-label">Home-cooked this month</span><span class="sc-sub">Takeout 6% · Dine out 12%</span><span class="sc-foot">Your family's meal memory</span></div>
+    <div class="statcard sc-sage" aria-hidden="true"><span class="sc-top">Sofra</span><span class="sc-num">$128</span><span class="sc-label">Saved vs last month</span><span class="sc-sub">Four more nights cooked in</span><span class="sc-foot">Your family's meal memory</span></div>
+    <div class="statcard sc-kids" aria-hidden="true"><span class="sc-top">Sofra</span><span class="sc-num">87</span><span class="sc-label">Days since Lasagna</span><span class="sc-sub">Time to bring it back →</span><span class="sc-foot">Your family's meal memory</span></div>
+    <div class="statcard sc-terra" aria-hidden="true"><span class="sc-top">Sofra</span><span class="sc-num">6</span><span class="sc-label">Cuisines this month</span><span class="sc-sub">Italian · Thai · Mexican · more</span><span class="sc-foot">Your family's meal memory</span></div>
+    <div class="statcard sc-sage" aria-hidden="true"><span class="sc-top">Sofra</span><span class="sc-num">21</span><span class="sc-label">Night home streak</span><span class="sc-sub">Your longest yet</span><span class="sc-foot">Your family's meal memory</span></div>
+    <div class="statcard sc-kids" aria-hidden="true"><span class="sc-top">Sofra</span><span class="sc-num">3</span><span class="sc-label">Visits to Nonna's Kitchen</span><span class="sc-sub">$96 this month</span><span class="sc-foot">Your family's meal memory</span></div>
+  </div>
+</div></section>
+
 <section><div class="wrap">
   <div class="sec-head">
     <div class="eyebrow">A look inside</div>
     <h2>Warm, fast, and honest</h2>
-    <p class="lead">From sign-in and a shared household to ten-second logging, an auto-planned week — with a little confetti when you accept it — and any insight shared as a branded card. A terracotta-and-sage design built to feel like a home kitchen, in light and dark mode.</p>
+    <p class="lead">Four taps a week is all it takes. Here's what that looks like — a terracotta-and-sage design built to feel like a home kitchen, in light and dark mode.</p>
   </div>
-  <div class="gallery">
-    <figure><img src="assets/screens/login.png" alt="Sign in to Sofra" loading="lazy"><figcaption>Sign in</figcaption></figure>
-    <figure><img src="assets/screens/household.png" alt="Create or join a household" loading="lazy"><figcaption>Create or join a household</figcaption></figure>
-    <figure><img src="assets/screens/home.png" alt="Home dashboard" loading="lazy"><figcaption>Home dashboard</figcaption></figure>
-    <figure><img src="assets/screens/addmeal.png" alt="Log a meal in seconds" loading="lazy"><figcaption>Log a meal in seconds</figcaption></figure>
-    <figure><img src="assets/screens/dishlibrary.png" alt="A deep dish library" loading="lazy"><figcaption>1,500+ dishes, deep in Indian regional cooking</figcaption></figure>
-    <figure><img src="assets/screens/dishdetail.png" alt="Ingredients, recipe and notes on every dish" loading="lazy"><figcaption>Recipes, ingredients and notes on any dish</figcaption></figure>
-    <figure><img src="assets/screens/grocery.png" alt="Shared grocery list" loading="lazy"><figcaption>One shared grocery list</figcaption></figure>
-    <figure><img src="assets/screens/plan.png" alt="Auto-planned week" loading="lazy"><figcaption>Auto-planned week</figcaption></figure>
-    <figure><img src="assets/screens/celebration.png" alt="Celebration when you accept a plan" loading="lazy"><figcaption>A little celebration on accept</figcaption></figure>
-    <figure><img src="assets/screens/insights.png" alt="Honest insights" loading="lazy"><figcaption>Honest insights</figcaption></figure>
-    <figure><img src="assets/screens/share.png" alt="Share a branded stat card" loading="lazy"><figcaption>Share a branded stat card</figcaption></figure>
-    <figure><img src="assets/screens/calendar.png" alt="Weekly calendar" loading="lazy"><figcaption>Weekly calendar</figcaption></figure>
+  <div class="spotlights">
+    <div class="screen">
+      <div class="phone"><img src="assets/screens/home.png" alt="Sofra home dashboard" loading="lazy"></div>
+      <div class="body">
+        <h3>Your kitchen at a glance</h3>
+        <p>Open Sofra to see the month in one calm dashboard: your home-cooked ratio, outside spend against budget, unique dishes, and today's meals. No setup, no clutter — just where things stand.</p>
+      </div>
+    </div>
+    <div class="screen">
+      <div class="phone"><img src="assets/screens/addmeal.png" alt="Logging a meal in Sofra" loading="lazy"></div>
+      <div class="body">
+        <h3>Logging takes ten seconds</h3>
+        <p>Autocomplete from your own history and smart time-of-day defaults mean a meal goes in with a tap or two. Home, takeout, or dine-out — even a full plate with all the sides.</p>
+      </div>
+    </div>
+    <div class="screen">
+      <div class="phone"><img src="assets/screens/plan.png" alt="Sofra's auto-planned week" loading="lazy"></div>
+      <div class="body">
+        <h3>A week planned from your own dishes</h3>
+        <p>Tap once and Sofra drafts the week from what your family actually cooks — balanced across cuisines, skipping recent repeats. Swap anything you like, then send the ingredients straight to your grocery list.</p>
+      </div>
+    </div>
+    <div class="screen">
+      <div class="phone"><img src="assets/screens/insights.png" alt="Sofra's honest insights" loading="lazy"></div>
+      <div class="body">
+        <h3>See where your food really goes</h3>
+        <p>Home vs. outside, spend against budget, your most-loved dishes and the ones you've forgotten. The honest patterns most families never notice — and every one turns into a share-ready card.</p>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="grid-head">More to explore</h3>
+  <div class="gallery gallery-rich">
+    <figure><img src="assets/screens/grocery.png" alt="Shared grocery list" loading="lazy"><figcaption><strong>One shared grocery list</strong>Pull this week's ingredients straight from your plan in a tap, add anything else by hand, and tick items off together as you shop.</figcaption></figure>
+    <figure><img src="assets/screens/dishdetail.png" alt="Ingredients, recipe and notes on every dish" loading="lazy"><figcaption><strong>Ingredients &amp; recipes, on the dish</strong>Keep the recipe where it belongs. Paste a video or link, jot your own steps, list ingredients — then send them to grocery in one tap.</figcaption></figure>
+    <figure><img src="assets/screens/dishlibrary.png" alt="A deep dish library with veg and non-veg dishes" loading="lazy"><figcaption><strong>1,500+ dishes, veg &amp; non-veg</strong>Search and filter a deep, global library, add your own in seconds — and every dish carries the veg / non-veg dot, so your household's balance is always clear.</figcaption></figure>
+    <figure><img src="assets/screens/calendar.png" alt="Weekly calendar" loading="lazy"><figcaption><strong>Your weekly calendar</strong>The whole week at a glance, past and planned, with the veg / non-veg dot on every meal.</figcaption></figure>
+    <figure><img src="assets/screens/household.png" alt="Create or join a household" loading="lazy"><figcaption><strong>One shared household</strong>Everyone adds and sees meals in real time — a single source of truth for the family's kitchen.</figcaption></figure>
+    <figure><img src="assets/screens/share.png" alt="Share a branded stat card" loading="lazy"><figcaption><strong>Share a branded card</strong>Turn any insight into a beautiful, on-brand card for the family group or your feed.</figcaption></figure>
+    <figure><img src="assets/screens/login.png" alt="Sign in to Sofra" loading="lazy"><figcaption><strong>Sign in your way</strong>Google, Apple, or a plain email and password — you're in within seconds.</figcaption></figure>
+    <figure><img src="assets/screens/celebration.png" alt="Celebration when you accept a plan" loading="lazy"><figcaption><strong>A little confetti on accept</strong>Accepting a week's plan should feel like a small win. So it does.</figcaption></figure>
   </div>
 </div></section>
 
@@ -98,7 +193,7 @@
     <h2>Three steps to a calmer kitchen</h2>
   </div>
   <div class="grid">
-    <div class="card"><div class="ic tint-terra">1</div><h3>Log what you eat</h3><p>Ten-second logging with autocomplete and quick-picks. Home meals, takeout, dine-outs — even a full thali.</p></div>
+    <div class="card"><div class="ic tint-terra">1</div><h3>Log what you eat</h3><p>Ten-second logging with autocomplete and quick-picks. Home meals, takeout, dine-outs — even a full plate with all the sides.</p></div>
     <div class="card"><div class="ic tint-sage">2</div><h3>Let Sofra learn</h3><p>After a week or two, Sofra knows your family's dishes, cadence, and spending.</p></div>
     <div class="card"><div class="ic tint-amber">3</div><h3>Plan &amp; improve</h3><p>Auto-plan the week, spot spending patterns, and rediscover dishes you'd forgotten.</p></div>
   </div>
@@ -118,7 +213,31 @@
     <div class="card"><h3>What does it cost?</h3><p>Sofra is free to use at launch, with no ads and nothing to buy.</p></div>
     <div class="card"><h3>Is my data private?</h3><p>Your meals stay private to your household, encrypted in transit. You can delete your account and all its data anytime from Settings.</p></div>
     <div class="card"><h3>Do I need to plan to use it?</h3><p>No. Just log meals as you go — the planning and insights build themselves from your own history.</p></div>
+    <div class="card"><h3>Is Sofra only for Indian families?</h3><p>Not at all. Sofra works for <strong>any family and any cuisine, anywhere</strong> — it plans from the dishes <em>you</em> cook, whatever they are. The built-in library spans 1,500+ dishes across the world's cuisines, and you can add your own in seconds.</p></div>
+    <div class="card"><h3>Do I have to log every single meal?</h3><p>No. Log as much or as little as you like — logging takes about ten seconds, and the more you add the smarter the plans and insights get. Miss a day? Nothing breaks.</p></div>
+    <div class="card"><h3>How is this different from a spreadsheet or notes app?</h3><p>A spreadsheet just stores. Sofra <em>understands</em> — it auto-plans your week, flags forgotten dishes, tracks home-vs-outside spending, and turns it all into share-ready insights. No formulas, no upkeep.</p></div>
+    <div class="card"><h3>Can I use it on my own?</h3><p>Yes. A household of one works perfectly — you get the same memory, planning, and insights, just for you.</p></div>
+    <div class="card"><h3>Is there a catch if it's free?</h3><p>No catch. No ads, and we never sell your data. Sofra is free to use at launch, and your meals stay private to your household.</p></div>
   </div>
+</div></section>
+
+<section class="trustband"><div class="wrap">
+  <div class="sec-head" style="text-align:center; margin:0 auto 28px; max-width:54ch">
+    <div class="eyebrow" style="display:block">Why families choose Sofra</div>
+    <h2>Simple to start. Honest by design.</h2>
+  </div>
+  <div class="trust-points">
+    <div class="tp"><strong>Live on iPhone &amp; Android</strong><span>On the App Store and Google Play today.</span></div>
+    <div class="tp"><strong>Free, with no ads</strong><span>Nothing to buy, nothing selling your attention.</span></div>
+    <div class="tp"><strong>Private to your household</strong><span>Your meals stay yours — delete everything anytime.</span></div>
+    <div class="tp"><strong>Any family, any cuisine</strong><span>Plans from the dishes you cook, wherever you are.</span></div>
+  </div>
+  <!-- TESTIMONIAL SLOT — paste 2–3 real quotes/ratings here when available, then remove this comment.
+  <div class="quotes">
+    <blockquote class="quote">"Sofra finally got our family off the whiteboard for good."<cite>— Name, City</cite></blockquote>
+    <blockquote class="quote">"I had no idea how much we spent eating out until this."<cite>— Name, City</cite></blockquote>
+  </div>
+  -->
 </div></section>
 
 <section id="get"><div class="wrap">
@@ -126,12 +245,9 @@
     <span class="pill">Now on iPhone &amp; Android</span>
     <h2 style="margin-top:12px">Get Sofra</h2>
     <p class="lead">Sofra is live on the App Store and Google Play — download it now on your iPhone or Android phone.</p>
-    <div class="btnrow" style="justify-content:flex-start; flex-wrap:wrap">
-      <a class="btn btn-primary" href="https://apps.apple.com/app/id6797710095" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true" style="vertical-align:-3px;margin-right:7px"><path d="M16.36 12.9c.02 2.4 2.1 3.2 2.13 3.21-.02.06-.33 1.14-1.1 2.25-.66.96-1.35 1.92-2.44 1.94-1.07.02-1.42-.63-2.64-.63s-1.6.61-2.62.65c-1.05.04-1.85-1.04-2.52-2-1.36-1.97-2.4-5.56-1-7.99a3.9 3.9 0 0 1 3.28-1.99c1.03-.02 2 .69 2.64.69.63 0 1.82-.86 3.07-.73.52.02 1.99.21 2.93 1.59-.08.05-1.75 1.02-1.73 3.04M14.4 5.6c.57-.69.95-1.65.85-2.6-.82.03-1.81.55-2.4 1.24-.53.61-.99 1.58-.87 2.51.91.07 1.85-.46 2.42-1.15"/></svg>Download on the App Store</a>
-      <a class="btn btn-primary" href="https://play.google.com/store/apps/details?id=com.thaliplan.app" target="_blank" rel="noopener">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true" style="vertical-align:-2px;margin-right:8px"><path d="M4 3.2v17.6c0 .5.5.8.9.5l9.2-8.8L4.9 2.7c-.4-.3-.9 0-.9.5m11.5 6.1 2.3 2.2-2.4 2.3-2.6-2.5zM16.9 15l3.4-1.9c.6-.4.6-1.2 0-1.6L16.9 9.7 14.1 12z"/></svg>Get it on Google Play</a>
-      <a class="btn btn-ghost" href="guide.html">Read the guide</a>
+    <div class="badges" style="margin-top:20px">
+      <a href="https://apps.apple.com/app/id6797710095" target="_blank" rel="noopener" aria-label="Download on the App Store"><img src="assets/badge-appstore.svg" alt="Download on the App Store" height="54"></a>
+      <a href="https://play.google.com/store/apps/details?id=com.thaliplan.app" target="_blank" rel="noopener" aria-label="Get it on Google Play"><img src="assets/badge-googleplay.svg" alt="Get it on Google Play" height="54"></a>
     </div>
     <p style="margin-top:14px; color:var(--faint); font-size:14px">No ads. No selling your data. Your family's meals stay private to your household — and you can delete everything anytime.</p>
   </div>
@@ -146,5 +262,22 @@
     <a href="mailto:sofra.support@gmail.com">Support</a>
   </span>
 </div></footer>
+<script>
+(function(){
+  var btn=document.getElementById('themeToggle');
+  if(!btn)return;
+  var mq=window.matchMedia('(prefers-color-scheme: dark)');
+  function effective(){var e=document.documentElement.getAttribute('data-theme');return e?e:(mq.matches?'dark':'light');}
+  function render(){btn.dataset.mode=effective();}
+  render();
+  btn.addEventListener('click',function(){
+    var next=effective()==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{localStorage.setItem('sofra-theme',next);}catch(e){}
+    render();
+  });
+  mq.addEventListener('change',render);
+})();
+</script>
 </body>
 </html>
